@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { Plus, Eye } from "lucide-react";
+import { Plus, Eye, FileText } from "lucide-react";
+import DetallesCotizacion from "./DetallesCotizacion";
 
 export default function Cotizaciones({ onNewCotizacion }) {
   const [cotizaciones, setCotizaciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCotizacionId, setSelectedCotizacionId] = useState(null);
 
   useEffect(() => {
     fetchCotizaciones();
@@ -55,6 +57,19 @@ export default function Cotizaciones({ onNewCotizacion }) {
     );
   }
 
+  if (selectedCotizacionId) {
+    return (
+      <DetallesCotizacion
+        cotizacionId={selectedCotizacionId}
+        onBack={() => setSelectedCotizacionId(null)}
+        onDeleted={() => {
+          setSelectedCotizacionId(null);
+          fetchCotizaciones();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
@@ -90,7 +105,8 @@ export default function Cotizaciones({ onNewCotizacion }) {
               {cotizaciones.map((cot) => (
                 <div
                   key={cot.id}
-                  className="p-6 hover:bg-gray-50 transition-colors"
+                  onClick={() => setSelectedCotizacionId(cot.id)}
+                  className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -152,15 +168,6 @@ export default function Cotizaciones({ onNewCotizacion }) {
                           {cot.notas}
                         </p>
                       )}
-                    </div>
-
-                    <div className="flex gap-2 ml-4">
-                      <button
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Ver detalles"
-                      >
-                        <Eye size={20} />
-                      </button>
                     </div>
                   </div>
                 </div>

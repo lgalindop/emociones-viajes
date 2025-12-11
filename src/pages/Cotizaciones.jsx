@@ -9,55 +9,83 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import DetallesCotizacion from "./DetallesCotizacion";
-import { useSearchParams } from "react-router-dom";
 import { useDebounce } from "../hooks/useDebounce";
 
 export default function Cotizaciones({ onNewCotizacion }) {
   const [cotizaciones, setCotizaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCotizacionId, setSelectedCotizacionId] = useState(null);
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Get initial values from URL or defaults
+  // Get initial values from localStorage or defaults
   const [searchTerm, setSearchTerm] = useState(
-    searchParams.get("search") || ""
+    localStorage.getItem("filter_search") || ""
   );
   const [statusFilter, setStatusFilter] = useState(
-    searchParams.get("status") || "all"
+    localStorage.getItem("filter_status") || "all"
   );
   const [leadOriginFilter, setLeadOriginFilter] = useState(
-    searchParams.get("origin") || "all"
+    localStorage.getItem("filter_origin") || "all"
   );
-  const [dateFrom, setDateFrom] = useState(searchParams.get("from") || "");
-  const [dateTo, setDateTo] = useState(searchParams.get("to") || "");
+  const [dateFrom, setDateFrom] = useState(
+    localStorage.getItem("filter_from") || ""
+  );
+  const [dateTo, setDateTo] = useState(localStorage.getItem("filter_to") || "");
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState(
-    searchParams.get("view") || "detailed"
+    localStorage.getItem("filter_view") || "detailed"
   );
 
   // Debounced search term (300ms delay)
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  // Sync state to URL params
+  // Save filters to localStorage whenever they change
   useEffect(() => {
-    const params = {};
-    if (debouncedSearchTerm) params.search = debouncedSearchTerm;
-    if (statusFilter !== "all") params.status = statusFilter;
-    if (leadOriginFilter !== "all") params.origin = leadOriginFilter;
-    if (dateFrom) params.from = dateFrom;
-    if (dateTo) params.to = dateTo;
-    if (viewMode !== "detailed") params.view = viewMode;
+    if (debouncedSearchTerm) {
+      localStorage.setItem("filter_search", debouncedSearchTerm);
+    } else {
+      localStorage.removeItem("filter_search");
+    }
+  }, [debouncedSearchTerm]);
 
-    setSearchParams(params, { replace: true });
-  }, [
-    debouncedSearchTerm,
-    statusFilter,
-    leadOriginFilter,
-    dateFrom,
-    dateTo,
-    viewMode,
-    setSearchParams,
-  ]);
+  useEffect(() => {
+    if (statusFilter !== "all") {
+      localStorage.setItem("filter_status", statusFilter);
+    } else {
+      localStorage.removeItem("filter_status");
+    }
+  }, [statusFilter]);
+
+  useEffect(() => {
+    if (leadOriginFilter !== "all") {
+      localStorage.setItem("filter_origin", leadOriginFilter);
+    } else {
+      localStorage.removeItem("filter_origin");
+    }
+  }, [leadOriginFilter]);
+
+  useEffect(() => {
+    if (dateFrom) {
+      localStorage.setItem("filter_from", dateFrom);
+    } else {
+      localStorage.removeItem("filter_from");
+    }
+  }, [dateFrom]);
+
+  useEffect(() => {
+    if (dateTo) {
+      localStorage.setItem("filter_to", dateTo);
+    } else {
+      localStorage.removeItem("filter_to");
+    }
+  }, [dateTo]);
+
+  useEffect(() => {
+    if (viewMode !== "detailed") {
+      localStorage.setItem("filter_view", viewMode);
+    } else {
+      localStorage.removeItem("filter_view");
+    }
+  }, [viewMode]);
 
   useEffect(() => {
     fetchCotizaciones();

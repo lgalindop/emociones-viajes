@@ -3,6 +3,8 @@ import Operadores from "./pages/Operadores";
 import Cotizaciones from "./pages/Cotizaciones";
 import NuevaCotizacion from "./pages/NuevaCotizacion";
 import { Home, Users, FileText } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import LanguageSelector from "./components/LanguageSelector";
 
 function App() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -15,6 +17,7 @@ function App() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-bold">Emociones Viajes</h1>
+              <LanguageSelector />
               <div className="flex gap-2">
                 <button
                   onClick={() => setCurrentPage("home")}

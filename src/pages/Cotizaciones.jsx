@@ -10,11 +10,13 @@ import {
 } from "lucide-react";
 import DetallesCotizacion from "./DetallesCotizacion";
 import { useDebounce } from "../hooks/useDebounce";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Cotizaciones({ onNewCotizacion }) {
   const [cotizaciones, setCotizaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCotizacionId, setSelectedCotizacionId] = useState(null);
+  const { user, isAdmin } = useAuth();
 
   // Get initial values from localStorage or defaults
   const [searchTerm, setSearchTerm] = useState(
@@ -94,6 +96,7 @@ export default function Cotizaciones({ onNewCotizacion }) {
   async function fetchCotizaciones() {
     const startTime = performance.now();
     try {
+      // RLS policies handle filtering - fetch all and let database filter
       const { data, error } = await supabase
         .from("cotizaciones")
         .select("*")

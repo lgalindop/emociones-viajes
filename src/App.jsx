@@ -2,13 +2,62 @@ import { useState } from "react";
 import Operadores from "./pages/Operadores";
 import Cotizaciones from "./pages/Cotizaciones";
 import NuevaCotizacion from "./pages/NuevaCotizacion";
-import { Home, Users, FileText } from "lucide-react";
+import Login from "./pages/Login";
+import UserManagement from "./pages/UserManagement";
+import { Home, Users, FileText, LogOut, Shield, User } from "lucide-react";
 import LanguageSelector from "./components/LanguageSelector";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState("home");
   const { t } = useLanguage();
+  const { user, profile, signOut, isAdmin } = useAuth();
+
+  // Redirect to login if not authenticated
+  if (!user) {
+    return <Login />;
+  }
+
+  // Show inactive account message
+  if (profile && !profile.is_active) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center max-w-md p-8 bg-white rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">
+            Cuenta Desactivada
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Tu cuenta ha sido desactivada. Por favor contacta al administrador.
+          </p>
+          <button
+            onClick={signOut}
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+          >
+            Cerrar Sesión
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function getRoleBadgeColor(role) {
+    const colors = {
+      admin: "bg-purple-100 text-purple-800",
+      agent: "bg-blue-100 text-blue-800",
+      viewer: "bg-gray-100 text-gray-800",
+    };
+    return colors[role] || colors.viewer;
+  }
+
+  function getRoleLabel(role) {
+    const labels = {
+      admin: "Admin",
+      agent: "Agente",
+      viewer: "Visualizador",
+    };
+    return labels[role] || role;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -41,7 +90,40 @@ function AppContent() {
                   <Users size={20} />
                   {t("nav.operators")}
                 </button>
+                {isAdmin() && (
+                  <button
+                    onClick={() => setCurrentPage("users")}
+                    className={`px-4 py-2 rounded flex items-center gap-2 ${currentPage === "users" ? "bg-white/20" : "hover:bg-white/10"}`}
+                  >
+                    <Shield size={20} />
+                    Usuarios
+                  </button>
+                )}
               </div>
+            </div>
+
+            {/* User menu */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <User size={20} />
+                <div className="text-right">
+                  <p className="text-sm font-medium">
+                    {profile?.full_name || profile?.email}
+                  </p>
+                  <p
+                    className={`text-xs px-2 py-0.5 rounded-full inline-block ${getRoleBadgeColor(profile?.role)}`}
+                  >
+                    {getRoleLabel(profile?.role)}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={signOut}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                title="Cerrar sesión"
+              >
+                <LogOut size={20} />
+              </button>
             </div>
           </div>
         </div>
@@ -96,6 +178,18 @@ function AppContent() {
                     Gestionar operadores turísticos
                   </p>
                 </button>
+                {isAdmin() && (
+                  <button
+                    onClick={() => setCurrentPage("users")}
+                    className="p-6 border-2 border-purple-600 rounded-lg hover:bg-purple-50 text-left transition-colors"
+                  >
+                    <Shield size={32} className="text-purple-600 mb-2" />
+                    <h3 className="font-semibold text-lg">Usuarios</h3>
+                    <p className="text-sm text-gray-600">
+                      Gestionar usuarios y permisos
+                    </p>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -114,15 +208,18 @@ function AppContent() {
           onSuccess={() => setCurrentPage("cotizaciones")}
         />
       )}
+      {currentPage === "users" && isAdmin() && <UserManagement />}
     </div>
   );
 }
 
 function App() {
   return (
-    <LanguageProvider>
-      <AppContent />
-    </LanguageProvider>
+    <AuthProvider>
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
+    </AuthProvider>
   );
 }
 

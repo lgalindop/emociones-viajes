@@ -9,7 +9,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     cliente_nombre: "",
     cliente_telefono: "",
     cliente_email: "",
-    origen_lead: "WhatsApp",
+    origen_lead: "whatsapp",
     destino: "",
     fecha_salida: "",
     fecha_regreso: "",
@@ -308,12 +308,12 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                         }
                         className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary focus:border-transparent bg-white"
                       >
-                        <option>WhatsApp</option>
-                        <option>Instagram</option>
-                        <option>Facebook</option>
-                        <option>Llamada</option>
-                        <option>Referido</option>
-                        <option>Otro</option>
+                        <option value="whatsapp">💬 WhatsApp</option>
+                        <option value="instagram">📷 Instagram</option>
+                        <option value="facebook">👥 Facebook</option>
+                        <option value="referido">🤝 Referido</option>
+                        <option value="web">🌐 Web</option>
+                        <option value="otro">📋 Otro</option>
                       </select>
                     </div>
                   </div>

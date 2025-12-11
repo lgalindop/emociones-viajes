@@ -9,25 +9,62 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import DetallesCotizacion from "./DetallesCotizacion";
+import { useSearchParams } from "react-router-dom";
+import { useDebounce } from "../hooks/useDebounce";
 
 export default function Cotizaciones({ onNewCotizacion }) {
   const [cotizaciones, setCotizaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCotizacionId, setSelectedCotizacionId] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Search & Filter state
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  // Get initial values from URL or defaults
+  const [searchTerm, setSearchTerm] = useState(
+    searchParams.get("search") || ""
+  );
+  const [statusFilter, setStatusFilter] = useState(
+    searchParams.get("status") || "all"
+  );
+  const [leadOriginFilter, setLeadOriginFilter] = useState(
+    searchParams.get("origin") || "all"
+  );
+  const [dateFrom, setDateFrom] = useState(searchParams.get("from") || "");
+  const [dateTo, setDateTo] = useState(searchParams.get("to") || "");
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState("detailed"); // "compact" or "detailed"
+  const [viewMode, setViewMode] = useState(
+    searchParams.get("view") || "detailed"
+  );
+
+  // Debounced search term (300ms delay)
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Sync state to URL params
+  useEffect(() => {
+    const params = {};
+    if (debouncedSearchTerm) params.search = debouncedSearchTerm;
+    if (statusFilter !== "all") params.status = statusFilter;
+    if (leadOriginFilter !== "all") params.origin = leadOriginFilter;
+    if (dateFrom) params.from = dateFrom;
+    if (dateTo) params.to = dateTo;
+    if (viewMode !== "detailed") params.view = viewMode;
+
+    setSearchParams(params, { replace: true });
+  }, [
+    debouncedSearchTerm,
+    statusFilter,
+    leadOriginFilter,
+    dateFrom,
+    dateTo,
+    viewMode,
+    setSearchParams,
+  ]);
 
   useEffect(() => {
     fetchCotizaciones();
   }, []);
 
   async function fetchCotizaciones() {
+    const startTime = performance.now();
     try {
       const { data, error } = await supabase
         .from("cotizaciones")
@@ -36,6 +73,10 @@ export default function Cotizaciones({ onNewCotizacion }) {
 
       if (error) throw error;
       setCotizaciones(data || []);
+
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+      console.log(`Fetch completed in ${duration.toFixed(2)}ms`);
     } catch (error) {
       console.error("Error fetching cotizaciones:", error);
       alert("Error al cargar cotizaciones");
@@ -46,26 +87,30 @@ export default function Cotizaciones({ onNewCotizacion }) {
 
   // Filtered and searched cotizaciones
   const filteredCotizaciones = useMemo(() => {
+    const startTime = performance.now();
     let filtered = cotizaciones;
 
     // Search filter
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const search = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(
         (cot) =>
-          cot.cliente_nombre.toLowerCase().includes(search) ||
-          cot.folio.toLowerCase().includes(search) ||
-          cot.destino.toLowerCase().includes(search) ||
-          (cot.cliente_telefono &&
-            cot.cliente_telefono.toLowerCase().includes(search)) ||
-          (cot.cliente_email &&
-            cot.cliente_email.toLowerCase().includes(search))
+          cot.cliente_nombre?.toLowerCase().includes(search) ||
+          cot.folio?.toLowerCase().includes(search) ||
+          cot.destino?.toLowerCase().includes(search) ||
+          cot.cliente_telefono?.toLowerCase().includes(search) ||
+          cot.cliente_email?.toLowerCase().includes(search)
       );
     }
 
     // Status filter
     if (statusFilter !== "all") {
       filtered = filtered.filter((cot) => cot.estatus === statusFilter);
+    }
+
+    // Lead origin filter
+    if (leadOriginFilter !== "all") {
+      filtered = filtered.filter((cot) => cot.origen_lead === leadOriginFilter);
     }
 
     // Date range filter
@@ -80,12 +125,24 @@ export default function Cotizaciones({ onNewCotizacion }) {
       );
     }
 
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+    console.log(`Filter completed in ${duration.toFixed(2)}ms`);
+
     return filtered;
-  }, [cotizaciones, searchTerm, statusFilter, dateFrom, dateTo]);
+  }, [
+    cotizaciones,
+    debouncedSearchTerm,
+    statusFilter,
+    leadOriginFilter,
+    dateFrom,
+    dateTo,
+  ]);
 
   function clearFilters() {
     setSearchTerm("");
     setStatusFilter("all");
+    setLeadOriginFilter("all");
     setDateFrom("");
     setDateTo("");
   }
@@ -110,6 +167,18 @@ export default function Cotizaciones({ onNewCotizacion }) {
     return colors[estatus] || "bg-gray-100 text-gray-800";
   }
 
+  function getLeadOriginIcon(origen) {
+    const icons = {
+      whatsapp: "💬",
+      instagram: "📷",
+      facebook: "👥",
+      referido: "🤝",
+      web: "🌐",
+      otro: "📋",
+    };
+    return icons[origen] || "📋";
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -132,8 +201,9 @@ export default function Cotizaciones({ onNewCotizacion }) {
   }
 
   const activeFiltersCount = [
-    searchTerm,
+    debouncedSearchTerm,
     statusFilter !== "all",
+    leadOriginFilter !== "all",
     dateFrom,
     dateTo,
   ].filter(Boolean).length;
@@ -172,7 +242,7 @@ export default function Cotizaciones({ onNewCotizacion }) {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por nombre, folio, destino, teléfono..."
+                placeholder="Buscar por nombre, folio, destino, teléfono, email..."
                 className="w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               {searchTerm && (
@@ -230,7 +300,7 @@ export default function Cotizaciones({ onNewCotizacion }) {
 
           {/* Expanded filters */}
           {showFilters && (
-            <div className="border-t pt-4 mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="border-t pt-4 mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Estatus
@@ -246,6 +316,25 @@ export default function Cotizaciones({ onNewCotizacion }) {
                   <option value="seguimiento">Seguimiento</option>
                   <option value="cerrada">Cerrada</option>
                   <option value="perdida">Perdida</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Origen del Lead
+                </label>
+                <select
+                  value={leadOriginFilter}
+                  onChange={(e) => setLeadOriginFilter(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2"
+                >
+                  <option value="all">Todos</option>
+                  <option value="whatsapp">💬 WhatsApp</option>
+                  <option value="instagram">📷 Instagram</option>
+                  <option value="facebook">👥 Facebook</option>
+                  <option value="referido">🤝 Referido</option>
+                  <option value="web">🌐 Web</option>
+                  <option value="otro">📋 Otro</option>
                 </select>
               </div>
 
@@ -343,6 +432,14 @@ export default function Cotizaciones({ onNewCotizacion }) {
                           >
                             {cot.estatus}
                           </span>
+                          {cot.origen_lead && (
+                            <span className="text-sm text-gray-500 flex items-center gap-1">
+                              {getLeadOriginIcon(cot.origen_lead)}
+                              <span className="capitalize">
+                                {cot.origen_lead}
+                              </span>
+                            </span>
+                          )}
                         </div>
 
                         <h3 className="font-semibold text-xl mb-2">
@@ -413,6 +510,11 @@ export default function Cotizaciones({ onNewCotizacion }) {
                         >
                           {cot.estatus}
                         </span>
+                        {cot.origen_lead && (
+                          <span className="text-lg" title={cot.origen_lead}>
+                            {getLeadOriginIcon(cot.origen_lead)}
+                          </span>
+                        )}
                         <span className="font-semibold flex-1">
                           {cot.cliente_nombre}
                         </span>

@@ -3,11 +3,12 @@ import Operadores from "./pages/Operadores";
 import Cotizaciones from "./pages/Cotizaciones";
 import NuevaCotizacion from "./pages/NuevaCotizacion";
 import { Home, Users, FileText } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import LanguageSelector from "./components/LanguageSelector";
+import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 
-function App() {
+function AppContent() {
   const [currentPage, setCurrentPage] = useState("home");
+  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -24,21 +25,21 @@ function App() {
                   className={`px-4 py-2 rounded flex items-center gap-2 ${currentPage === "home" ? "bg-white/20" : "hover:bg-white/10"}`}
                 >
                   <Home size={20} />
-                  Inicio
+                  {t("nav.home")}
                 </button>
                 <button
                   onClick={() => setCurrentPage("cotizaciones")}
                   className={`px-4 py-2 rounded flex items-center gap-2 ${currentPage === "cotizaciones" || currentPage === "nueva-cotizacion" ? "bg-white/20" : "hover:bg-white/10"}`}
                 >
                   <FileText size={20} />
-                  Cotizaciones
+                  {t("nav.cotizaciones")}
                 </button>
                 <button
                   onClick={() => setCurrentPage("operadores")}
                   className={`px-4 py-2 rounded flex items-center gap-2 ${currentPage === "operadores" ? "bg-white/20" : "hover:bg-white/10"}`}
                 >
                   <Users size={20} />
-                  Operadores
+                  {t("nav.operators")}
                 </button>
               </div>
             </div>
@@ -64,7 +65,9 @@ function App() {
                   className="p-6 border-2 border-primary rounded-lg hover:bg-primary/5 text-left transition-colors"
                 >
                   <FileText size={32} className="text-primary mb-2" />
-                  <h3 className="font-semibold text-lg">Nueva Cotización</h3>
+                  <h3 className="font-semibold text-lg">
+                    {t("cotizaciones.new")}
+                  </h3>
                   <p className="text-sm text-gray-600">
                     Crear una cotización para un cliente
                   </p>
@@ -74,7 +77,9 @@ function App() {
                   className="p-6 border-2 border-primary rounded-lg hover:bg-primary/5 text-left transition-colors"
                 >
                   <FileText size={32} className="text-primary mb-2" />
-                  <h3 className="font-semibold text-lg">Ver Cotizaciones</h3>
+                  <h3 className="font-semibold text-lg">
+                    Ver {t("nav.cotizaciones")}
+                  </h3>
                   <p className="text-sm text-gray-600">
                     Ver historial de cotizaciones
                   </p>
@@ -84,7 +89,9 @@ function App() {
                   className="p-6 border-2 border-primary rounded-lg hover:bg-primary/5 text-left transition-colors"
                 >
                   <Users size={32} className="text-primary mb-2" />
-                  <h3 className="font-semibold text-lg">Operadores</h3>
+                  <h3 className="font-semibold text-lg">
+                    {t("nav.operators")}
+                  </h3>
                   <p className="text-sm text-gray-600">
                     Gestionar operadores turísticos
                   </p>
@@ -108,6 +115,14 @@ function App() {
         />
       )}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 }
 

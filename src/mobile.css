@@ -1,0 +1,169 @@
+/* Mobile Responsive Fixes for Emociones Viajes
+   Add this to your index.css or create mobile.css and import it in main.jsx */
+
+/* Base mobile optimizations */
+@media (max-width: 768px) {
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Navigation - Stack vertically on mobile */
+  nav .flex.gap-2 {
+    flex-wrap: wrap;
+    gap: 0.5rem !important;
+  }
+
+  nav button {
+    font-size: 0.75rem !important;
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  /* Pipeline Kanban - Hide on mobile, show list view message */
+  .pipeline-kanban-desktop {
+    display: none;
+  }
+
+  /* Tables - Horizontal scroll */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Forms - Full width inputs */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important; /* Prevents iOS zoom */
+    max-width: 100%;
+  }
+
+  /* Modals - Full screen on mobile */
+  [class*="modal"],
+  [class*="fixed inset-0"] > div {
+    margin: 0 !important;
+    max-width: 100% !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+  }
+
+  /* Cards - Reduce padding */
+  [class*="p-6"],
+  [class*="p-8"] {
+    padding: 1rem !important;
+  }
+
+  /* Text sizes */
+  h1 {
+    font-size: 1.5rem !important;
+  }
+
+  h2 {
+    font-size: 1.25rem !important;
+  }
+
+  /* Buttons - Full width on mobile */
+  button.w-full {
+    width: 100% !important;
+  }
+
+  /* Grid - Single column */
+  .grid.grid-cols-2,
+  .grid.grid-cols-3,
+  .grid.grid-cols-4 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+
+  /* Dashboard cards - Stack */
+  .grid.md\\:grid-cols-2,
+  .grid.md\\:grid-cols-3,
+  .grid.lg\\:grid-cols-3 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+
+  /* Hide desktop-only elements */
+  .hidden.md\\:inline,
+  .hidden.md\\:block,
+  .hidden.md\\:flex {
+    display: none !important;
+  }
+
+  /* Show mobile-only elements */
+  .md\\:hidden {
+    display: block !important;
+  }
+
+  /* Spacing adjustments */
+  .p-4.md\\:p-6 {
+    padding: 1rem !important;
+  }
+
+  .p-6.md\\:p-8 {
+    padding: 1.5rem !important;
+  }
+
+  /* User menu - Compact */
+  nav [class*="text-right"] {
+    font-size: 0.75rem !important;
+  }
+
+  nav [class*="text-sm"] {
+    font-size: 0.65rem !important;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 375px) {
+  /* Even smaller text for tiny screens */
+  html {
+    font-size: 14px;
+  }
+
+  nav button {
+    font-size: 0.7rem !important;
+    padding: 0.4rem 0.6rem !important;
+  }
+
+  h1 {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* Landscape mode on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Reduce vertical padding */
+  .p-6,
+  .p-8,
+  .py-6,
+  .py-8 {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  /* Sticky headers less tall */
+  nav {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+}
+
+/* Touch-friendly targets */
+button,
+a,
+[role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Improve touch scrolling */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent text size adjustment on orientation change */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}

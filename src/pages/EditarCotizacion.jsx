@@ -1,8 +1,9 @@
-// pages/EditarCotizacion.jsx
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
+  const { user, profile, isAdmin } = useAuth();
   const [formData, setFormData] = useState({
     cliente_nombre: "",
     cliente_telefono: "",
@@ -22,6 +23,13 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
   const [opciones, setOpciones] = useState([]);
 
   useEffect(() => {
+    // Check permissions before allowing edit
+    if (!canEditThis()) {
+      alert("No tienes permisos para editar esta cotización");
+      onBack();
+      return;
+    }
+
     if (!cotizacion) return;
     setFormData({
       cliente_nombre: cotizacion.cliente_nombre || "",
@@ -45,6 +53,20 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
     // eslint-disable-next-line
   }, [cotizacion]);
 
+  function canEditThis() {
+    if (!cotizacion || !user || !profile) return false;
+
+    // Admins can edit everything
+    if (isAdmin()) return true;
+
+    // Agents can edit only their own
+    if (profile.role === "agent" && cotizacion.created_by === user.id)
+      return true;
+
+    // Viewers cannot edit
+    return false;
+  }
+
   async function fetchOpcionesLocal() {
     if (!cotizacion?.id) return;
     const { data } = await supabase
@@ -56,21 +78,42 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
 
   async function guardarCotizacion(e) {
     e.preventDefault();
+
+    if (!canEditThis()) {
+      alert("No tienes permisos para editar esta cotización");
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("cotizaciones")
         .update(formData)
         .eq("id", cotizacion.id);
-      if (error) throw error;
-      alert("Cotización actualizada");
+
+      if (error) {
+        // Check if error is due to RLS
+        if (error.code === "42501" || error.message.includes("policy")) {
+          alert("Error: No tienes permisos para editar esta cotización");
+          onBack();
+          return;
+        }
+        throw error;
+      }
+
+      alert("Cotización actualizada exitosamente");
       onSuccess && onSuccess();
     } catch (err) {
-      console.error(err);
-      alert("Error guardando cotización");
+      console.error("Error guardando cotización:", err);
+      alert("Error guardando cotización: " + err.message);
     }
   }
 
   async function guardarOpciones() {
+    if (!canEditThis()) {
+      alert("No tienes permisos para editar esta cotización");
+      return;
+    }
+
     try {
       // actualizar cada opcion por id
       for (const op of opciones) {
@@ -86,12 +129,19 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
             link_paquete: op.link_paquete || "",
           })
           .eq("id", op.id);
-        if (error) throw error;
+
+        if (error) {
+          if (error.code === "42501" || error.message.includes("policy")) {
+            alert("Error: No tienes permisos para editar esta cotización");
+            return;
+          }
+          throw error;
+        }
       }
-      alert("Opciones guardadas");
+      alert("Opciones guardadas exitosamente");
     } catch (err) {
-      console.error(err);
-      alert("Error guardando opciones");
+      console.error("Error guardando opciones:", err);
+      alert("Error guardando opciones: " + err.message);
     }
   }
 
@@ -99,6 +149,11 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
     const copy = [...opciones];
     copy[index] = { ...copy[index], [field]: value };
     setOpciones(copy);
+  }
+
+  // If no permission, show nothing (already redirected in useEffect)
+  if (!canEditThis()) {
+    return null;
   }
 
   return (
@@ -120,6 +175,7 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
             onChange={(e) =>
               setFormData({ ...formData, cliente_nombre: e.target.value })
             }
+            placeholder="Nombre del cliente"
           />
           <div className="grid grid-cols-2 gap-2">
             <input
@@ -128,6 +184,7 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
               onChange={(e) =>
                 setFormData({ ...formData, cliente_telefono: e.target.value })
               }
+              placeholder="Teléfono"
             />
             <input
               className="border rounded px-3 py-2"
@@ -135,6 +192,7 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
               onChange={(e) =>
                 setFormData({ ...formData, cliente_email: e.target.value })
               }
+              placeholder="Email"
             />
           </div>
         </div>
@@ -147,6 +205,7 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
             onChange={(e) =>
               setFormData({ ...formData, destino: e.target.value })
             }
+            placeholder="Destino"
           />
           <div className="grid grid-cols-2 gap-2 mb-2">
             <input
@@ -168,44 +227,72 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <input
-              type="number"
-              className="border rounded px-3 py-2"
-              value={formData.num_adultos}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  num_adultos: parseInt(e.target.value),
-                })
-              }
-            />
-            <input
-              type="number"
-              className="border rounded px-3 py-2"
-              value={formData.num_ninos}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  num_ninos: parseInt(e.target.value),
-                })
-              }
-            />
-            <select
-              className="border rounded px-3 py-2"
-              value={formData.divisa}
-              onChange={(e) =>
-                setFormData({ ...formData, divisa: e.target.value })
-              }
-            >
-              <option value="MXN">MXN</option>
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-            </select>
+            <div>
+              <label className="text-xs text-gray-600">Adultos</label>
+              <input
+                type="number"
+                className="w-full border rounded px-3 py-2"
+                value={formData.num_adultos}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    num_adultos: parseInt(e.target.value) || 0,
+                  })
+                }
+                min="0"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600">Niños</label>
+              <input
+                type="number"
+                className="w-full border rounded px-3 py-2"
+                value={formData.num_ninos}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    num_ninos: parseInt(e.target.value) || 0,
+                  })
+                }
+                min="0"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600">Divisa</label>
+              <select
+                className="w-full border rounded px-3 py-2"
+                value={formData.divisa}
+                onChange={(e) =>
+                  setFormData({ ...formData, divisa: e.target.value })
+                }
+              >
+                <option value="MXN">MXN</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </div>
           </div>
         </div>
 
         <div className="bg-white rounded p-4">
-          <h2 className="font-semibold mb-2">Opciones</h2>
+          <h2 className="font-semibold mb-2">Estatus</h2>
+          <select
+            className="w-full border rounded px-3 py-2"
+            value={formData.estatus}
+            onChange={(e) =>
+              setFormData({ ...formData, estatus: e.target.value })
+            }
+          >
+            <option value="nueva">Nueva</option>
+            <option value="enviada">Enviada</option>
+            <option value="seguimiento">Seguimiento</option>
+            <option value="cerrada">Cerrada</option>
+            <option value="perdida">Perdida</option>
+          </select>
+        </div>
+
+        <div className="bg-white rounded p-4">
+          <h2 className="font-semibold mb-2">Opciones de Paquetes</h2>
           {opciones.length === 0 && (
             <p className="text-sm text-gray-500">No hay opciones</p>
           )}
@@ -217,39 +304,76 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
                 onChange={(e) =>
                   updateOption(i, "nombre_paquete", e.target.value)
                 }
+                placeholder="Nombre del paquete"
               />
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  className="border rounded px-3 py-2"
-                  value={op.precio_total || ""}
-                  onChange={(e) =>
-                    updateOption(i, "precio_total", e.target.value)
-                  }
-                />
-                <input
-                  className="border rounded px-3 py-2"
-                  value={op.precio_por_persona || ""}
-                  onChange={(e) =>
-                    updateOption(i, "precio_por_persona", e.target.value)
-                  }
-                />
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                  <label className="text-xs text-gray-600">Precio Total</label>
+                  <input
+                    type="number"
+                    className="w-full border rounded px-3 py-2"
+                    value={op.precio_total || ""}
+                    onChange={(e) =>
+                      updateOption(i, "precio_total", e.target.value)
+                    }
+                    placeholder="0.00"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600">Por Persona</label>
+                  <input
+                    type="number"
+                    className="w-full border rounded px-3 py-2"
+                    value={op.precio_por_persona || ""}
+                    onChange={(e) =>
+                      updateOption(i, "precio_por_persona", e.target.value)
+                    }
+                    placeholder="0.00"
+                    step="0.01"
+                  />
+                </div>
               </div>
+              <input
+                className="w-full border rounded px-3 py-2 mb-2"
+                value={op.disponibilidad || ""}
+                onChange={(e) =>
+                  updateOption(i, "disponibilidad", e.target.value)
+                }
+                placeholder="Disponibilidad"
+              />
+              <input
+                type="url"
+                className="w-full border rounded px-3 py-2 mb-2"
+                value={op.link_paquete || ""}
+                onChange={(e) =>
+                  updateOption(i, "link_paquete", e.target.value)
+                }
+                placeholder="Link del paquete"
+              />
+              <textarea
+                className="w-full border rounded px-3 py-2"
+                value={op.notas || ""}
+                onChange={(e) => updateOption(i, "notas", e.target.value)}
+                placeholder="Notas"
+                rows="2"
+              />
             </div>
           ))}
 
-          <div className="flex gap-2">
+          {opciones.length > 0 && (
             <button
               type="button"
               onClick={guardarOpciones}
-              className="bg-primary text-white px-4 py-2 rounded"
+              className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
             >
               Guardar Opciones
             </button>
-          </div>
+          )}
         </div>
 
         <div className="bg-white rounded p-4">
-          <h2 className="font-semibold mb-2">Notas</h2>
+          <h2 className="font-semibold mb-2">Notas Generales</h2>
           <textarea
             className="w-full border rounded px-3 py-2"
             rows={3}
@@ -257,20 +381,21 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
             onChange={(e) =>
               setFormData({ ...formData, notas: e.target.value })
             }
+            placeholder="Notas adicionales sobre la cotización..."
           ></textarea>
         </div>
 
         <div className="flex gap-2">
           <button
             type="submit"
-            className="bg-green-600 text-white px-4 py-2 rounded"
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
           >
             Guardar Cotización
           </button>
           <button
             type="button"
             onClick={onBack}
-            className="bg-gray-200 px-4 py-2 rounded"
+            className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
           >
             Cancelar
           </button>

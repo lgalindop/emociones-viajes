@@ -265,9 +265,11 @@ function AppContent() {
         {currentPage === "home" && (
           <div className="max-w-7xl mx-auto px-4 py-6">
             <h2 className="text-2xl md:text-3xl font-bold text-primary mb-2">
-              {t("home.welcome")}
+              {t("Emociones Viajes")}
             </h2>
-            <p className="text-gray-600 mb-6">{t("home.subtitle")}</p>
+            <p className="text-gray-600 mb-6">
+              {t("Sistema de Cotizaciones de Emociones Viajes")}
+            </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <button

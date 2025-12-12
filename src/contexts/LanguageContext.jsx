@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 const LanguageContext = createContext(undefined);
 
 const languages = [
-  { code: "es", name: "Español", flag: "🇪🇸" },
+  { code: "es", name: "Español", flag: "🇲🇽" },
   { code: "en", name: "English", flag: "🇺🇸" },
   { code: "fr", name: "Français", flag: "🇫🇷" },
   { code: "de", name: "Deutsch", flag: "🇩🇪" },

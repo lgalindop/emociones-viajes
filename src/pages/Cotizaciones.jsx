@@ -7,6 +7,7 @@ import {
   Search,
   X,
   SlidersHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import DetallesCotizacion from "./DetallesCotizacion";
 import { useDebounce } from "../hooks/useDebounce";
@@ -96,7 +97,6 @@ export default function Cotizaciones({ onNewCotizacion }) {
   async function fetchCotizaciones() {
     const startTime = performance.now();
     try {
-      // RLS policies handle filtering - fetch all and let database filter
       const { data, error } = await supabase
         .from("cotizaciones")
         .select("*")
@@ -104,63 +104,55 @@ export default function Cotizaciones({ onNewCotizacion }) {
 
       if (error) throw error;
       setCotizaciones(data || []);
-
-      const endTime = performance.now();
-      const duration = endTime - startTime;
-      console.log(`Fetch completed in ${duration.toFixed(2)}ms`);
+      console.log(
+        `Fetch time: ${(performance.now() - startTime).toFixed(2)}ms`
+      );
     } catch (error) {
-      console.error("Error fetching cotizaciones:", error);
-      alert("Error al cargar cotizaciones");
+      console.error("Error fetching cotizaciones:", error.message);
     } finally {
       setLoading(false);
     }
   }
 
-  // Filtered and searched cotizaciones
+  // Memoized filtered cotizaciones with debounced search
   const filteredCotizaciones = useMemo(() => {
-    const startTime = performance.now();
-    let filtered = cotizaciones;
+    return cotizaciones.filter((cot) => {
+      // Search filter (debounced)
+      if (debouncedSearchTerm) {
+        const searchLower = debouncedSearchTerm.toLowerCase();
+        const matchesSearch =
+          cot.folio.toLowerCase().includes(searchLower) ||
+          cot.cliente_nombre?.toLowerCase().includes(searchLower) ||
+          cot.destino?.toLowerCase().includes(searchLower) ||
+          cot.cliente_telefono?.toLowerCase().includes(searchLower) ||
+          cot.cliente_email?.toLowerCase().includes(searchLower);
 
-    // Search filter
-    if (debouncedSearchTerm) {
-      const search = debouncedSearchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (cot) =>
-          cot.cliente_nombre?.toLowerCase().includes(search) ||
-          cot.folio?.toLowerCase().includes(search) ||
-          cot.destino?.toLowerCase().includes(search) ||
-          cot.cliente_telefono?.toLowerCase().includes(search) ||
-          cot.cliente_email?.toLowerCase().includes(search)
-      );
-    }
+        if (!matchesSearch) return false;
+      }
 
-    // Status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((cot) => cot.estatus === statusFilter);
-    }
+      // Status filter
+      if (statusFilter !== "all" && cot.estatus !== statusFilter) {
+        return false;
+      }
 
-    // Lead origin filter
-    if (leadOriginFilter !== "all") {
-      filtered = filtered.filter((cot) => cot.origen_lead === leadOriginFilter);
-    }
+      // Lead origin filter
+      if (leadOriginFilter !== "all" && cot.origen_lead !== leadOriginFilter) {
+        return false;
+      }
 
-    // Date range filter
-    if (dateFrom) {
-      filtered = filtered.filter(
-        (cot) => new Date(cot.fecha_salida) >= new Date(dateFrom)
-      );
-    }
-    if (dateTo) {
-      filtered = filtered.filter(
-        (cot) => new Date(cot.fecha_salida) <= new Date(dateTo)
-      );
-    }
+      // Date range filter
+      if (dateFrom || dateTo) {
+        const cotDate = new Date(cot.created_at);
+        if (dateFrom && cotDate < new Date(dateFrom)) return false;
+        if (dateTo) {
+          const toDate = new Date(dateTo);
+          toDate.setHours(23, 59, 59, 999);
+          if (cotDate > toDate) return false;
+        }
+      }
 
-    const endTime = performance.now();
-    const duration = endTime - startTime;
-    console.log(`Filter completed in ${duration.toFixed(2)}ms`);
-
-    return filtered;
+      return true;
+    });
   }, [
     cotizaciones,
     debouncedSearchTerm,
@@ -176,18 +168,14 @@ export default function Cotizaciones({ onNewCotizacion }) {
     setLeadOriginFilter("all");
     setDateFrom("");
     setDateTo("");
+    localStorage.removeItem("filter_search");
+    localStorage.removeItem("filter_status");
+    localStorage.removeItem("filter_origin");
+    localStorage.removeItem("filter_from");
+    localStorage.removeItem("filter_to");
   }
 
-  function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("es-MX", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  }
-
-  function getEstatusColor(estatus) {
+  function getStatusBadge(estatus) {
     const colors = {
       nueva: "bg-blue-100 text-blue-800",
       enviada: "bg-purple-100 text-purple-800",
@@ -240,12 +228,15 @@ export default function Cotizaciones({ onNewCotizacion }) {
   ].filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8 pb-24 md:pb-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 md:mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-primary">Cotizaciones</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-2xl md:text-3xl font-bold text-primary">
+              Cotizaciones
+            </h1>
+            <p className="text-sm md:text-base text-gray-600 mt-1">
               {filteredCotizaciones.length} de {cotizaciones.length}{" "}
               cotizaciones
             </p>
@@ -253,59 +244,64 @@ export default function Cotizaciones({ onNewCotizacion }) {
 
           <button
             onClick={onNewCotizacion}
-            className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Plus size={20} />
-            Nueva Cotización
+            <span>Nueva Cotización</span>
           </button>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex gap-4 items-center mb-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por nombre, folio, destino, teléfono, email..."
-                className="w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X size={18} />
-                </button>
-              )}
-            </div>
+        <div className="bg-white rounded-lg shadow p-3 md:p-4 mb-4 md:mb-6">
+          {/* Search Bar */}
+          <div className="relative mb-3">
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={18}
+            />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar..."
+              className="w-full pl-10 pr-10 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
 
-            {/* Filter toggle */}
+          {/* Filter Controls - Mobile Optimized */}
+          <div className="flex flex-wrap gap-2">
+            {/* Filter Drawer Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors ${
                 showFilters
-                  ? "bg-primary text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
               }`}
             >
-              <SlidersHorizontal size={18} />
-              Filtros
+              <SlidersHorizontal size={16} />
+              <span>Filtros</span>
               {activeFiltersCount > 0 && (
-                <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
                   {activeFiltersCount}
                 </span>
               )}
+              <ChevronDown
+                size={14}
+                className={`transition-transform ${showFilters ? "rotate-180" : ""}`}
+              />
             </button>
 
-            {/* View mode toggle */}
-            <div className="flex gap-1 border rounded-lg p-1">
+            {/* View Mode Toggle - Desktop only */}
+            <div className="hidden md:flex gap-1 border rounded-lg p-1 ml-auto">
               <button
                 onClick={() => setViewMode("compact")}
                 className={`px-3 py-1 rounded text-sm transition-colors ${
@@ -327,19 +323,31 @@ export default function Cotizaciones({ onNewCotizacion }) {
                 Detallado
               </button>
             </div>
+
+            {/* Clear Filters - Show if active */}
+            {activeFiltersCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+              >
+                <X size={14} />
+                <span className="hidden sm:inline">Limpiar</span>
+              </button>
+            )}
           </div>
 
-          {/* Expanded filters */}
+          {/* Expanded Filters - Mobile Drawer Style */}
           {showFilters && (
-            <div className="border-t pt-4 mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="border-t mt-3 pt-3 space-y-3">
+              {/* Status Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Estatus
                 </label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="all">Todos</option>
                   <option value="nueva">Nueva</option>
@@ -350,14 +358,15 @@ export default function Cotizaciones({ onNewCotizacion }) {
                 </select>
               </div>
 
+              {/* Origin Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Origen del Lead
                 </label>
                 <select
                   value={leadOriginFilter}
                   onChange={(e) => setLeadOriginFilter(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="all">Todos</option>
                   <option value="whatsapp">💬 WhatsApp</option>
@@ -369,200 +378,199 @@ export default function Cotizaciones({ onNewCotizacion }) {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Fecha desde
-                </label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2"
-                />
+              {/* Date Range */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Desde
+                  </label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Hasta
+                  </label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Fecha hasta
+              {/* Mobile View Mode Toggle */}
+              <div className="md:hidden">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Vista
                 </label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2"
-                />
-              </div>
-
-              {activeFiltersCount > 0 && (
-                <div className="col-span-full flex justify-end">
+                <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={clearFilters}
-                    className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
+                    onClick={() => setViewMode("compact")}
+                    className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                      viewMode === "compact"
+                        ? "bg-primary text-white"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
                   >
-                    <X size={16} />
-                    Limpiar filtros
+                    Compacta
+                  </button>
+                  <button
+                    onClick={() => setViewMode("detailed")}
+                    className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                      viewMode === "detailed"
+                        ? "bg-primary text-white"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    Detallada
                   </button>
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Lista de cotizaciones */}
-        <div className="bg-white rounded-lg shadow">
-          {filteredCotizaciones.length === 0 ? (
-            <div className="p-12 text-center">
-              {cotizaciones.length === 0 ? (
-                <>
-                  <FileText size={48} className="mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500 mb-4">
-                    No hay cotizaciones registradas
-                  </p>
-                  <button
-                    onClick={onNewCotizacion}
-                    className="text-primary hover:underline"
-                  >
-                    Crea la primera cotización
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Search size={48} className="mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500 mb-4">
-                    No se encontraron cotizaciones con los filtros aplicados
-                  </p>
-                  <button
-                    onClick={clearFilters}
-                    className="text-primary hover:underline"
-                  >
-                    Limpiar filtros
-                  </button>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="divide-y">
-              {filteredCotizaciones.map((cot) => (
-                <div
-                  key={cot.id}
-                  onClick={() => setSelectedCotizacionId(cot.id)}
-                  className={`hover:bg-gray-50 transition-colors cursor-pointer ${
-                    viewMode === "compact" ? "p-4" : "p-6"
-                  }`}
-                >
-                  {viewMode === "detailed" ? (
-                    // Detailed view
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="font-mono text-sm text-gray-500 font-semibold">
-                            {cot.folio}
-                          </span>
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${getEstatusColor(cot.estatus)}`}
-                          >
-                            {cot.estatus}
-                          </span>
-                          {cot.origen_lead && (
-                            <span className="text-sm text-gray-500 flex items-center gap-1">
-                              {getLeadOriginIcon(cot.origen_lead)}
-                              <span className="capitalize">
-                                {cot.origen_lead}
-                              </span>
-                            </span>
-                          )}
-                        </div>
+        {/* No results message */}
+        {filteredCotizaciones.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
+            <FileText size={48} className="mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-600 mb-2">
+              No hay cotizaciones
+            </h3>
+            <p className="text-gray-500 mb-4">
+              {activeFiltersCount > 0
+                ? "Intenta ajustar los filtros"
+                : "Comienza creando tu primera cotización"}
+            </p>
+            {activeFiltersCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="text-primary hover:underline"
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+        )}
 
-                        <h3 className="font-semibold text-xl mb-2">
-                          {cot.cliente_nombre}
-                        </h3>
-
-                        <div className="mt-2 text-sm text-gray-600 space-y-1">
-                          <p className="flex items-center gap-2">
-                            <span>✈️</span>
-                            <span className="font-medium">{cot.destino}</span>
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <span>📅</span>
-                            <span>
-                              {formatDate(cot.fecha_salida)} -{" "}
-                              {formatDate(cot.fecha_regreso)}
-                            </span>
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <span>👥</span>
-                            <span>
-                              {cot.num_adultos} adulto(s)
-                              {cot.num_ninos > 0 &&
-                                `, ${cot.num_ninos} niño(s)`}
-                            </span>
-                          </p>
-                          {cot.presupuesto_aprox && (
-                            <p className="flex items-center gap-2">
-                              <span>💰</span>
-                              <span>
-                                Presupuesto: $
-                                {parseFloat(
-                                  cot.presupuesto_aprox
-                                ).toLocaleString("es-MX")}
-                              </span>
-                            </p>
-                          )}
-                          {cot.cliente_telefono && (
-                            <p className="flex items-center gap-2">
-                              <span>📞</span>
-                              <span>{cot.cliente_telefono}</span>
-                            </p>
-                          )}
-                        </div>
-
-                        {cot.notas && (
-                          <p className="mt-3 text-sm text-gray-500 italic bg-gray-50 p-2 rounded">
-                            {cot.notas}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2 ml-4">
-                        <button className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors">
-                          <Eye size={20} />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    // Compact view
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
-                        <span className="font-mono text-xs text-gray-500 font-semibold w-24">
-                          {cot.folio}
+        {/* Cotizaciones List - Responsive Cards */}
+        <div className="space-y-3 md:space-y-4">
+          {filteredCotizaciones.map((cotizacion) => (
+            <div
+              key={cotizacion.id}
+              className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-4"
+            >
+              {/* Compact View for Mobile by default */}
+              {viewMode === "compact" || window.innerWidth < 768 ? (
+                // Compact Mobile View
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-mono text-gray-500">
+                          {cotizacion.folio}
                         </span>
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getEstatusColor(cot.estatus)} w-24 text-center`}
+                          className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(cotizacion.estatus)}`}
                         >
-                          {cot.estatus}
-                        </span>
-                        {cot.origen_lead && (
-                          <span className="text-lg" title={cot.origen_lead}>
-                            {getLeadOriginIcon(cot.origen_lead)}
-                          </span>
-                        )}
-                        <span className="font-semibold flex-1">
-                          {cot.cliente_nombre}
-                        </span>
-                        <span className="text-sm text-gray-600 w-32">
-                          {cot.destino}
-                        </span>
-                        <span className="text-sm text-gray-500 w-40">
-                          {formatDate(cot.fecha_salida)}
+                          {cotizacion.estatus}
                         </span>
                       </div>
-                      <Eye size={18} className="text-gray-400" />
+                      <h3 className="font-semibold text-gray-900 truncate">
+                        {cotizacion.cliente_nombre}
+                      </h3>
+                      <p className="text-sm text-gray-600 truncate">
+                        📍 {cotizacion.destino}
+                      </p>
                     </div>
-                  )}
+                    <button
+                      onClick={() => setSelectedCotizacionId(cotizacion.id)}
+                      className="flex-shrink-0 p-2 text-primary hover:bg-primary/10 rounded-lg"
+                    >
+                      <Eye size={20} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>
+                      {new Date(cotizacion.created_at).toLocaleDateString(
+                        "es-MX"
+                      )}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      {getLeadOriginIcon(cotizacion.origen_lead)}
+                      {cotizacion.origen_lead}
+                    </span>
+                  </div>
                 </div>
-              ))}
+              ) : (
+                // Detailed View for Desktop
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">
+                        {cotizacion.folio}
+                      </p>
+                      <p className="font-semibold text-gray-900">
+                        {cotizacion.cliente_nombre}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        📞 {cotizacion.cliente_telefono}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Destino</p>
+                      <p className="text-sm">📍 {cotizacion.destino}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(cotizacion.fecha_salida).toLocaleDateString(
+                          "es-MX"
+                        )}{" "}
+                        -{" "}
+                        {new Date(cotizacion.fecha_regreso).toLocaleDateString(
+                          "es-MX"
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Detalles</p>
+                      <p className="text-sm">
+                        👥 {cotizacion.num_adultos}A {cotizacion.num_ninos}N
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {getLeadOriginIcon(cotizacion.origen_lead)}{" "}
+                        {cotizacion.origen_lead}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Estatus</p>
+                      <span
+                        className={`inline-block text-xs px-3 py-1 rounded-full ${getStatusBadge(cotizacion.estatus)}`}
+                      >
+                        {cotizacion.estatus}
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(cotizacion.created_at).toLocaleDateString(
+                          "es-MX"
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedCotizacionId(cotizacion.id)}
+                    className="ml-4 flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    <Eye size={18} />
+                    Ver
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+          ))}
         </div>
       </div>
     </div>

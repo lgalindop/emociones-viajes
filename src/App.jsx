@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Operadores from "./pages/Operadores";
 import Cotizaciones from "./pages/Cotizaciones";
 import NuevaCotizacion from "./pages/NuevaCotizacion";
@@ -7,6 +8,7 @@ import UserManagement from "./pages/UserManagement";
 import PipelineKanban from "./components/pipeline/PipelineKanban";
 import SalesList from "./pages/SalesList";
 import SalesDashboard from "./pages/SalesDashboard";
+import LandingPage from "./pages/LandingPage";
 import {
   Home,
   Users,
@@ -20,21 +22,14 @@ import {
   Menu,
   X,
 } from "lucide-react";
-// LanguageSelector imported but not rendered
-import LanguageSelector from "./components/LanguageSelector";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
-function AppContent() {
+function MainApp() {
   const [currentPage, setCurrentPage] = useState("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { t } = useLanguage(); // Still available for any remaining English strings
+  const { t } = useLanguage();
   const { user, profile, signOut, isAdmin } = useAuth();
-
-  // Redirect to login if not authenticated
-  if (!user) {
-    return <Login />;
-  }
 
   // Show inactive account message
   if (profile && !profile.is_active) {
@@ -89,7 +84,6 @@ function AppContent() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-bold">Emociones Viajes</h1>
-              {/* Language selector removed from UI but component still exists */}
               <div className="flex gap-2">
                 <button
                   onClick={() => setCurrentPage("home")}
@@ -181,7 +175,6 @@ function AppContent() {
           </div>
         </div>
 
-        {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
           <div className="absolute top-full left-0 right-0 bg-primary border-t border-white/20 shadow-lg">
             <div className="p-4">
@@ -401,11 +394,29 @@ function AppContent() {
   );
 }
 
+// Auth wrapper component
+function AuthenticatedApp() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Login />;
+  }
+
+  return <MainApp />;
+}
+
+// Main App with routing
 export default function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
-        <AppContent />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/app/*" element={<AuthenticatedApp />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
       </LanguageProvider>
     </AuthProvider>
   );

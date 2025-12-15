@@ -36,9 +36,6 @@ export default function Cotizaciones({ onNewCotizacion }) {
   );
   const [dateTo, setDateTo] = useState(localStorage.getItem("filter_to") || "");
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState(
-    localStorage.getItem("filter_view") || "detailed"
-  );
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -81,14 +78,6 @@ export default function Cotizaciones({ onNewCotizacion }) {
       localStorage.removeItem("filter_to");
     }
   }, [dateTo]);
-
-  useEffect(() => {
-    if (viewMode !== "detailed") {
-      localStorage.setItem("filter_view", viewMode);
-    } else {
-      localStorage.removeItem("filter_view");
-    }
-  }, [viewMode]);
 
   useEffect(() => {
     fetchCotizaciones();
@@ -331,29 +320,6 @@ export default function Cotizaciones({ onNewCotizacion }) {
               />
             </button>
 
-            <div className="hidden md:flex gap-1 border rounded-lg p-1 ml-auto">
-              <button
-                onClick={() => setViewMode("compact")}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
-                  viewMode === "compact"
-                    ? "bg-primary text-white"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                Compacta
-              </button>
-              <button
-                onClick={() => setViewMode("detailed")}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
-                  viewMode === "detailed"
-                    ? "bg-primary text-white"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                Detallada
-              </button>
-            </div>
-
             {activeFiltersCount > 0 && (
               <button
                 onClick={clearFilters}
@@ -438,34 +404,6 @@ export default function Cotizaciones({ onNewCotizacion }) {
                   />
                 </div>
               </div>
-
-              <div className="md:hidden">
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Vista
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setViewMode("compact")}
-                    className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                      viewMode === "compact"
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    Compacta
-                  </button>
-                  <button
-                    onClick={() => setViewMode("detailed")}
-                    className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                      viewMode === "detailed"
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    Detallada
-                  </button>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -518,141 +456,97 @@ export default function Cotizaciones({ onNewCotizacion }) {
                   : ""
               }`}
             >
-              {viewMode === "compact" ? (
-                // COMPACT VIEW - Essential data only
-                <div
-                  className="p-4 cursor-pointer hover:bg-gray-50"
-                  onClick={() => setSelectedCotizacionId(cotizacion.id)}
-                >
-                  <div className="flex items-start gap-3">
-                    {isAdmin() && (
-                      <input
-                        type="checkbox"
-                        checked={selectedForDelete.includes(cotizacion.id)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          toggleSelectForDelete(cotizacion.id);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="mt-1 w-4 h-4 text-primary rounded"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-mono text-gray-500">
-                          {cotizacion.folio}
-                        </span>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(cotizacion.estatus)}`}
-                        >
-                          {cotizacion.estatus}
-                        </span>
-                      </div>
-                      <h3 className="font-semibold text-gray-900">
+              {/* Detailed View */}
+              <div
+                className="p-4 cursor-pointer hover:bg-gray-50"
+                onClick={() => setSelectedCotizacionId(cotizacion.id)}
+              >
+                <div className="flex items-start gap-3">
+                  {isAdmin() && (
+                    <input
+                      type="checkbox"
+                      checked={selectedForDelete.includes(cotizacion.id)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleSelectForDelete(cotizacion.id);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-1 w-4 h-4 text-primary rounded"
+                    />
+                  )}
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Cliente</p>
+                      <p className="font-semibold text-gray-900 mb-1">
                         {cotizacion.cliente_nombre}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        📍 {cotizacion.destino}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        {cotizacion.folio}
                       </p>
                     </div>
-                    <Eye size={20} className="text-primary flex-shrink-0" />
-                  </div>
-                </div>
-              ) : (
-                // DETAILED VIEW - All relevant data
-                <div
-                  className="p-4 cursor-pointer hover:bg-gray-50"
-                  onClick={() => setSelectedCotizacionId(cotizacion.id)}
-                >
-                  <div className="flex items-start gap-3">
-                    {isAdmin() && (
-                      <input
-                        type="checkbox"
-                        checked={selectedForDelete.includes(cotizacion.id)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          toggleSelectForDelete(cotizacion.id);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="mt-1 w-4 h-4 text-primary rounded"
-                      />
-                    )}
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Cliente</p>
-                        <p className="font-semibold text-gray-900 mb-1">
-                          {cotizacion.cliente_nombre}
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Destino</p>
+                      <p className="text-sm font-medium">
+                        📍 {cotizacion.destino}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(cotizacion.fecha_salida).toLocaleDateString(
+                          "es-MX",
+                          { day: "numeric", month: "short" }
+                        )}{" "}
+                        -{" "}
+                        {new Date(cotizacion.fecha_regreso).toLocaleDateString(
+                          "es-MX",
+                          { day: "numeric", month: "short" }
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Viajeros</p>
+                      <p className="text-sm">
+                        👥 {cotizacion.num_adultos} adultos,{" "}
+                        {cotizacion.num_ninos} niños
+                      </p>
+                      {cotizacion.presupuesto_aprox && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          💰 ${cotizacion.presupuesto_aprox.toLocaleString()}
                         </p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Contacto</p>
+                      {cotizacion.cliente_telefono && (
                         <p className="text-xs text-gray-600">
-                          {cotizacion.folio}
+                          📞 {cotizacion.cliente_telefono}
                         </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Destino</p>
-                        <p className="text-sm font-medium">
-                          📍 {cotizacion.destino}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {new Date(cotizacion.fecha_salida).toLocaleDateString(
-                            "es-MX",
-                            { day: "numeric", month: "short" }
-                          )}{" "}
-                          -{" "}
-                          {new Date(
-                            cotizacion.fecha_regreso
-                          ).toLocaleDateString("es-MX", {
-                            day: "numeric",
-                            month: "short",
-                          })}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Viajeros</p>
-                        <p className="text-sm">
-                          👥 {cotizacion.num_adultos} adultos,{" "}
-                          {cotizacion.num_ninos} niños
-                        </p>
-                        {cotizacion.presupuesto_aprox && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            💰 ${cotizacion.presupuesto_aprox.toLocaleString()}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Contacto</p>
-                        {cotizacion.cliente_telefono && (
-                          <p className="text-xs text-gray-600">
-                            📞 {cotizacion.cliente_telefono}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-1 mt-1">
-                          <LeadOriginIcon
-                            origen={cotizacion.origen_lead}
-                            size={14}
-                          />
-                          <span className="text-xs text-gray-600">
-                            {getLeadOriginLabel(cotizacion.origen_lead)}
-                          </span>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Estatus</p>
-                        <span
-                          className={`inline-block text-xs px-3 py-1 rounded-full ${getStatusBadge(cotizacion.estatus)}`}
-                        >
-                          {cotizacion.estatus}
+                      )}
+                      <div className="flex items-center gap-1 mt-1">
+                        <LeadOriginIcon
+                          origen={cotizacion.origen_lead}
+                          size={14}
+                        />
+                        <span className="text-xs text-gray-600">
+                          {getLeadOriginLabel(cotizacion.origen_lead)}
                         </span>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {new Date(cotizacion.created_at).toLocaleDateString(
-                            "es-MX"
-                          )}
-                        </p>
                       </div>
                     </div>
-                    <Eye size={20} className="text-primary flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Estatus</p>
+                      <span
+                        className={`inline-block text-xs px-3 py-1 rounded-full ${getStatusBadge(cotizacion.estatus)}`}
+                      >
+                        {cotizacion.estatus}
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(cotizacion.created_at).toLocaleDateString(
+                          "es-MX"
+                        )}
+                      </p>
+                    </div>
                   </div>
+                  <Eye size={20} className="text-primary flex-shrink-0" />
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>

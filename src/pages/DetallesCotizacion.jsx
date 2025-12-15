@@ -208,7 +208,7 @@ export default function DetallesCotizacion({
   const presupuesto = parseFloat(cotizacion.presupuesto_aprox) || 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8 pb-24 md:pb-8">
       <div className="max-w-6xl mx-auto">
         <button
           onClick={onBack}
@@ -218,26 +218,27 @@ export default function DetallesCotizacion({
           Regresar
         </button>
 
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <div className="flex justify-between items-start mb-6">
+        <div className="bg-white rounded-xl shadow-lg p-4 md:p-8">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-primary">
+              <h1 className="text-2xl md:text-3xl font-bold text-primary">
                 {cotizacion.folio}
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-sm md:text-base text-gray-600 mt-1">
                 Creada el {formatDate(cotizacion.created_at)}
               </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 w-full md:w-auto">
               {!editing && (
                 <>
                   <button
                     onClick={() => setEditing(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm md:text-base"
                   >
-                    <Edit2 size={18} />
-                    Editar
+                    <Edit2 size={16} className="md:w-[18px] md:h-[18px]" />
+                    <span className="hidden sm:inline">Editar</span>
+                    <span className="sm:hidden">Edit</span>
                   </button>
                   <ExportToWhatsApp
                     cotizacion={cotizacion}
@@ -251,10 +252,11 @@ export default function DetallesCotizacion({
                   />
                   <button
                     onClick={handleDelete}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm md:text-base"
                   >
-                    <Trash2 size={18} />
-                    Eliminar
+                    <Trash2 size={16} className="md:w-[18px] md:h-[18px]" />
+                    <span className="hidden sm:inline">Eliminar</span>
+                    <span className="sm:hidden">Del</span>
                   </button>
                 </>
               )}

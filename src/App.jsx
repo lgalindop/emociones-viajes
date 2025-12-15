@@ -20,6 +20,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+// LanguageSelector imported but not rendered
 import LanguageSelector from "./components/LanguageSelector";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -27,7 +28,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 function AppContent() {
   const [currentPage, setCurrentPage] = useState("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { t } = useLanguage();
+  const { t } = useLanguage(); // Still available for any remaining English strings
   const { user, profile, signOut, isAdmin } = useAuth();
 
   // Redirect to login if not authenticated
@@ -88,28 +89,28 @@ function AppContent() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-bold">Emociones Viajes</h1>
-              <LanguageSelector />
+              {/* Language selector removed from UI but component still exists */}
               <div className="flex gap-2">
                 <button
                   onClick={() => setCurrentPage("home")}
                   className={`px-4 py-2 rounded flex items-center gap-2 ${currentPage === "home" ? "bg-white/20" : "hover:bg-white/10"}`}
                 >
                   <Home size={20} />
-                  {t("nav.home")}
+                  Inicio
                 </button>
                 <button
                   onClick={() => setCurrentPage("cotizaciones")}
                   className={`px-4 py-2 rounded flex items-center gap-2 ${currentPage === "cotizaciones" || currentPage === "nueva-cotizacion" ? "bg-white/20" : "hover:bg-white/10"}`}
                 >
                   <FileText size={20} />
-                  {t("nav.cotizaciones")}
+                  Cotizaciones
                 </button>
                 <button
                   onClick={() => setCurrentPage("operadores")}
                   className={`px-4 py-2 rounded flex items-center gap-2 ${currentPage === "operadores" ? "bg-white/20" : "hover:bg-white/10"}`}
                 >
                   <Users size={20} />
-                  {t("nav.operators")}
+                  Operadores
                 </button>
                 <button
                   onClick={() => setCurrentPage("pipeline")}
@@ -171,7 +172,6 @@ function AppContent() {
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-lg font-bold">Emociones Viajes</h1>
           <div className="flex items-center gap-2">
-            <LanguageSelector />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 hover:bg-white/10 rounded-lg"
@@ -201,21 +201,21 @@ function AppContent() {
                   className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 ${currentPage === "home" ? "bg-white/20" : "hover:bg-white/10"}`}
                 >
                   <Home size={20} />
-                  <span>{t("nav.home")}</span>
+                  <span>Inicio</span>
                 </button>
                 <button
                   onClick={() => handleNavClick("cotizaciones")}
                   className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 ${currentPage === "cotizaciones" ? "bg-white/20" : "hover:bg-white/10"}`}
                 >
                   <FileText size={20} />
-                  <span>{t("nav.cotizaciones")}</span>
+                  <span>Cotizaciones</span>
                 </button>
                 <button
                   onClick={() => handleNavClick("operadores")}
                   className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 ${currentPage === "operadores" ? "bg-white/20" : "hover:bg-white/10"}`}
                 >
                   <Users size={20} />
-                  <span>{t("nav.operators")}</span>
+                  <span>Operadores</span>
                 </button>
                 <button
                   onClick={() => handleNavClick("pipeline")}
@@ -265,10 +265,10 @@ function AppContent() {
         {currentPage === "home" && (
           <div className="max-w-7xl mx-auto px-4 py-6">
             <h2 className="text-2xl md:text-3xl font-bold text-primary mb-2">
-              {t("Emociones Viajes")}
+              Bienvenido
             </h2>
             <p className="text-gray-600 mb-6">
-              {t("Sistema de Cotizaciones de Emociones Viajes")}
+              Sistema de Gestión de Cotizaciones para Emociones Viajes
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -277,9 +277,7 @@ function AppContent() {
                 className="p-6 border-2 border-secondary rounded-lg hover:bg-secondary/5 text-left transition-colors"
               >
                 <FileText size={32} className="text-secondary mb-2" />
-                <h3 className="font-semibold text-lg">
-                  {t("nav.cotizaciones")}
-                </h3>
+                <h3 className="font-semibold text-lg">Cotizaciones</h3>
                 <p className="text-sm text-gray-600">
                   Ver y gestionar cotizaciones
                 </p>
@@ -289,7 +287,7 @@ function AppContent() {
                 className="p-6 border-2 border-primary rounded-lg hover:bg-primary/5 text-left transition-colors"
               >
                 <Users size={32} className="text-primary mb-2" />
-                <h3 className="font-semibold text-lg">{t("nav.operators")}</h3>
+                <h3 className="font-semibold text-lg">Operadores</h3>
                 <p className="text-sm text-gray-600">
                   Gestionar operadores turísticos
                 </p>

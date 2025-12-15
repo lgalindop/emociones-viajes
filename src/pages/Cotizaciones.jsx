@@ -8,18 +8,20 @@ import {
   X,
   SlidersHorizontal,
   ChevronDown,
+  Trash2,
 } from "lucide-react";
 import DetallesCotizacion from "./DetallesCotizacion";
 import { useDebounce } from "../hooks/useDebounce";
 import { useAuth } from "../contexts/AuthContext";
+import LeadOriginIcon from "../components/LeadOriginIcon";
 
 export default function Cotizaciones({ onNewCotizacion }) {
   const [cotizaciones, setCotizaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCotizacionId, setSelectedCotizacionId] = useState(null);
+  const [selectedForDelete, setSelectedForDelete] = useState([]);
   const { user, isAdmin } = useAuth();
 
-  // Get initial values from localStorage or defaults
   const [searchTerm, setSearchTerm] = useState(
     localStorage.getItem("filter_search") || ""
   );
@@ -38,10 +40,8 @@ export default function Cotizaciones({ onNewCotizacion }) {
     localStorage.getItem("filter_view") || "detailed"
   );
 
-  // Debounced search term (300ms delay)
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  // Save filters to localStorage whenever they change
   useEffect(() => {
     if (debouncedSearchTerm) {
       localStorage.setItem("filter_search", debouncedSearchTerm);
@@ -114,10 +114,8 @@ export default function Cotizaciones({ onNewCotizacion }) {
     }
   }
 
-  // Memoized filtered cotizaciones with debounced search
   const filteredCotizaciones = useMemo(() => {
     return cotizaciones.filter((cot) => {
-      // Search filter (debounced)
       if (debouncedSearchTerm) {
         const searchLower = debouncedSearchTerm.toLowerCase();
         const matchesSearch =
@@ -130,17 +128,14 @@ export default function Cotizaciones({ onNewCotizacion }) {
         if (!matchesSearch) return false;
       }
 
-      // Status filter
       if (statusFilter !== "all" && cot.estatus !== statusFilter) {
         return false;
       }
 
-      // Lead origin filter
       if (leadOriginFilter !== "all" && cot.origen_lead !== leadOriginFilter) {
         return false;
       }
 
-      // Date range filter
       if (dateFrom || dateTo) {
         const cotDate = new Date(cot.created_at);
         if (dateFrom && cotDate < new Date(dateFrom)) return false;
@@ -175,6 +170,45 @@ export default function Cotizaciones({ onNewCotizacion }) {
     localStorage.removeItem("filter_to");
   }
 
+  function toggleSelectForDelete(id) {
+    setSelectedForDelete((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  }
+
+  function toggleSelectAll() {
+    if (selectedForDelete.length === filteredCotizaciones.length) {
+      setSelectedForDelete([]);
+    } else {
+      setSelectedForDelete(filteredCotizaciones.map((c) => c.id));
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedForDelete.length === 0) return;
+
+    const confirm = window.confirm(
+      `¿Eliminar ${selectedForDelete.length} cotización(es)? Esta acción no se puede deshacer.`
+    );
+
+    if (!confirm) return;
+
+    try {
+      const { error } = await supabase
+        .from("cotizaciones")
+        .delete()
+        .in("id", selectedForDelete);
+
+      if (error) throw error;
+
+      setSelectedForDelete([]);
+      fetchCotizaciones();
+    } catch (error) {
+      console.error("Error deleting:", error);
+      alert("Error al eliminar cotizaciones");
+    }
+  }
+
   function getStatusBadge(estatus) {
     const colors = {
       nueva: "bg-blue-100 text-blue-800",
@@ -186,16 +220,16 @@ export default function Cotizaciones({ onNewCotizacion }) {
     return colors[estatus] || "bg-gray-100 text-gray-800";
   }
 
-  function getLeadOriginIcon(origen) {
-    const icons = {
-      whatsapp: "💬",
-      instagram: "📷",
-      facebook: "👥",
-      referido: "🤝",
-      web: "🌐",
-      otro: "📋",
+  function getLeadOriginLabel(origen) {
+    const labels = {
+      whatsapp: "WhatsApp",
+      instagram: "Instagram",
+      facebook: "Facebook",
+      referido: "Referido",
+      web: "Web",
+      otro: "Otro",
     };
-    return icons[origen] || "📋";
+    return labels[origen] || origen;
   }
 
   if (loading) {
@@ -253,7 +287,6 @@ export default function Cotizaciones({ onNewCotizacion }) {
 
         {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow p-3 md:p-4 mb-4 md:mb-6">
-          {/* Search Bar */}
           <div className="relative mb-3">
             <Search
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -276,9 +309,7 @@ export default function Cotizaciones({ onNewCotizacion }) {
             )}
           </div>
 
-          {/* Filter Controls - Mobile Optimized */}
           <div className="flex flex-wrap gap-2">
-            {/* Filter Drawer Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors ${
@@ -300,7 +331,6 @@ export default function Cotizaciones({ onNewCotizacion }) {
               />
             </button>
 
-            {/* View Mode Toggle - Desktop only */}
             <div className="hidden md:flex gap-1 border rounded-lg p-1 ml-auto">
               <button
                 onClick={() => setViewMode("compact")}
@@ -310,7 +340,7 @@ export default function Cotizaciones({ onNewCotizacion }) {
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                Compacto
+                Compacta
               </button>
               <button
                 onClick={() => setViewMode("detailed")}
@@ -320,11 +350,10 @@ export default function Cotizaciones({ onNewCotizacion }) {
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                Detallado
+                Detallada
               </button>
             </div>
 
-            {/* Clear Filters - Show if active */}
             {activeFiltersCount > 0 && (
               <button
                 onClick={clearFilters}
@@ -334,12 +363,20 @@ export default function Cotizaciones({ onNewCotizacion }) {
                 <span className="hidden sm:inline">Limpiar</span>
               </button>
             )}
+
+            {isAdmin() && selectedForDelete.length > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                className="flex items-center gap-1 px-3 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg"
+              >
+                <Trash2 size={14} />
+                <span>Eliminar ({selectedForDelete.length})</span>
+              </button>
+            )}
           </div>
 
-          {/* Expanded Filters - Mobile Drawer Style */}
           {showFilters && (
             <div className="border-t mt-3 pt-3 space-y-3">
-              {/* Status Filter */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   Estatus
@@ -358,7 +395,6 @@ export default function Cotizaciones({ onNewCotizacion }) {
                 </select>
               </div>
 
-              {/* Origin Filter */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   Origen del Lead
@@ -369,16 +405,15 @@ export default function Cotizaciones({ onNewCotizacion }) {
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="all">Todos</option>
-                  <option value="whatsapp">💬 WhatsApp</option>
-                  <option value="instagram">📷 Instagram</option>
-                  <option value="facebook">👥 Facebook</option>
-                  <option value="referido">🤝 Referido</option>
-                  <option value="web">🌐 Web</option>
-                  <option value="otro">📋 Otro</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="facebook">Facebook</option>
+                  <option value="referido">Referido</option>
+                  <option value="web">Web</option>
+                  <option value="otro">Otro</option>
                 </select>
               </div>
 
-              {/* Date Range */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -404,7 +439,6 @@ export default function Cotizaciones({ onNewCotizacion }) {
                 </div>
               </div>
 
-              {/* Mobile View Mode Toggle */}
               <div className="md:hidden">
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   Vista
@@ -436,7 +470,21 @@ export default function Cotizaciones({ onNewCotizacion }) {
           )}
         </div>
 
-        {/* No results message */}
+        {/* Select All (only for admins) */}
+        {isAdmin() && filteredCotizaciones.length > 0 && (
+          <div className="mb-3 flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={selectedForDelete.length === filteredCotizaciones.length}
+              onChange={toggleSelectAll}
+              className="w-4 h-4 text-primary rounded"
+            />
+            <span className="text-sm text-gray-600">
+              Seleccionar todas ({filteredCotizaciones.length})
+            </span>
+          </div>
+        )}
+
         {filteredCotizaciones.length === 0 && (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <FileText size={48} className="mx-auto text-gray-300 mb-4" />
@@ -459,18 +507,36 @@ export default function Cotizaciones({ onNewCotizacion }) {
           </div>
         )}
 
-        {/* Cotizaciones List - Responsive Cards */}
+        {/* Cotizaciones List */}
         <div className="space-y-3 md:space-y-4">
           {filteredCotizaciones.map((cotizacion) => (
             <div
               key={cotizacion.id}
-              className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-4"
+              className={`bg-white rounded-lg shadow hover:shadow-md transition-all ${
+                selectedForDelete.includes(cotizacion.id)
+                  ? "ring-2 ring-red-500"
+                  : ""
+              }`}
             >
-              {/* Compact View for Mobile by default */}
-              {viewMode === "compact" || window.innerWidth < 768 ? (
-                // Compact Mobile View
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-2">
+              {viewMode === "compact" ? (
+                // COMPACT VIEW - Essential data only
+                <div
+                  className="p-4 cursor-pointer hover:bg-gray-50"
+                  onClick={() => setSelectedCotizacionId(cotizacion.id)}
+                >
+                  <div className="flex items-start gap-3">
+                    {isAdmin() && (
+                      <input
+                        type="checkbox"
+                        checked={selectedForDelete.includes(cotizacion.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleSelectForDelete(cotizacion.id);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-1 w-4 h-4 text-primary rounded"
+                      />
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-mono text-gray-500">
@@ -482,91 +548,109 @@ export default function Cotizaciones({ onNewCotizacion }) {
                           {cotizacion.estatus}
                         </span>
                       </div>
-                      <h3 className="font-semibold text-gray-900 truncate">
+                      <h3 className="font-semibold text-gray-900">
                         {cotizacion.cliente_nombre}
                       </h3>
-                      <p className="text-sm text-gray-600 truncate">
+                      <p className="text-sm text-gray-600">
                         📍 {cotizacion.destino}
                       </p>
                     </div>
-                    <button
-                      onClick={() => setSelectedCotizacionId(cotizacion.id)}
-                      className="flex-shrink-0 p-2 text-primary hover:bg-primary/10 rounded-lg"
-                    >
-                      <Eye size={20} />
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>
-                      {new Date(cotizacion.created_at).toLocaleDateString(
-                        "es-MX"
-                      )}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      {getLeadOriginIcon(cotizacion.origen_lead)}
-                      {cotizacion.origen_lead}
-                    </span>
+                    <Eye size={20} className="text-primary flex-shrink-0" />
                   </div>
                 </div>
               ) : (
-                // Detailed View for Desktop
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">
-                        {cotizacion.folio}
-                      </p>
-                      <p className="font-semibold text-gray-900">
-                        {cotizacion.cliente_nombre}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        📞 {cotizacion.cliente_telefono}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Destino</p>
-                      <p className="text-sm">📍 {cotizacion.destino}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(cotizacion.fecha_salida).toLocaleDateString(
-                          "es-MX"
-                        )}{" "}
-                        -{" "}
-                        {new Date(cotizacion.fecha_regreso).toLocaleDateString(
-                          "es-MX"
+                // DETAILED VIEW - All relevant data
+                <div
+                  className="p-4 cursor-pointer hover:bg-gray-50"
+                  onClick={() => setSelectedCotizacionId(cotizacion.id)}
+                >
+                  <div className="flex items-start gap-3">
+                    {isAdmin() && (
+                      <input
+                        type="checkbox"
+                        checked={selectedForDelete.includes(cotizacion.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleSelectForDelete(cotizacion.id);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-1 w-4 h-4 text-primary rounded"
+                      />
+                    )}
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Cliente</p>
+                        <p className="font-semibold text-gray-900 mb-1">
+                          {cotizacion.cliente_nombre}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {cotizacion.folio}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Destino</p>
+                        <p className="text-sm font-medium">
+                          📍 {cotizacion.destino}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(cotizacion.fecha_salida).toLocaleDateString(
+                            "es-MX",
+                            { day: "numeric", month: "short" }
+                          )}{" "}
+                          -{" "}
+                          {new Date(
+                            cotizacion.fecha_regreso
+                          ).toLocaleDateString("es-MX", {
+                            day: "numeric",
+                            month: "short",
+                          })}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Viajeros</p>
+                        <p className="text-sm">
+                          👥 {cotizacion.num_adultos} adultos,{" "}
+                          {cotizacion.num_ninos} niños
+                        </p>
+                        {cotizacion.presupuesto_aprox && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            💰 ${cotizacion.presupuesto_aprox.toLocaleString()}
+                          </p>
                         )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Detalles</p>
-                      <p className="text-sm">
-                        👥 {cotizacion.num_adultos}A {cotizacion.num_ninos}N
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {getLeadOriginIcon(cotizacion.origen_lead)}{" "}
-                        {cotizacion.origen_lead}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Estatus</p>
-                      <span
-                        className={`inline-block text-xs px-3 py-1 rounded-full ${getStatusBadge(cotizacion.estatus)}`}
-                      >
-                        {cotizacion.estatus}
-                      </span>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(cotizacion.created_at).toLocaleDateString(
-                          "es-MX"
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Contacto</p>
+                        {cotizacion.cliente_telefono && (
+                          <p className="text-xs text-gray-600">
+                            📞 {cotizacion.cliente_telefono}
+                          </p>
                         )}
-                      </p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <LeadOriginIcon
+                            origen={cotizacion.origen_lead}
+                            size={14}
+                          />
+                          <span className="text-xs text-gray-600">
+                            {getLeadOriginLabel(cotizacion.origen_lead)}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Estatus</p>
+                        <span
+                          className={`inline-block text-xs px-3 py-1 rounded-full ${getStatusBadge(cotizacion.estatus)}`}
+                        >
+                          {cotizacion.estatus}
+                        </span>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(cotizacion.created_at).toLocaleDateString(
+                            "es-MX"
+                          )}
+                        </p>
+                      </div>
                     </div>
+                    <Eye size={20} className="text-primary flex-shrink-0" />
                   </div>
-                  <button
-                    onClick={() => setSelectedCotizacionId(cotizacion.id)}
-                    className="ml-4 flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                  >
-                    <Eye size={18} />
-                    Ver
-                  </button>
                 </div>
               )}
             </div>

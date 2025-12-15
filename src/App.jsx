@@ -270,7 +270,7 @@ function MainApp() {
       <main className="pb-20 md:pb-0">
         <Routes>
           <Route
-            path="/"
+            index
             element={
               <div className="max-w-7xl mx-auto px-4 py-6">
                 <h2 className="text-2xl md:text-3xl font-bold text-primary mb-2">

@@ -16,6 +16,8 @@ import PipelineKanban from "./components/pipeline/PipelineKanban";
 import SalesList from "./pages/SalesList";
 import SalesDashboard from "./pages/SalesDashboard";
 import LandingPage from "./pages/LandingPage";
+import CMSDashboard from "./pages/CMSDashboard";
+import ApprovalQueue from "./pages/ApprovalQueue";
 import {
   Home,
   Users,
@@ -27,6 +29,7 @@ import {
   BarChart3,
   Menu,
   X,
+  Layout,
 } from "lucide-react";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -38,7 +41,6 @@ function MainApp() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Show inactive account message
   if (profile && !profile.is_active) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
@@ -89,6 +91,8 @@ function MainApp() {
     );
   }
 
+  const showCMS = profile?.content_manager || isAdmin();
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Desktop Navigation */}
@@ -96,7 +100,12 @@ function MainApp() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-bold">Emociones Viajes</h1>
+              <button
+                onClick={() => navigate("/")}
+                className="text-xl font-bold hover:opacity-80 transition-opacity"
+              >
+                Emociones Viajes
+              </button>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleNavClick("/app")}
@@ -140,6 +149,15 @@ function MainApp() {
                   <BarChart3 size={20} />
                   Dashboard
                 </button>
+                {showCMS && (
+                  <button
+                    onClick={() => handleNavClick("/app/cms")}
+                    className={`px-4 py-2 rounded flex items-center gap-2 ${isActive("/app/cms") ? "bg-white/20" : "hover:bg-white/10"}`}
+                  >
+                    <Layout size={20} />
+                    CMS
+                  </button>
+                )}
                 {isAdmin() && (
                   <button
                     onClick={() => handleNavClick("/app/users")}
@@ -177,7 +195,12 @@ function MainApp() {
       {/* Mobile Top Bar */}
       <div className="md:hidden bg-primary text-white shadow-lg sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-lg font-bold">Emociones Viajes</h1>
+          <button
+            onClick={() => navigate("/")}
+            className="text-lg font-bold hover:opacity-80"
+          >
+            Emociones Viajes
+          </button>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -244,6 +267,15 @@ function MainApp() {
                   <BarChart3 size={20} />
                   <span>Dashboard</span>
                 </button>
+                {showCMS && (
+                  <button
+                    onClick={() => handleNavClick("/app/cms")}
+                    className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 ${isActive("/app/cms") ? "bg-white/20" : "hover:bg-white/10"}`}
+                  >
+                    <Layout size={20} />
+                    <span>CMS</span>
+                  </button>
+                )}
                 {isAdmin() && (
                   <button
                     onClick={() => handleNavClick("/app/users")}
@@ -329,6 +361,18 @@ function MainApp() {
                     <h3 className="font-semibold text-lg">Dashboard</h3>
                     <p className="text-sm text-gray-600">Reportes y métricas</p>
                   </button>
+                  {showCMS && (
+                    <button
+                      onClick={() => navigate("/app/cms")}
+                      className="p-6 border-2 border-indigo-600 rounded-lg hover:bg-indigo-50 text-left transition-colors"
+                    >
+                      <Layout size={32} className="text-indigo-600 mb-2" />
+                      <h3 className="font-semibold text-lg">CMS</h3>
+                      <p className="text-sm text-gray-600">
+                        Gestionar página pública
+                      </p>
+                    </button>
+                  )}
                   {isAdmin() && (
                     <button
                       onClick={() => navigate("/app/users")}
@@ -373,6 +417,8 @@ function MainApp() {
           />
           <Route path="/sales" element={<SalesList />} />
           <Route path="/dashboard" element={<SalesDashboard />} />
+          <Route path="/cms" element={<CMSDashboard />} />
+          <Route path="/cms/approvals" element={<ApprovalQueue />} />
           {isAdmin() && <Route path="/users" element={<UserManagement />} />}
           <Route path="*" element={<Navigate to="/app" replace />} />
         </Routes>
@@ -422,7 +468,6 @@ function MainApp() {
   );
 }
 
-// Auth wrapper component
 function AuthenticatedApp() {
   const { user } = useAuth();
 
@@ -433,7 +478,6 @@ function AuthenticatedApp() {
   return <MainApp />;
 }
 
-// Main App with routing
 export default function App() {
   return (
     <AuthProvider>
@@ -441,6 +485,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/app/*" element={<AuthenticatedApp />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -42,7 +42,15 @@ export default function CMSDashboard() {
   }
 
   function startEdit(section) {
-    const current = sections.find((s) => s.section === section);
+    // Try to find draft first, then published, then use defaults
+    const draft = sections.find(
+      (s) => s.section === section && s.status === "draft"
+    );
+    const published = sections.find(
+      (s) => s.section === section && s.status === "published"
+    );
+    const current = draft || published;
+
     setEditingSection(section);
     setEditContent(current?.content || getDefaultContent(section));
   }
@@ -144,13 +152,9 @@ export default function CMSDashboard() {
   function renderEditor() {
     switch (editingSection) {
       case "hero":
-        return (
-          <HeroEditor content={editContent} onChange={setEditContent} />
-        );
+        return <HeroEditor content={editContent} onChange={setEditContent} />;
       case "deals":
-        return (
-          <DealsEditor content={editContent} onChange={setEditContent} />
-        );
+        return <DealsEditor content={editContent} onChange={setEditContent} />;
       case "destinations":
         return (
           <DestinationsEditor content={editContent} onChange={setEditContent} />
@@ -313,7 +317,9 @@ export default function CMSDashboard() {
                     {draft && !pending && (
                       <button
                         onClick={async () => {
-                          const changeNotes = prompt("Notas de cambio (opcional):");
+                          const changeNotes = prompt(
+                            "Notas de cambio (opcional):"
+                          );
                           if (changeNotes === null) return;
 
                           const { error } = await supabase

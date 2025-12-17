@@ -8,17 +8,25 @@ import {
   Clock, 
   Calendar,
   DollarSign,
-  Upload,
-  Check
+  Check,
+  Receipt,
+  Eye,
+  Send,
+  Download
 } from "lucide-react";
+import ReceiptGenerator from "../receipts/ReceiptGenerator";
 
 export default function PaymentSchedule({ venta, onBack, onUpdate }) {
   const [pagos, setPagos] = useState([]);
+  const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showReceiptGenerator, setShowReceiptGenerator] = useState(false);
+  const [selectedPago, setSelectedPago] = useState(null);
   const { user } = useAuth();
 
   useEffect(() => {
     fetchPagos();
+    fetchReceipts();
   }, [venta.id]);
 
   async function fetchPagos() {
@@ -35,6 +43,21 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
       console.error('Error:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchReceipts() {
+    try {
+      const { data, error } = await supabase
+        .from('receipts')
+        .select('*')
+        .eq('venta_id', venta.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setReceipts(data || []);
+    } catch (error) {
+      console.error('Error fetching receipts:', error);
     }
   }
 
@@ -62,12 +85,79 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
         created_by: user.id,
       });
 
-      fetchPagos();
+      await fetchPagos();
       onUpdate();
       alert('✅ Pago registrado');
+      
+      // Ask if they want to generate receipt
+      if (confirm('¿Deseas generar un recibo para este pago?')) {
+        const updatedPagos = await supabase
+          .from('pagos')
+          .select('*')
+          .eq('id', pago.id)
+          .single();
+        
+        if (updatedPagos.data) {
+          setSelectedPago(updatedPagos.data);
+          setShowReceiptGenerator(true);
+        }
+      }
     } catch (error) {
       console.error('Error:', error);
       alert('Error al registrar pago');
+    }
+  }
+
+  async function shareViaWhatsApp(receipt) {
+    const message = encodeURIComponent(
+      `Recibo de pago ${receipt.receipt_number}\nFolio: ${venta.folio_venta}\nMonto: $${receipt.amount.toLocaleString('es-MX')}`
+    );
+
+    // Try native share first (mobile)
+    if (navigator.share) {
+      try {
+        const response = await fetch(receipt.image_url);
+        const blob = await response.blob();
+        const file = new File([blob], `${receipt.receipt_number}.jpg`, { type: 'image/jpeg' });
+
+        await navigator.share({
+          title: 'Recibo de Pago',
+          text: `Recibo ${receipt.receipt_number}`,
+          files: [file]
+        });
+
+        await supabase
+          .from('receipts')
+          .update({ 
+            sent_via_whatsapp: true, 
+            sent_at: new Date().toISOString() 
+          })
+          .eq('id', receipt.id);
+
+        fetchReceipts();
+        return;
+      } catch (error) {
+        console.log('Native share failed, falling back to WhatsApp Web');
+      }
+    }
+
+    // Fallback: WhatsApp Web
+    const phone = venta.cotizaciones.cliente_telefono?.replace(/\D/g, '');
+    if (phone) {
+      const whatsappUrl = `https://wa.me/${phone}?text=${message}`;
+      window.open(whatsappUrl, '_blank');
+
+      await supabase
+        .from('receipts')
+        .update({ 
+          sent_via_whatsapp: true, 
+          sent_at: new Date().toISOString() 
+        })
+        .eq('id', receipt.id);
+
+      fetchReceipts();
+    } else {
+      alert('No hay número de teléfono registrado');
     }
   }
 
@@ -108,87 +198,71 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
     .reduce((sum, p) => sum + parseFloat(p.monto), 0);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-gray-600 hover:text-primary mb-6"
-        >
-          <ArrowLeft size={20} />
-          <span className="font-medium">Regresar a Ventas</span>
-        </button>
+    <>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-5xl mx-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+            >
+              <ArrowLeft size={20} />
+              Volver a Ventas
+            </button>
 
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {/* Venta Info */}
-          <div className="bg-gradient-to-r from-primary to-primary-light p-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-2xl font-bold">{venta.folio_venta}</h1>
-                <p className="opacity-90">{venta.cotizaciones?.cliente_nombre}</p>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-primary">
+                    {venta.folio_venta}
+                  </h1>
+                  <p className="text-gray-600">
+                    {venta.cotizaciones.cliente_nombre}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-600 mb-1">Total Venta</p>
+                  <p className="text-3xl font-bold text-primary">
+                    ${parseFloat(venta.precio_total).toLocaleString('es-MX')}
+                  </p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm opacity-90">Total</p>
-                <p className="text-3xl font-bold">
-                  ${parseFloat(venta.precio_total).toLocaleString('es-MX')}
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-6 text-sm">
-              <div>
-                <p className="opacity-75">Destino</p>
-                <p className="font-medium">📍 {venta.cotizaciones?.destino}</p>
-              </div>
-              <div>
-                <p className="opacity-75">Fecha Viaje</p>
-                <p className="font-medium">
-                  {new Date(venta.fecha_viaje).toLocaleDateString('es-MX')}
-                </p>
-              </div>
-            </div>
-          </div>
 
-          {/* Payment Summary */}
-          <div className="p-6 border-b bg-gray-50">
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total</p>
-                <p className="text-xl font-bold">
-                  ${parseFloat(venta.precio_total).toLocaleString('es-MX')}
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Pagado</p>
+                  <p className="text-xl font-bold text-green-600">
+                    ${totalPagado.toLocaleString('es-MX')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Pendiente</p>
+                  <p className="text-xl font-bold text-red-600">
+                    ${totalPendiente.toLocaleString('es-MX')}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Progress bar */}
+              <div className="mt-4">
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-green-500 h-3 rounded-full transition-all"
+                    style={{ 
+                      width: `${(totalPagado / venta.precio_total * 100)}%` 
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600 mt-1 text-right">
+                  {((totalPagado / venta.precio_total) * 100).toFixed(1)}% completado
                 </p>
               </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Pagado</p>
-                <p className="text-xl font-bold text-green-600">
-                  ${totalPagado.toLocaleString('es-MX')}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Pendiente</p>
-                <p className="text-xl font-bold text-red-600">
-                  ${totalPendiente.toLocaleString('es-MX')}
-                </p>
-              </div>
-            </div>
-            
-            {/* Progress bar */}
-            <div className="mt-4">
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  className="bg-green-500 h-3 rounded-full transition-all"
-                  style={{ 
-                    width: `${(totalPagado / venta.precio_total * 100)}%` 
-                  }}
-                />
-              </div>
-              <p className="text-xs text-gray-600 mt-1 text-right">
-                {((totalPagado / venta.precio_total) * 100).toFixed(1)}% completado
-              </p>
             </div>
           </div>
 
           {/* Payment Timeline */}
-          <div className="p-6">
+          <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-6">Calendario de Pagos</h2>
             
             {pagos.length === 0 && (
@@ -203,6 +277,7 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
                   new Date(pago.fecha_programada) < new Date();
                 const isToday = new Date(pago.fecha_programada).toDateString() === 
                   new Date().toDateString();
+                const pagoReceipts = receipts.filter(r => r.pago_id === pago.id);
 
                 return (
                   <div
@@ -256,15 +331,44 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
                               Método: {pago.metodo_pago}
                             </p>
                           )}
-                          {pago.referencia && (
-                            <p className="text-sm text-gray-600">
-                              Ref: {pago.referencia}
-                            </p>
-                          )}
                           {pago.notas && (
                             <p className="text-sm text-gray-600 mt-1 italic">
                               {pago.notas}
                             </p>
+                          )}
+
+                          {/* Receipts for this payment */}
+                          {pagoReceipts.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <div className="text-sm font-medium text-gray-700 mb-2">
+                                Recibos:
+                              </div>
+                              <div className="space-y-2">
+                                {pagoReceipts.map(receipt => (
+                                  <div key={receipt.id} className="flex items-center gap-2 text-sm">
+                                    <Receipt size={14} className="text-blue-500" />
+                                    <span className="font-mono">{receipt.receipt_number}</span>
+                                    <button
+                                      onClick={() => window.open(receipt.image_url, '_blank')}
+                                      className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                      title="Ver recibo"
+                                    >
+                                      <Eye size={14} />
+                                    </button>
+                                    <button
+                                      onClick={() => shareViaWhatsApp(receipt)}
+                                      className="p-1 text-green-600 hover:bg-green-100 rounded"
+                                      title="Enviar por WhatsApp"
+                                    >
+                                      <Send size={14} />
+                                    </button>
+                                    {receipt.sent_via_whatsapp && (
+                                      <span className="text-xs text-green-600">✓ Enviado</span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -283,6 +387,19 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
                             Marcar Pagado
                           </button>
                         )}
+
+                        {pago.estado === 'pagado' && pagoReceipts.length === 0 && (
+                          <button
+                            onClick={() => {
+                              setSelectedPago(pago);
+                              setShowReceiptGenerator(true);
+                            }}
+                            className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm mt-2"
+                          >
+                            <Receipt size={16} />
+                            Generar Recibo
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -292,6 +409,23 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Receipt Generator Modal */}
+      {showReceiptGenerator && selectedPago && (
+        <ReceiptGenerator
+          venta={venta}
+          pago={selectedPago}
+          onClose={() => {
+            setShowReceiptGenerator(false);
+            setSelectedPago(null);
+          }}
+          onSuccess={(receipt) => {
+            fetchReceipts();
+            setShowReceiptGenerator(false);
+            setSelectedPago(null);
+          }}
+        />
+      )}
+    </>
   );
 }

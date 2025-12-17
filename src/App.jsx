@@ -18,6 +18,7 @@ import SalesDashboard from "./pages/SalesDashboard";
 import LandingPage from "./pages/LandingPage";
 import CMSDashboard from "./pages/CMSDashboard";
 import ApprovalQueue from "./pages/ApprovalQueue";
+import ReceiptsList from "./pages/ReceiptsList";
 import {
   Home,
   Users,
@@ -30,6 +31,7 @@ import {
   Menu,
   X,
   Layout,
+  Receipt,
 } from "lucide-react";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -149,6 +151,13 @@ function MainApp() {
                   <BarChart3 size={20} />
                   Dashboard
                 </button>
+                <button
+                  onClick={() => handleNavClick("/app/receipts")}
+                  className={`px-4 py-2 rounded flex items-center gap-2 ${isActive("/app/receipts") ? "bg-white/20" : "hover:bg-white/10"}`}
+                >
+                  <Receipt size={20} />
+                  Recibos
+                </button>
                 {showCMS && (
                   <button
                     onClick={() => handleNavClick("/app/cms")}
@@ -267,6 +276,13 @@ function MainApp() {
                   <BarChart3 size={20} />
                   <span>Dashboard</span>
                 </button>
+                <button
+                  onClick={() => handleNavClick("/app/receipts")}
+                  className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 ${isActive("/app/receipts") ? "bg-white/20" : "hover:bg-white/10"}`}
+                >
+                  <Receipt size={20} />
+                  <span>Recibos</span>
+                </button>
                 {showCMS && (
                   <button
                     onClick={() => handleNavClick("/app/cms")}
@@ -361,6 +377,16 @@ function MainApp() {
                     <h3 className="font-semibold text-lg">Dashboard</h3>
                     <p className="text-sm text-gray-600">Reportes y métricas</p>
                   </button>
+                  <button
+                    onClick={() => navigate("/app/receipts")}
+                    className="p-6 border-2 border-orange-600 rounded-lg hover:bg-orange-50 text-left transition-colors"
+                  >
+                    <Receipt size={32} className="text-orange-600 mb-2" />
+                    <h3 className="font-semibold text-lg">Recibos</h3>
+                    <p className="text-sm text-gray-600">
+                      Generar y gestionar recibos
+                    </p>
+                  </button>
                   {showCMS && (
                     <button
                       onClick={() => navigate("/app/cms")}
@@ -417,6 +443,7 @@ function MainApp() {
           />
           <Route path="/sales" element={<SalesList />} />
           <Route path="/dashboard" element={<SalesDashboard />} />
+          <Route path="/receipts" element={<ReceiptsList />} />
           <Route path="/cms" element={<CMSDashboard />} />
           <Route path="/cms/approvals" element={<ApprovalQueue />} />
           {isAdmin() && <Route path="/users" element={<UserManagement />} />}

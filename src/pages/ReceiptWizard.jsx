@@ -36,7 +36,6 @@ export default function ReceiptWizard({ onClose, onSuccess }) {
     no_folio_reserva: "",
     fecha_hora_reserva: "",
     total_reserva: "",
-    fecha_proximo_abono: "",
     fecha_limite_pago: "",
     show_comision: false,
     show_fechas: true,
@@ -49,6 +48,7 @@ export default function ReceiptWizard({ onClose, onSuccess }) {
     if (searchTerm.length > 2) {
       searchVentas();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
 
   async function searchVentas() {
@@ -122,8 +122,16 @@ export default function ReceiptWizard({ onClose, onSuccess }) {
       total_price: venta.precio_total,
       previous_payments: venta.monto_pagado || 0,
       balance: venta.monto_pendiente || 0,
-      fecha_viaje: venta.fecha_viaje,
+      fecha_viaje: venta.fecha_viaje || "",
       line_items: [],
+      comision: "",
+      no_folio_reserva: "",
+      fecha_hora_reserva: "",
+      total_reserva: "",
+      fecha_limite_pago: venta.fecha_limite_pago || "",
+      show_comision: false,
+      show_fechas: true,
+      show_reserva_info: true,
     });
     setSearchTerm("");
     setVentas([]);
@@ -397,6 +405,14 @@ export default function ReceiptWizard({ onClose, onSuccess }) {
                               balance: "",
                               fecha_viaje: "",
                               line_items: [],
+                              comision: "",
+                              no_folio_reserva: "",
+                              fecha_hora_reserva: "",
+                              total_reserva: "",
+                              fecha_limite_pago: "",
+                              show_comision: false,
+                              show_fechas: true,
+                              show_reserva_info: true,
                             });
                           }}
                           className="text-red-600 hover:bg-red-100 p-2 rounded"
@@ -684,23 +700,6 @@ export default function ReceiptWizard({ onClose, onSuccess }) {
                           <>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Fecha Próximo Abono
-                              </label>
-                              <input
-                                type="date"
-                                value={formData.fecha_proximo_abono}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    fecha_proximo_abono: e.target.value,
-                                  })
-                                }
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Fecha Límite Pago
                               </label>
                               <input
@@ -853,7 +852,6 @@ export default function ReceiptWizard({ onClose, onSuccess }) {
             show_fechas: formData.show_fechas,
             show_reserva_info: formData.show_reserva_info,
             comision: formData.comision,
-            fecha_proximo_abono: formData.fecha_proximo_abono,
             fecha_limite_pago: formData.fecha_limite_pago,
           }}
           onClose={() => setShowPreview(false)}

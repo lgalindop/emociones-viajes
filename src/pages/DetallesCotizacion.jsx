@@ -797,6 +797,11 @@ export default function DetallesCotizacion({
                           <p className="text-sm text-gray-600 mt-1">
                             Operador: {getOperadorNombre(op.operador_id)}
                           </p>
+                          <p className="text-sm text-gray-600 mb-2">
+                            <strong>Viajeros:</strong>{" "}
+                            {cotizacion.num_adultos + cotizacion.num_ninos}{" "}
+                            persona(s)
+                          </p>
 
                           {op.precio_por_persona > 0 && (
                             <p className="text-sm text-gray-600 mt-2">

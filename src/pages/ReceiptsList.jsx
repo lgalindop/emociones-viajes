@@ -388,7 +388,6 @@ export default function ReceiptsList() {
           onSuccess={(receipt) => {
             fetchReceipts();
             setShowWizard(false);
-            alert("✅ Recibo generado exitosamente");
           }}
         />
       )}

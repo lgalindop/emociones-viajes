@@ -139,6 +139,12 @@ export default function ExportToPDF({ cotizacion, opciones, operadores }) {
         pdf.setTextColor(100, 100, 100);
         pdf.text(getOperadorNombre(opcion.operador_id), margin, yPos);
         yPos += 8;
+        pdf.text(
+          `Viajeros: ${cotizacion.num_adultos + cotizacion.num_ninos} persona(s)`,
+          margin,
+          yPos
+        );
+        yPos += 6;
 
         // Price box
         pdf.setFillColor(30, 58, 95);

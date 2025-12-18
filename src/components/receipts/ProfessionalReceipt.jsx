@@ -2,52 +2,51 @@ export default function ProfessionalReceipt({ data }) {
   return (
     <div
       style={{
-        width: "1080px",
-        height: "1527px", // A4 aspect ratio (210x297mm at 150dpi)
+        width: "800px",
+        minHeight: "auto",
         background: "#ffffff",
-        padding: "60px",
+        padding: "40px",
         fontFamily: "Arial, sans-serif",
-        position: "relative",
+        boxSizing: "border-box",
       }}
     >
-      {/* Header Section */}
+      {/* Header */}
       <div
         style={{
-          borderBottom: "4px solid #3b82f6",
-          paddingBottom: "30px",
-          marginBottom: "40px",
+          borderBottom: "3px solid #3b82f6",
+          paddingBottom: "20px",
+          marginBottom: "30px",
           textAlign: "center",
         }}
       >
         <div
           style={{
-            fontSize: "42px",
+            fontSize: "32px",
             color: "#3b82f6",
             fontWeight: "bold",
-            marginBottom: "10px",
+            marginBottom: "8px",
           }}
         >
           Gracias por su pago
         </div>
       </div>
 
-      {/* Green Check Circle */}
+      {/* Check Icon */}
       <div
         style={{
-          width: "180px",
-          height: "180px",
+          width: "120px",
+          height: "120px",
           background: "#22c55e",
           borderRadius: "50%",
-          margin: "0 auto 40px",
+          margin: "0 auto 30px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 10px 30px rgba(34, 197, 94, 0.3)",
         }}
       >
         <svg
-          width="100"
-          height="100"
+          width="70"
+          height="70"
           viewBox="0 0 24 24"
           fill="none"
           stroke="white"
@@ -57,20 +56,20 @@ export default function ProfessionalReceipt({ data }) {
         </svg>
       </div>
 
-      {/* Client Name and Amount */}
-      <div style={{ textAlign: "center", marginBottom: "50px" }}>
+      {/* Client & Amount */}
+      <div style={{ textAlign: "center", marginBottom: "30px" }}>
         <div
           style={{
-            fontSize: "32px",
+            fontSize: "24px",
             color: "#64748b",
-            marginBottom: "12px",
+            marginBottom: "10px",
           }}
         >
           {data.client_name}
         </div>
         <div
           style={{
-            fontSize: "72px",
+            fontSize: "48px",
             fontWeight: "bold",
             color: "#1e293b",
           }}
@@ -83,61 +82,61 @@ export default function ProfessionalReceipt({ data }) {
         </div>
       </div>
 
-      {/* Payment Details Table */}
+      {/* Details Table */}
       <div
         style={{
           background: "#f8fafc",
-          borderRadius: "12px",
+          borderRadius: "8px",
           overflow: "hidden",
-          marginBottom: "40px",
+          marginBottom: "20px",
           border: "1px solid #e2e8f0",
         }}
       >
         <div
           style={{
-            padding: "20px 30px",
+            padding: "15px 20px",
             borderBottom: "1px solid #e2e8f0",
             display: "flex",
             justifyContent: "space-between",
           }}
         >
-          <span style={{ fontSize: "28px", color: "#64748b" }}>
+          <span style={{ fontSize: "18px", color: "#64748b" }}>
             Folio de pago
           </span>
           <span
-            style={{ fontSize: "28px", fontWeight: "600", color: "#1e293b" }}
+            style={{ fontSize: "18px", fontWeight: "600", color: "#1e293b" }}
           >
             {data.receipt_number}
           </span>
         </div>
         <div
           style={{
-            padding: "20px 30px",
+            padding: "15px 20px",
             borderBottom: "1px solid #e2e8f0",
             display: "flex",
             justifyContent: "space-between",
           }}
         >
-          <span style={{ fontSize: "28px", color: "#64748b" }}>
+          <span style={{ fontSize: "18px", color: "#64748b" }}>
             Forma de pago
           </span>
           <span
-            style={{ fontSize: "28px", fontWeight: "600", color: "#1e293b" }}
+            style={{ fontSize: "18px", fontWeight: "600", color: "#1e293b" }}
           >
             {data.payment_method}
           </span>
         </div>
         <div
           style={{
-            padding: "20px 30px",
+            padding: "15px 20px",
             borderBottom: "1px solid #e2e8f0",
             display: "flex",
             justifyContent: "space-between",
           }}
         >
-          <span style={{ fontSize: "28px", color: "#64748b" }}>Fecha</span>
+          <span style={{ fontSize: "18px", color: "#64748b" }}>Fecha</span>
           <span
-            style={{ fontSize: "28px", fontWeight: "600", color: "#1e293b" }}
+            style={{ fontSize: "18px", fontWeight: "600", color: "#1e293b" }}
           >
             {new Date(data.payment_date).toLocaleDateString("es-MX", {
               day: "2-digit",
@@ -148,15 +147,15 @@ export default function ProfessionalReceipt({ data }) {
         </div>
         <div
           style={{
-            padding: "20px 30px",
+            padding: "15px 20px",
             borderBottom: "1px solid #e2e8f0",
             display: "flex",
             justifyContent: "space-between",
           }}
         >
-          <span style={{ fontSize: "28px", color: "#64748b" }}>Referencia</span>
+          <span style={{ fontSize: "18px", color: "#64748b" }}>Referencia</span>
           <span
-            style={{ fontSize: "28px", fontWeight: "600", color: "#1e293b" }}
+            style={{ fontSize: "18px", fontWeight: "600", color: "#1e293b" }}
           >
             {data.folio_venta}
           </span>
@@ -171,18 +170,18 @@ export default function ProfessionalReceipt({ data }) {
                 <div
                   key={index}
                   style={{
-                    padding: "20px 30px",
+                    padding: "15px 20px",
                     borderBottom: "1px solid #e2e8f0",
                     display: "flex",
                     justifyContent: "space-between",
                   }}
                 >
-                  <span style={{ fontSize: "28px", color: "#64748b" }}>
+                  <span style={{ fontSize: "18px", color: "#64748b" }}>
                     {item.label}
                   </span>
                   <span
                     style={{
-                      fontSize: "28px",
+                      fontSize: "18px",
                       fontWeight: "600",
                       color: "#1e293b",
                     }}
@@ -200,17 +199,17 @@ export default function ProfessionalReceipt({ data }) {
         {data.show_comision && (
           <div
             style={{
-              padding: "20px 30px",
+              padding: "15px 20px",
               borderBottom: "1px solid #e2e8f0",
               display: "flex",
               justifyContent: "space-between",
             }}
           >
-            <span style={{ fontSize: "28px", color: "#64748b" }}>
+            <span style={{ fontSize: "18px", color: "#64748b" }}>
               Comisión:
             </span>
             <span
-              style={{ fontSize: "28px", fontWeight: "600", color: "#1e293b" }}
+              style={{ fontSize: "18px", fontWeight: "600", color: "#1e293b" }}
             >
               $
               {parseFloat(data.comision || 0).toLocaleString("es-MX", {
@@ -223,14 +222,14 @@ export default function ProfessionalReceipt({ data }) {
 
         <div
           style={{
-            padding: "20px 30px",
+            padding: "15px 20px",
             display: "flex",
             justifyContent: "space-between",
           }}
         >
-          <span style={{ fontSize: "28px", color: "#64748b" }}>Total:</span>
+          <span style={{ fontSize: "18px", color: "#64748b" }}>Total:</span>
           <span
-            style={{ fontSize: "28px", fontWeight: "bold", color: "#1e293b" }}
+            style={{ fontSize: "18px", fontWeight: "bold", color: "#1e293b" }}
           >
             $
             {data.amount.toLocaleString("es-MX", {
@@ -241,23 +240,22 @@ export default function ProfessionalReceipt({ data }) {
         </div>
       </div>
 
-      {/* Balance Info - Yellow Highlight */}
+      {/* Balance - Yellow */}
       <div
         style={{
           background: "#fef08a",
-          borderRadius: "12px",
-          padding: "20px 30px",
-          marginBottom: "30px",
+          borderRadius: "8px",
+          padding: "15px 20px",
+          marginBottom: "20px",
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
         }}
       >
-        <span style={{ fontSize: "28px", fontWeight: "600", color: "#854d0e" }}>
+        <span style={{ fontSize: "18px", fontWeight: "600", color: "#854d0e" }}>
           Saldo:
         </span>
         <span
-          style={{ fontSize: "32px", fontWeight: "bold", color: "#854d0e" }}
+          style={{ fontSize: "22px", fontWeight: "bold", color: "#854d0e" }}
         >
           $
           {data.balance.toLocaleString("es-MX", {
@@ -267,239 +265,154 @@ export default function ProfessionalReceipt({ data }) {
         </span>
       </div>
 
+      {/* Payment Deadline */}
       <div
         style={{
-          background: "#fef08a",
-          borderRadius: "12px",
-          padding: "20px 30px",
-          marginBottom: "40px",
+          background: "#fef3c7",
+          borderRadius: "8px",
+          padding: "15px 20px",
+          marginBottom: "20px",
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
         }}
       >
-        <span style={{ fontSize: "26px", color: "#854d0e" }}>
-          Fecha Próximo Abono
+        <span style={{ fontSize: "18px", color: "#92400e" }}>
+          Fecha límite de pago:
         </span>
-        <span style={{ fontSize: "26px", fontWeight: "600", color: "#854d0e" }}>
-          {/* Calculate next payment date estimate */}
-          {new Date(
-            new Date(data.payment_date).getTime() + 30 * 24 * 60 * 60 * 1000
-          ).toLocaleDateString("es-MX", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          })}
-        </span>
-      </div>
-
-      <div
-        style={{
-          background: "#fef08a",
-          borderRadius: "12px",
-          padding: "20px 30px",
-          marginBottom: "50px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <span style={{ fontSize: "26px", color: "#854d0e" }}>
-          Fecha Límite de Pago
-        </span>
-        <span style={{ fontSize: "26px", fontWeight: "600", color: "#854d0e" }}>
-          {data.fecha_viaje
-            ? new Date(
-                new Date(data.fecha_viaje).getTime() - 7 * 24 * 60 * 60 * 1000
-              ).toLocaleDateString("es-MX", {
+        <span style={{ fontSize: "18px", fontWeight: "600", color: "#92400e" }}>
+          {data.fecha_limite_pago
+            ? new Date(data.fecha_limite_pago).toLocaleDateString("es-MX", {
                 day: "2-digit",
                 month: "2-digit",
                 year: "numeric",
               })
-            : "-"}
+            : "Por definir"}
         </span>
       </div>
 
       {/* Reservation Info */}
-      <div
-        style={{
-          borderTop: "2px solid #e2e8f0",
-          paddingTop: "30px",
-          marginBottom: "40px",
-        }}
-      >
+      {data.show_reserva_info && (
         <div
           style={{
-            fontSize: "28px",
-            fontWeight: "bold",
-            color: "#1e293b",
-            marginBottom: "20px",
-          }}
-        >
-          Información importante de la reservación
-        </div>
-
-        <div
-          style={{
-            background: "#f8fafc",
-            borderRadius: "12px",
-            overflow: "hidden",
-            border: "1px solid #e2e8f0",
+            borderTop: "1px solid #e2e8f0",
+            paddingTop: "20px",
+            marginTop: "20px",
           }}
         >
           <div
             style={{
-              padding: "18px 30px",
-              borderBottom: "1px solid #e2e8f0",
-              display: "flex",
-              justifyContent: "space-between",
+              fontSize: "16px",
+              fontWeight: "bold",
+              color: "#64748b",
+              marginBottom: "15px",
             }}
           >
-            <span style={{ fontSize: "26px", color: "#64748b" }}>
-              No folio reserva
+            Información de Reserva
+          </div>
+          <div style={{ marginBottom: "10px" }}>
+            <span style={{ fontSize: "14px", color: "#64748b" }}>
+              N. de Reserva:{" "}
             </span>
             <span
-              style={{ fontSize: "26px", fontWeight: "600", color: "#1e293b" }}
+              style={{ fontSize: "14px", fontWeight: "600", color: "#1e293b" }}
             >
               {data.folio_venta}
             </span>
           </div>
-          <div
-            style={{
-              padding: "18px 30px",
-              borderBottom: "1px solid #e2e8f0",
-              display: "flex",
-              justifyContent: "space-between",
-            }}
-          >
-            <span style={{ fontSize: "26px", color: "#64748b" }}>
-              Fecha y hora
-            </span>
-            <span
-              style={{ fontSize: "26px", fontWeight: "600", color: "#1e293b" }}
-            >
-              {new Date().toLocaleString("es-MX", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })}
-            </span>
-          </div>
-          <div
-            style={{
-              padding: "18px 30px",
-              display: "flex",
-              justifyContent: "space-between",
-            }}
-          >
-            <span style={{ fontSize: "26px", color: "#64748b" }}>
-              Total reserva
-            </span>
-            <span
-              style={{ fontSize: "26px", fontWeight: "600", color: "#1e293b" }}
-            >
-              $
-              {data.total_price.toLocaleString("es-MX", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </span>
-          </div>
+          {data.fecha_viaje && (
+            <div style={{ marginBottom: "10px" }}>
+              <span style={{ fontSize: "14px", color: "#64748b" }}>
+                Fecha de viaje:{" "}
+              </span>
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#1e293b",
+                }}
+              >
+                {new Date(data.fecha_viaje).toLocaleDateString("es-MX", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            </div>
+          )}
+          {data.destino && (
+            <div>
+              <span style={{ fontSize: "14px", color: "#64748b" }}>
+                Destino:{" "}
+              </span>
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#1e293b",
+                }}
+              >
+                {data.destino}
+              </span>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Footer */}
       <div
         style={{
           borderTop: "2px solid #e2e8f0",
-          paddingTop: "30px",
+          paddingTop: "20px",
+          marginTop: "30px",
           textAlign: "center",
         }}
       >
         <div
           style={{
-            fontSize: "24px",
-            fontWeight: "bold",
-            color: "#1e293b",
-            marginBottom: "12px",
+            fontSize: "12px",
+            color: "#94a3b8",
+            marginBottom: "8px",
           }}
         >
           Dudas o aclaraciones
         </div>
         <div
-          style={{ fontSize: "22px", color: "#64748b", marginBottom: "8px" }}
+          style={{
+            fontSize: "14px",
+            color: "#64748b",
+            marginBottom: "5px",
+          }}
         >
-          Correo electrónico: emocionesviajes@gmail.com
+          Contacto: emocionesviajes@gmail.com
         </div>
         <div
-          style={{ fontSize: "22px", color: "#64748b", marginBottom: "8px" }}
+          style={{
+            fontSize: "14px",
+            color: "#64748b",
+            marginBottom: "5px",
+          }}
         >
           Teléfono: +52 614 397 2021
         </div>
         <div
-          style={{ fontSize: "22px", color: "#64748b", marginBottom: "30px" }}
+          style={{
+            fontSize: "14px",
+            color: "#64748b",
+          }}
         >
-          Dirección: Huerto los duraznos #444, Los Huertos
+          Dirección: Chihuahua, Chihuahua, México
         </div>
-
-        {/* Logo at bottom */}
-        <div style={{ marginTop: "30px" }}>
-          <div
-            style={{
-              display: "inline-block",
-              width: "120px",
-              height: "120px",
-              background: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <svg width="80" height="80" viewBox="0 0 120 120" fill="none">
-              <path
-                d="M60 30 L75 60 L60 90 L45 60 Z"
-                fill="white"
-                opacity="0.3"
-              />
-              <circle
-                cx="60"
-                cy="60"
-                r="25"
-                stroke="white"
-                strokeWidth="4"
-                fill="none"
-              />
-              <path
-                d="M35 60 Q60 40, 85 60"
-                stroke="white"
-                strokeWidth="3"
-                fill="none"
-              />
-            </svg>
-          </div>
-          <div
-            style={{
-              fontSize: "28px",
-              color: "#5eb6d4",
-              fontStyle: "italic",
-              marginTop: "12px",
-            }}
-          >
-            emociones
-          </div>
-          <div
-            style={{
-              fontSize: "24px",
-              color: "#1e40af",
-              fontWeight: "bold",
-            }}
-          >
-            viajes
-          </div>
+        <div
+          style={{
+            marginTop: "20px",
+            fontSize: "18px",
+            fontWeight: "bold",
+            color: "#3b82f6",
+          }}
+        >
+          emociones
+          <br />
+          viajes
         </div>
       </div>
     </div>

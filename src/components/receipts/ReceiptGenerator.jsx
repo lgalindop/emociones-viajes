@@ -28,6 +28,7 @@ export default function ReceiptGenerator({
     if (template === "informal") {
       generateDefaultText();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [template]);
 
   function generateDefaultText() {
@@ -135,33 +136,45 @@ export default function ReceiptGenerator({
       await document.fonts.ready;
 
       const element = receiptRef.current;
-      const targetWidth = 1080;
-      const targetHeight = template === "professional" ? 1527 : 1920;
 
-      // Force exact dimensions
-      element.style.width = `${targetWidth}px`;
-      element.style.height = `${targetHeight}px`;
-      element.style.position = "absolute";
-      element.style.left = "0";
-      element.style.top = "0";
+      // Create a clone for capturing
+      const clone = element.cloneNode(true);
+      clone.style.width = "800px";
+      clone.style.minHeight = "auto";
+      clone.style.height = "auto";
+      clone.style.position = "absolute";
+      clone.style.left = "-99999px";
+      clone.style.top = "0";
+      clone.style.zIndex = "-1";
+      clone.style.transform = "none";
+      clone.style.opacity = "1";
+      clone.style.visibility = "visible";
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      document.body.appendChild(clone);
 
-      const canvas = await html2canvas(element, {
-        width: targetWidth,
-        height: targetHeight,
-        windowWidth: targetWidth,
-        windowHeight: targetHeight,
-        scale: 2,
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+
+      // Get actual rendered height
+      const actualHeight = clone.scrollHeight;
+
+      const canvas = await html2canvas(clone, {
+        width: 800,
+        height: actualHeight,
+        windowWidth: 800,
+        windowHeight: actualHeight,
+        scale: 3,
         backgroundColor: "#ffffff",
         logging: false,
         useCORS: true,
         allowTaint: true,
       });
 
+      // Remove clone
+      document.body.removeChild(clone);
+
       // Convert to blob
       const blob = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", 0.92)
+        canvas.toBlob(resolve, "image/jpeg", 0.95)
       );
 
       // Upload image
@@ -183,11 +196,11 @@ export default function ReceiptGenerator({
         const pdf = new jsPDF({
           orientation: "portrait",
           unit: "px",
-          format: [1080, 1527],
+          format: [800, actualHeight],
         });
 
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
-        pdf.addImage(imgData, "JPEG", 0, 0, 1080, 1527);
+        pdf.addImage(imgData, "JPEG", 0, 0, 800, actualHeight);
 
         const pdfBlob = pdf.output("blob");
         const pdfFilename = `${venta.folio_venta}-${timestamp}.pdf`;

@@ -581,6 +581,11 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                                 <p className="text-sm text-gray-600 mt-1">
                                   {operador?.nombre || "Operador desconocido"}
                                 </p>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  <strong>Viajeros:</strong>{" "}
+                                  {formData.num_adultos + formData.num_ninos}{" "}
+                                  persona(s)
+                                </p>
                                 <p className="text-xl font-bold text-primary mt-2">
                                   $
                                   {parseFloat(

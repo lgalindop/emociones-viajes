@@ -251,7 +251,7 @@ export default function SalesList() {
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <button
                       onClick={() =>
-                        (window.location.href = `/app/sales/${venta.id}`)
+                        alert("Vista de detalles de venta en desarrollo")
                       }
                       className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
                     >

@@ -20,6 +20,7 @@ export default function ReceiptGenerator({
   const [customText, setCustomText] = useState(customData?.custom_text || "");
   const [generating, setGenerating] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [receiptNumber, setReceiptNumber] = useState("REC-2025-XXXXX");
   const receiptRef = useRef();
   const { user } = useAuth();
 
@@ -133,6 +134,24 @@ export default function ReceiptGenerator({
   async function generateReceipt() {
     setGenerating(true);
     try {
+      // Generate receipt number FIRST
+      const year = new Date().getFullYear();
+      const { data: lastReceipt } = await supabase
+        .from("receipts")
+        .select("receipt_number")
+        .like("receipt_number", `REC-${year}-%`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      let nextNumber = 1;
+      if (lastReceipt?.receipt_number) {
+        const lastNum = parseInt(lastReceipt.receipt_number.split("-")[2]);
+        nextNumber = lastNum + 1;
+      }
+      const generatedReceiptNumber = `REC-${year}-${String(nextNumber).padStart(5, "0")}`;
+      setReceiptNumber(generatedReceiptNumber);
+
       await document.fonts.ready;
 
       const element = receiptRef.current;
@@ -221,6 +240,7 @@ export default function ReceiptGenerator({
       const { data: receipt, error: dbError } = await supabase
         .from("receipts")
         .insert({
+          receipt_number: generatedReceiptNumber,
           venta_id: venta.id,
           pago_id: pago.id,
           template_type: template,
@@ -256,7 +276,7 @@ export default function ReceiptGenerator({
   }
 
   const receiptData = {
-    receipt_number: "REC-2025-XXXXX",
+    receipt_number: receiptNumber,
     amount: pago.monto,
     payment_date: pago.fecha_pagado || new Date().toISOString().split("T")[0],
     payment_method: pago.metodo_pago || "Efectivo",

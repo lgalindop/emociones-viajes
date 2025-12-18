@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { Plus, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import DetallesCotizacion from "../../pages/DetallesCotizacion";
+import ConvertToSale from "../sales/ConvertToSale";
 
 const STAGES = {
   lead: { label: "Lead", color: "bg-gray-100 border-gray-300" },
@@ -39,6 +40,10 @@ export default function PipelineKanban({ onNewQuote }) {
   const [moveDirection, setMoveDirection] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [viewingCotizacionId, setViewingCotizacionId] = useState(null);
+  const [showConvertToSale, setShowConvertToSale] = useState(false);
+  const [convertingCotizacion, setConvertingCotizacion] = useState(null);
+  const [convertOpciones, setConvertOpciones] = useState([]);
+  const [convertOperadores, setConvertOperadores] = useState([]);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -103,6 +108,28 @@ export default function PipelineKanban({ onNewQuote }) {
       moveDirection === "forward"
         ? getNextStage(currentStage)
         : getPrevStage(currentStage);
+
+    // If moving to booking_confirmed, show convert to sale modal
+    if (newStage === "booking_confirmed") {
+      setShowConfirmModal(false);
+
+      // Fetch opciones and operadores for this cotizacion
+      const { data: opciones } = await supabase
+        .from("opciones_cotizacion")
+        .select("*")
+        .eq("cotizacion_id", selectedCot.id);
+
+      const { data: operadores } = await supabase
+        .from("operadores")
+        .select("*");
+
+      setConvertOpciones(opciones || []);
+      setConvertOperadores(operadores || []);
+      setConvertingCotizacion(selectedCot);
+      setShowConvertToSale(true);
+      setSelectedCot(null);
+      return;
+    }
 
     try {
       // Update cotización
@@ -312,6 +339,28 @@ export default function PipelineKanban({ onNewQuote }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Convert to Sale Modal */}
+      {showConvertToSale && convertingCotizacion && (
+        <ConvertToSale
+          cotizacion={convertingCotizacion}
+          opciones={convertOpciones}
+          operadores={convertOperadores}
+          onClose={() => {
+            setShowConvertToSale(false);
+            setConvertingCotizacion(null);
+            setConvertOpciones([]);
+            setConvertOperadores([]);
+          }}
+          onSuccess={() => {
+            setShowConvertToSale(false);
+            setConvertingCotizacion(null);
+            setConvertOpciones([]);
+            setConvertOperadores([]);
+            fetchCotizaciones();
+          }}
+        />
       )}
     </div>
   );

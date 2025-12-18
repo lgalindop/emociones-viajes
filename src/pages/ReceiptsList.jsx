@@ -85,7 +85,7 @@ export default function ReceiptsList() {
 
         fetchReceipts();
         return;
-      } catch (error) {
+      } catch {
         console.log("Native share failed, falling back to WhatsApp Web");
       }
     }
@@ -385,7 +385,7 @@ export default function ReceiptsList() {
       {showWizard && (
         <ReceiptWizard
           onClose={() => setShowWizard(false)}
-          onSuccess={(receipt) => {
+          onSuccess={() => {
             fetchReceipts();
             setShowWizard(false);
           }}

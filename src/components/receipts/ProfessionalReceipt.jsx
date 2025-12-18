@@ -241,29 +241,33 @@ export default function ProfessionalReceipt({ data }) {
       </div>
 
       {/* Balance - Yellow */}
-      <div
-        style={{
-          background: "#fef08a",
-          borderRadius: "8px",
-          padding: "15px 20px",
-          marginBottom: "20px",
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <span style={{ fontSize: "18px", fontWeight: "600", color: "#854d0e" }}>
-          Saldo:
-        </span>
-        <span
-          style={{ fontSize: "22px", fontWeight: "bold", color: "#854d0e" }}
+      {data.balance > 0 && (
+        <div
+          style={{
+            background: "#fef08a",
+            borderRadius: "8px",
+            padding: "15px 20px",
+            marginBottom: "20px",
+            display: "flex",
+            justifyContent: "space-between",
+          }}
         >
-          $
-          {data.balance.toLocaleString("es-MX", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
-        </span>
-      </div>
+          <span
+            style={{ fontSize: "18px", fontWeight: "600", color: "#854d0e" }}
+          >
+            Saldo:
+          </span>
+          <span
+            style={{ fontSize: "22px", fontWeight: "bold", color: "#854d0e" }}
+          >
+            $
+            {data.balance.toLocaleString("es-MX", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
+        </div>
+      )}
 
       {/* Payment Deadline */}
       <div

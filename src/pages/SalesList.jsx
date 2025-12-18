@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { Eye, Search, Calendar, DollarSign, X } from "lucide-react";
+import DetallesVenta from "./DetallesVenta";
 
 export default function SalesList() {
   const [ventas, setVentas] = useState([]);
@@ -8,10 +9,24 @@ export default function SalesList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
+  const [viewingVentaId, setViewingVentaId] = useState(null);
 
   useEffect(() => {
     fetchVentas();
   }, []);
+
+  // If viewing a venta, show details
+  if (viewingVentaId) {
+    return (
+      <DetallesVenta
+        ventaId={viewingVentaId}
+        onBack={() => {
+          setViewingVentaId(null);
+          fetchVentas();
+        }}
+      />
+    );
+  }
 
   async function fetchVentas() {
     try {
@@ -250,9 +265,7 @@ export default function SalesList() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <button
-                      onClick={() =>
-                        alert("Vista de detalles de venta en desarrollo")
-                      }
+                      onClick={() => setViewingVentaId(venta.id)}
                       className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
                     >
                       <Eye size={14} />

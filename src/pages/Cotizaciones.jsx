@@ -20,7 +20,7 @@ export default function Cotizaciones({ onNewCotizacion }) {
   const [loading, setLoading] = useState(true);
   const [selectedCotizacionId, setSelectedCotizacionId] = useState(null);
   const [selectedForDelete, setSelectedForDelete] = useState([]);
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState(
     localStorage.getItem("filter_search") || ""
@@ -48,56 +48,36 @@ export default function Cotizaciones({ onNewCotizacion }) {
   }, [debouncedSearchTerm]);
 
   useEffect(() => {
-    if (statusFilter !== "all") {
-      localStorage.setItem("filter_status", statusFilter);
-    } else {
-      localStorage.removeItem("filter_status");
-    }
-  }, [statusFilter]);
-
-  useEffect(() => {
-    if (leadOriginFilter !== "all") {
-      localStorage.setItem("filter_origin", leadOriginFilter);
-    } else {
-      localStorage.removeItem("filter_origin");
-    }
-  }, [leadOriginFilter]);
-
-  useEffect(() => {
-    if (dateFrom) {
-      localStorage.setItem("filter_from", dateFrom);
-    } else {
-      localStorage.removeItem("filter_from");
-    }
-  }, [dateFrom]);
-
-  useEffect(() => {
-    if (dateTo) {
-      localStorage.setItem("filter_to", dateTo);
-    } else {
-      localStorage.removeItem("filter_to");
-    }
-  }, [dateTo]);
-
-  useEffect(() => {
     fetchCotizaciones();
   }, []);
 
   async function fetchCotizaciones() {
-    const startTime = performance.now();
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from("cotizaciones")
-        .select("*")
+        .select(
+          `
+          *,
+          ventas (
+            id,
+            monto_pendiente
+          )
+        `
+        )
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setCotizaciones(data || []);
-      console.log(
-        `Fetch time: ${(performance.now() - startTime).toFixed(2)}ms`
-      );
+
+      // Filter out fully paid ventas
+      const filtered = (data || []).filter((cot) => {
+        if (!cot.ventas || cot.ventas.length === 0) return true;
+        return cot.ventas[0].monto_pendiente > 0;
+      });
+
+      setCotizaciones(filtered);
     } catch (error) {
-      console.error("Error fetching cotizaciones:", error.message);
+      console.error("Error:", error);
     } finally {
       setLoading(false);
     }
@@ -146,6 +126,28 @@ export default function Cotizaciones({ onNewCotizacion }) {
     dateTo,
   ]);
 
+  function getStageLabel(stage) {
+    const stages = {
+      lead: "Lead",
+      qualification: "Calificación",
+      quote_sent: "Cotización Enviada",
+      negotiation: "Negociación",
+      booking_confirmed: "Reserva Confirmada",
+    };
+    return stages[stage] || stage;
+  }
+
+  function getStageBadge(stage) {
+    const colors = {
+      lead: "bg-gray-100 text-gray-700",
+      qualification: "bg-blue-100 text-blue-700",
+      quote_sent: "bg-purple-100 text-purple-700",
+      negotiation: "bg-yellow-100 text-yellow-700",
+      booking_confirmed: "bg-green-100 text-green-700",
+    };
+    return colors[stage] || "bg-gray-100 text-gray-700";
+  }
+
   function clearFilters() {
     setSearchTerm("");
     setStatusFilter("all");
@@ -177,9 +179,8 @@ export default function Cotizaciones({ onNewCotizacion }) {
     if (selectedForDelete.length === 0) return;
 
     const confirm = window.confirm(
-      `¿Eliminar ${selectedForDelete.length} cotización(es)? Esta acción no se puede deshacer.`
+      `¿Eliminar ${selectedForDelete.length} cotización(es)?`
     );
-
     if (!confirm) return;
 
     try {
@@ -190,35 +191,13 @@ export default function Cotizaciones({ onNewCotizacion }) {
 
       if (error) throw error;
 
+      alert("✅ Cotizaciones eliminadas");
       setSelectedForDelete([]);
       fetchCotizaciones();
     } catch (error) {
-      console.error("Error deleting:", error);
+      console.error("Error:", error);
       alert("Error al eliminar cotizaciones");
     }
-  }
-
-  function getStatusBadge(estatus) {
-    const colors = {
-      nueva: "bg-blue-100 text-blue-800",
-      enviada: "bg-purple-100 text-purple-800",
-      seguimiento: "bg-yellow-100 text-yellow-800",
-      cerrada: "bg-green-100 text-green-800",
-      perdida: "bg-red-100 text-red-800",
-    };
-    return colors[estatus] || "bg-gray-100 text-gray-800";
-  }
-
-  function getLeadOriginLabel(origen) {
-    const labels = {
-      whatsapp: "WhatsApp",
-      instagram: "Instagram",
-      facebook: "Facebook",
-      referido: "Referido",
-      web: "Web",
-      otro: "Otro",
-    };
-    return labels[origen] || origen;
   }
 
   if (loading) {
@@ -285,7 +264,7 @@ export default function Cotizaciones({ onNewCotizacion }) {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar..."
+              placeholder="Buscar por folio, cliente, destino, teléfono, email..."
               className="w-full pl-10 pr-10 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             {searchTerm && (
@@ -304,57 +283,60 @@ export default function Cotizaciones({ onNewCotizacion }) {
               className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors ${
                 showFilters
                   ? "bg-primary text-white border-primary"
-                  : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
               }`}
             >
               <SlidersHorizontal size={16} />
-              <span>Filtros</span>
+              Filtros
               {activeFiltersCount > 0 && (
-                <span className="bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
+                <span className="bg-white text-primary px-1.5 rounded-full text-xs font-semibold">
                   {activeFiltersCount}
                 </span>
               )}
               <ChevronDown
-                size={14}
-                className={`transition-transform ${showFilters ? "rotate-180" : ""}`}
+                size={16}
+                className={`transition-transform ${
+                  showFilters ? "rotate-180" : ""
+                }`}
               />
             </button>
 
             {activeFiltersCount > 0 && (
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+                className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               >
-                <X size={14} />
-                <span className="hidden sm:inline">Limpiar</span>
+                Limpiar filtros
               </button>
             )}
 
-            {isAdmin() && selectedForDelete.length > 0 && (
+            {selectedForDelete.length > 0 && isAdmin() && (
               <button
                 onClick={handleBulkDelete}
-                className="flex items-center gap-1 px-3 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg"
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors ml-auto"
               >
-                <Trash2 size={14} />
-                <span>Eliminar ({selectedForDelete.length})</span>
+                <Trash2 size={16} />
+                Eliminar ({selectedForDelete.length})
               </button>
             )}
           </div>
 
           {showFilters && (
-            <div className="border-t mt-3 pt-3 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   Estatus
                 </label>
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    localStorage.setItem("filter_status", e.target.value);
+                  }}
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="all">Todos</option>
                   <option value="nueva">Nueva</option>
-                  <option value="enviada">Enviada</option>
                   <option value="seguimiento">Seguimiento</option>
                   <option value="cerrada">Cerrada</option>
                   <option value="perdida">Perdida</option>
@@ -367,7 +349,10 @@ export default function Cotizaciones({ onNewCotizacion }) {
                 </label>
                 <select
                   value={leadOriginFilter}
-                  onChange={(e) => setLeadOriginFilter(e.target.value)}
+                  onChange={(e) => {
+                    setLeadOriginFilter(e.target.value);
+                    localStorage.setItem("filter_origin", e.target.value);
+                  }}
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="all">Todos</option>
@@ -380,7 +365,7 @@ export default function Cotizaciones({ onNewCotizacion }) {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 lg:col-span-2">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Desde
@@ -388,7 +373,10 @@ export default function Cotizaciones({ onNewCotizacion }) {
                   <input
                     type="date"
                     value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
+                    onChange={(e) => {
+                      setDateFrom(e.target.value);
+                      localStorage.setItem("filter_from", e.target.value);
+                    }}
                     className="w-full border rounded-lg px-3 py-2 text-sm"
                   />
                 </div>
@@ -399,7 +387,10 @@ export default function Cotizaciones({ onNewCotizacion }) {
                   <input
                     type="date"
                     value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
+                    onChange={(e) => {
+                      setDateTo(e.target.value);
+                      localStorage.setItem("filter_to", e.target.value);
+                    }}
                     className="w-full border rounded-lg px-3 py-2 text-sm"
                   />
                 </div>
@@ -456,95 +447,76 @@ export default function Cotizaciones({ onNewCotizacion }) {
                   : ""
               }`}
             >
-              {/* Detailed View */}
-              <div
-                className="p-4 cursor-pointer hover:bg-gray-50"
-                onClick={() => setSelectedCotizacionId(cotizacion.id)}
-              >
+              <div className="p-4 md:p-6">
                 <div className="flex items-start gap-3">
                   {isAdmin() && (
                     <input
                       type="checkbox"
                       checked={selectedForDelete.includes(cotizacion.id)}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        toggleSelectForDelete(cotizacion.id);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => toggleSelectForDelete(cotizacion.id)}
                       className="mt-1 w-4 h-4 text-primary rounded"
+                      onClick={(e) => e.stopPropagation()}
                     />
                   )}
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Cliente</p>
-                      <p className="font-semibold text-gray-900 mb-1">
-                        {cotizacion.cliente_nombre}
-                      </p>
-                      <p className="text-xs text-gray-600">
-                        {cotizacion.folio}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Destino</p>
-                      <p className="text-sm font-medium">
-                        📍 {cotizacion.destino}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(cotizacion.fecha_salida).toLocaleDateString(
-                          "es-MX",
-                          { day: "numeric", month: "short" }
-                        )}{" "}
-                        -{" "}
-                        {new Date(cotizacion.fecha_regreso).toLocaleDateString(
-                          "es-MX",
-                          { day: "numeric", month: "short" }
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Viajeros</p>
-                      <p className="text-sm">
-                        👥 {cotizacion.num_adultos} adultos,{" "}
-                        {cotizacion.num_ninos} niños
-                      </p>
-                      {cotizacion.presupuesto_aprox && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          💰 ${cotizacion.presupuesto_aprox.toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Contacto</p>
-                      {cotizacion.cliente_telefono && (
-                        <p className="text-xs text-gray-600">
-                          📞 {cotizacion.cliente_telefono}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-1 mt-1">
-                        <LeadOriginIcon
-                          origen={cotizacion.origen_lead}
-                          size={14}
-                        />
-                        <span className="text-xs text-gray-600">
-                          {getLeadOriginLabel(cotizacion.origen_lead)}
+
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-500">
+                          {cotizacion.folio}
+                        </span>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${getStageBadge(cotizacion.pipeline_stage)}`}
+                        >
+                          {getStageLabel(cotizacion.pipeline_stage)}
                         </span>
                       </div>
+                      <LeadOriginIcon
+                        origen={cotizacion.origen_lead}
+                        size={18}
+                      />
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Estatus</p>
-                      <span
-                        className={`inline-block text-xs px-3 py-1 rounded-full ${getStatusBadge(cotizacion.estatus)}`}
-                      >
-                        {cotizacion.estatus}
-                      </span>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(cotizacion.created_at).toLocaleDateString(
-                          "es-MX"
-                        )}
+
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
+                      {cotizacion.cliente_nombre}
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600 mb-4">
+                      <p>
+                        <span className="font-medium">Destino:</span>{" "}
+                        {cotizacion.destino}
+                      </p>
+                      {cotizacion.fecha_salida && (
+                        <p>
+                          <span className="font-medium">Salida:</span>{" "}
+                          {new Date(cotizacion.fecha_salida).toLocaleDateString(
+                            "es-MX"
+                          )}
+                        </p>
+                      )}
+                      <p>
+                        <span className="font-medium">Viajeros:</span>{" "}
+                        {cotizacion.num_adultos + cotizacion.num_ninos}
                       </p>
                     </div>
+
+                    {cotizacion.presupuesto_aprox && (
+                      <p className="text-sm font-semibold text-primary mb-3">
+                        Presupuesto: $
+                        {parseFloat(
+                          cotizacion.presupuesto_aprox
+                        ).toLocaleString("es-MX")}
+                      </p>
+                    )}
+
+                    <button
+                      onClick={() => setSelectedCotizacionId(cotizacion.id)}
+                      className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm"
+                    >
+                      <Eye size={16} />
+                      Ver Detalles
+                    </button>
                   </div>
-                  <Eye size={20} className="text-primary flex-shrink-0" />
                 </div>
               </div>
             </div>

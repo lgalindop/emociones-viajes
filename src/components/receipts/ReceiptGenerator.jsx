@@ -152,6 +152,9 @@ export default function ReceiptGenerator({
       const generatedReceiptNumber = `REC-${year}-${String(nextNumber).padStart(5, "0")}`;
       setReceiptNumber(generatedReceiptNumber);
 
+      // Wait for React to update state and re-render
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       await document.fonts.ready;
 
       const element = receiptRef.current;
@@ -171,7 +174,7 @@ export default function ReceiptGenerator({
 
       document.body.appendChild(clone);
 
-      await new Promise((resolve) => setTimeout(resolve, 2500));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Get actual rendered height
       const actualHeight = clone.scrollHeight;

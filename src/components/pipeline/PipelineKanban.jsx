@@ -54,11 +54,30 @@ export default function PipelineKanban({ onNewQuote }) {
     try {
       const { data, error } = await supabase
         .from("cotizaciones")
-        .select("*")
+        .select(
+          `
+          *,
+          ventas (
+            id,
+            monto_pendiente
+          )
+        `
+        )
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setCotizaciones(data || []);
+
+      // Filter out cotizaciones with fully paid ventas
+      const filtered = (data || []).filter((cot) => {
+        // If no venta, show in pipeline
+        if (!cot.ventas || cot.ventas.length === 0) return true;
+
+        // If venta exists and has pending balance, show in pipeline
+        const venta = cot.ventas[0];
+        return venta.monto_pendiente > 0;
+      });
+
+      setCotizaciones(filtered);
     } catch (error) {
       console.error("Error:", error);
     } finally {
@@ -205,90 +224,62 @@ export default function PipelineKanban({ onNewQuote }) {
           );
 
           return (
-            <div key={stageKey} className="flex-shrink-0 w-80">
-              <div className={`rounded-lg border-2 ${stage.color} p-4`}>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-bold text-gray-800">{stage.label}</h2>
-                  <span className="px-2 py-1 bg-white rounded-full text-sm font-medium">
+            <div key={stageKey} className="flex-shrink-0 w-64">
+              <div className={`rounded-lg border-2 ${stage.color} p-3`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-semibold text-sm text-gray-800">{stage.label}</h2>
+                  <span className="px-1.5 py-0.5 bg-white rounded-full text-xs font-medium">
                     {stageCotizaciones.length}
                   </span>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {stageCotizaciones.map((cot) => (
                     <div
                       key={cot.id}
-                      className="bg-white rounded-lg shadow p-4 border-2 border-gray-200 hover:border-primary transition-colors"
+                      className="bg-white rounded-lg shadow-sm p-2.5 border border-gray-200 hover:border-primary transition-colors"
                     >
-                      <div className="mb-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-semibold text-sm text-gray-500">
-                            {cot.folio}
-                          </span>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full ${
-                              cot.probability >= 70
-                                ? "bg-green-100 text-green-700"
-                                : cot.probability >= 40
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-gray-100 text-gray-700"
-                            }`}
-                          >
-                            {cot.probability}%
-                          </span>
-                        </div>
-                        <h3 className="font-bold text-gray-900 mb-1">
+                      <div className="mb-2">
+                        <span className="text-xs text-gray-500 font-medium">
+                          {cot.folio}
+                        </span>
+                        <h3 className="font-semibold text-sm text-gray-900 mt-0.5">
                           {cot.cliente_nombre}
                         </h3>
-                        <p className="text-sm text-gray-600">{cot.destino}</p>
-                        {cot.presupuesto_aprox && (
-                          <p className="text-sm font-semibold text-primary mt-1">
-                            $
-                            {parseFloat(cot.presupuesto_aprox).toLocaleString(
-                              "es-MX"
-                            )}
-                          </p>
-                        )}
+                        <p className="text-xs text-gray-600 truncate">{cot.destino}</p>
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="space-y-2">
+                      <div className="flex gap-1.5">
                         <button
                           onClick={() => setViewingCotizacionId(cot.id)}
-                          className="w-full flex items-center justify-center gap-1 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
                         >
-                          <Eye size={14} />
-                          Ver
+                          <Eye size={12} />
                         </button>
-
-                        {/* Movement Buttons */}
-                        <div className="flex gap-2">
-                          {canMoveBack(stageKey) && (
-                            <button
-                              onClick={() => promptMoveBack(cot)}
-                              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                            >
-                              <ChevronLeft size={14} />
-                              Volver
-                            </button>
-                          )}
-                          {canMoveForward(stageKey) && (
-                            <button
-                              onClick={() => promptMoveForward(cot)}
-                              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200"
-                            >
-                              Mover
-                              <ChevronRight size={14} />
-                            </button>
-                          )}
-                        </div>
+                        {canMoveBack(stageKey) && (
+                          <button
+                            onClick={() => promptMoveBack(cot)}
+                            className="flex items-center justify-center px-2 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                          >
+                            <ChevronLeft size={12} />
+                          </button>
+                        )}
+                        {canMoveForward(stageKey) && (
+                          <button
+                            onClick={() => promptMoveForward(cot)}
+                            className="flex items-center justify-center px-2 py-1.5 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
+                          >
+                            <ChevronRight size={12} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
 
                   {stageCotizaciones.length === 0 && (
-                    <div className="text-center text-gray-400 py-8 text-sm">
-                      No hay cotizaciones
+                    <div className="text-center text-gray-400 py-6 text-xs">
+                      Vacío
                     </div>
                   )}
                 </div>

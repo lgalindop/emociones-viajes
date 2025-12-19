@@ -19,6 +19,7 @@ import LandingPage from "./pages/LandingPage";
 import CMSDashboard from "./pages/CMSDashboard";
 import ApprovalQueue from "./pages/ApprovalQueue";
 import ReceiptsList from "./pages/ReceiptsList";
+import ReceiptWizard from "./pages/ReceiptWizard";
 import {
   Home,
   Users,
@@ -33,12 +34,11 @@ import {
   Layout,
   Receipt,
 } from "lucide-react";
-import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 function MainApp() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { t } = useLanguage();
   const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -444,6 +444,7 @@ function MainApp() {
           <Route path="/sales" element={<SalesList />} />
           <Route path="/dashboard" element={<SalesDashboard />} />
           <Route path="/receipts" element={<ReceiptsList />} />
+          <Route path="/receipts/wizard" element={<ReceiptWizard />} />
           <Route path="/cms" element={<CMSDashboard />} />
           <Route path="/cms/approvals" element={<ApprovalQueue />} />
           {isAdmin() && <Route path="/users" element={<UserManagement />} />}

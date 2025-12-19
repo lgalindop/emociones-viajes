@@ -1,878 +1,857 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
-import {
-  X,
-  Search,
-  Plus,
-  Trash2,
-  ArrowRight,
-  ArrowLeft,
-  Eye,
-} from "lucide-react";
-import ReceiptGenerator from "../components/receipts/ReceiptGenerator";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, FileText } from "lucide-react";
+import ReceiptPreview from "../components/receipts/ReceiptPreview";
 
-export default function ReceiptWizard({ onClose, onSuccess }) {
-  const [step, setStep] = useState(1);
-  const [template, setTemplate] = useState("informal");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [ventas, setVentas] = useState([]);
-  const [selectedVenta, setSelectedVenta] = useState(null);
-  const [ventaToUse, setVentaToUse] = useState(null);
-  const [pagoToUse, setPagoToUse] = useState(null);
-  const [formData, setFormData] = useState({
-    client_name: "",
-    folio_reference: "",
-    amount: "",
-    payment_date: new Date().toISOString().split("T")[0],
-    payment_method: "Efectivo",
-    custom_text: "",
-    total_price: "",
-    previous_payments: "",
-    balance: "",
-    fecha_viaje: "",
-    line_items: [],
-    comision: "",
-    no_folio_reserva: "",
-    fecha_hora_reserva: "",
-    total_reserva: "",
-    fecha_limite_pago: "",
-    show_comision: false,
-    show_fechas: true,
-    show_reserva_info: true,
-  });
-  const [showPreview, setShowPreview] = useState(false);
+export default function ReceiptWizard() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
+  const editMode = location.state?.editMode || false;
+  const receiptId = location.state?.receiptId;
+  const ventaIdFromNav = location.state?.ventaId;
+
+  const [step, setStep] = useState(1);
+  const [mode, setMode] = useState(ventaIdFromNav ? "from-sale" : null);
+  const [ventas, setVentas] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedVenta, setSelectedVenta] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [existingReceipt, setExistingReceipt] = useState(null);
+
+  const [receiptData, setReceiptData] = useState({
+    clientName: "",
+    clientPhone: "",
+    clientEmail: "",
+    destination: "",
+    travelers: "",
+    amountPaid: "",
+    paymentMethod: "Efectivo",
+    paymentDate: new Date().toISOString().split("T")[0],
+    receiptNumber: "",
+    notes: "",
+    templateType: "professional",
+    folioVenta: "",
+  });
+
   useEffect(() => {
-    if (searchTerm.length > 2) {
-      searchVentas();
+    if (editMode && receiptId) {
+      loadReceiptForEdit();
+    } else if (mode === "from-sale") {
+      fetchVentas();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]);
+  }, [editMode, receiptId, mode]);
 
-  // Recalculate balance when amount changes
   useEffect(() => {
-    if (selectedVenta && formData.amount) {
-      const newBalance = selectedVenta.monto_pendiente - parseFloat(formData.amount || 0);
-      setFormData(prev => ({
-        ...prev,
-        balance: Math.max(0, newBalance)
-      }));
+    if (ventaIdFromNav && ventas.length > 0) {
+      const venta = ventas.find((v) => v.id === ventaIdFromNav);
+      if (venta) {
+        handleVentaSelect(venta);
+      }
     }
-  }, [formData.amount, selectedVenta]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ventaIdFromNav, ventas]);
 
-  async function searchVentas() {
+  async function loadReceiptForEdit() {
     try {
-      // Search by folio
-      const { data: byFolio } = await supabase
-        .from("ventas")
+      setLoading(true);
+      const { data: receipt, error } = await supabase
+        .from("receipts")
         .select(
           `
           *,
-          cotizaciones!inner (
-            folio,
-            cliente_nombre,
-            cliente_telefono,
-            destino,
-            fecha_salida
-          )
-        `
-        )
-        .ilike("folio_venta", `%${searchTerm}%`)
-        .limit(5);
-
-      // Search by client name in cotizaciones
-      const { data: byClient } = await supabase
-        .from("cotizaciones")
-        .select(
-          `
           ventas (
-            *,
+            id,
+            folio_venta,
+            precio_total,
             cotizaciones (
-              folio,
               cliente_nombre,
               cliente_telefono,
+              cliente_email,
               destino,
-              fecha_salida
+              num_adultos,
+              num_ninos
             )
           )
         `
         )
-        .ilike("cliente_nombre", `%${searchTerm}%`)
-        .not("ventas", "is", null)
-        .limit(5);
+        .eq("id", receiptId)
+        .single();
 
-      // Flatten byClient results
-      const clientVentas = (byClient || [])
-        .flatMap((cot) => cot.ventas || [])
-        .filter((v) => v);
+      if (error) throw error;
 
-      // Combine and deduplicate
-      const allVentas = [...(byFolio || []), ...clientVentas];
-      const unique = Array.from(
-        new Map(allVentas.map((v) => [v.id, v])).values()
-      );
+      setExistingReceipt(receipt);
+      setSelectedVenta(receipt.ventas);
+      setMode("from-sale");
 
-      setVentas(unique.slice(0, 10));
+      // Populate form with existing data
+      setReceiptData({
+        clientName: receipt.client_name || "",
+        clientPhone: receipt.client_phone || "",
+        clientEmail: receipt.client_email || "",
+        destination: receipt.destination || "",
+        travelers: receipt.travelers?.toString() || "",
+        amountPaid: receipt.amount?.toString() || "",
+        paymentMethod: receipt.payment_method || "Efectivo",
+        paymentDate:
+          receipt.payment_date || new Date().toISOString().split("T")[0],
+        receiptNumber: receipt.receipt_number || "",
+        notes: receipt.notes || "",
+        templateType: receipt.template_type || "professional",
+        folioVenta: receipt.ventas?.folio_venta || "",
+      });
+
+      setStep(2);
     } catch (error) {
-      console.error("Error searching ventas:", error);
-      setVentas([]);
+      console.error("Error:", error);
+      alert("Error al cargar recibo: " + error.message);
+      navigate("/app/receipts");
+    } finally {
+      setLoading(false);
     }
   }
 
-  function selectVenta(venta) {
+  async function fetchVentas() {
+    try {
+      const { data, error } = await supabase
+        .from("ventas")
+        .select(
+          `
+          *,
+          cotizaciones (
+            folio,
+            cliente_nombre,
+            cliente_telefono,
+            cliente_email,
+            destino,
+            num_adultos,
+            num_ninos
+          )
+        `
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setVentas(data || []);
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Error al cargar ventas");
+    }
+  }
+
+  async function generateNextReceiptNumber() {
+    try {
+      const year = new Date().getFullYear();
+      const { data, error } = await supabase
+        .from("receipts")
+        .select("receipt_number")
+        .like("receipt_number", `REC-${year}-%`)
+        .order("receipt_number", { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const lastNumber = data[0].receipt_number;
+        const match = lastNumber.match(/REC-\d{4}-(\d+)/);
+        if (match) {
+          const nextNum = parseInt(match[1]) + 1;
+          return `REC-${year}-${String(nextNum).padStart(5, "0")}`;
+        }
+      }
+
+      return `REC-${year}-00001`;
+    } catch (error) {
+      console.error("Error:", error);
+      const year = new Date().getFullYear();
+      return `REC-${year}-00001`;
+    }
+  }
+
+  async function handleVentaSelect(venta) {
     setSelectedVenta(venta);
-    setFormData({
-      client_name: venta.cotizaciones.cliente_nombre,
-      folio_reference: venta.folio_venta,
-      amount: "",
-      payment_date: new Date().toISOString().split("T")[0],
-      payment_method: "Efectivo",
-      custom_text: "",
-      total_price: venta.precio_total,
-      previous_payments: venta.monto_pagado || 0,
-      balance: venta.monto_pendiente || 0,
-      fecha_viaje: venta.fecha_viaje || "",
-      line_items: [],
-      comision: "",
-      no_folio_reserva: "",
-      fecha_hora_reserva: "",
-      total_reserva: "",
-      fecha_limite_pago: venta.fecha_limite_pago || "",
-      show_comision: false,
-      show_fechas: true,
-      show_reserva_info: true,
+    const travelers =
+      venta.cotizaciones.num_adultos + venta.cotizaciones.num_ninos;
+
+    // Generate sequential receipt number
+    const receiptNum =
+      existingReceipt?.receipt_number || (await generateNextReceiptNumber());
+
+    setReceiptData({
+      ...receiptData,
+      clientName: venta.cotizaciones.cliente_nombre,
+      clientPhone: venta.cotizaciones.cliente_telefono || "",
+      clientEmail: venta.cotizaciones.cliente_email || "",
+      destination: venta.cotizaciones.destino,
+      travelers: travelers.toString(),
+      receiptNumber: receiptNum,
+      folioVenta: venta.folio_venta,
     });
-    setSearchTerm("");
-    setVentas([]);
+    setStep(2);
   }
 
-  function addLineItem() {
-    setFormData({
-      ...formData,
-      line_items: [...formData.line_items, { label: "", amount: "" }],
-    });
+  async function handleGenerateReceipt(imageBlob) {
+    try {
+      setLoading(true);
+
+      // Upload image to Supabase Storage
+      const fileName = `receipt-${receiptData.receiptNumber}-${Date.now()}.png`;
+      const { error: uploadError } = await supabase.storage
+        .from("receipts")
+        .upload(fileName, imageBlob, {
+          contentType: "image/png",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("receipts")
+        .getPublicUrl(fileName);
+
+      const imageUrl = urlData.publicUrl;
+
+      if (editMode && existingReceipt) {
+        // EDIT MODE: Update existing receipt and cascade changes
+        await handleEditReceipt(imageUrl);
+      } else {
+        // CREATE MODE: New receipt
+        await handleCreateReceipt(imageUrl);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Error al procesar recibo: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function updateLineItem(index, field, value) {
-    const newItems = [...formData.line_items];
-    newItems[index][field] = value;
-    setFormData({ ...formData, line_items: newItems });
-  }
+  async function handleCreateReceipt(imageUrl) {
+    // Insert new receipt
+    const { data: receipt, error: receiptError } = await supabase
+      .from("receipts")
+      .insert({
+        venta_id: selectedVenta?.id || null,
+        receipt_number: receiptData.receiptNumber,
+        client_name: receiptData.clientName,
+        client_phone: receiptData.clientPhone || null,
+        client_email: receiptData.clientEmail || null,
+        destination: receiptData.destination,
+        travelers: parseInt(receiptData.travelers) || null,
+        amount: parseFloat(receiptData.amountPaid),
+        payment_method: receiptData.paymentMethod,
+        payment_date: receiptData.paymentDate,
+        notes: receiptData.notes || null,
+        template_type: receiptData.templateType,
+        image_url: imageUrl,
+        receipt_stage: "generated",
+        created_by: user.id,
+        folio_venta: receiptData.folioVenta || null,
+      })
+      .select()
+      .single();
 
-  function removeLineItem(index) {
-    setFormData({
-      ...formData,
-      line_items: formData.line_items.filter((_, i) => i !== index),
-    });
-  }
+    if (receiptError) throw receiptError;
 
-  function generateCustomText() {
-    const amountText = formData.amount
-      ? `$${parseFloat(formData.amount).toLocaleString("es-MX")}`
-      : "[monto]";
-    const text = `Se recibió un pago de ${amountText} como abono para la reservación${formData.folio_reference ? ` de folio ${formData.folio_reference}` : ""}${formData.client_name ? `, a nombre de ${formData.client_name}` : ""}${formData.fecha_viaje ? `, con fecha de viaje del ${new Date(formData.fecha_viaje).toLocaleDateString("es-MX")}` : ""}.`;
+    // If from sale, update venta and create pago
+    if (selectedVenta) {
+      const amountPaid = parseFloat(receiptData.amountPaid);
+      const currentPagado = parseFloat(selectedVenta.monto_pagado || 0);
+      const newMontoPagado = currentPagado + amountPaid;
+      const newMontoPendiente =
+        parseFloat(selectedVenta.precio_total) - newMontoPagado;
 
-    setFormData({ ...formData, custom_text: text });
-  }
+      // Update venta
+      const { error: ventaError } = await supabase
+        .from("ventas")
+        .update({
+          monto_pagado: newMontoPagado,
+          monto_pendiente: newMontoPendiente,
+        })
+        .eq("id", selectedVenta.id);
 
-  async function handleGenerate() {
-    // Validate required fields
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      alert("Por favor ingresa un monto válido");
-      return;
+      if (ventaError) throw ventaError;
+
+      // Create pago record
+      const { data: existingPagos } = await supabase
+        .from("pagos")
+        .select("numero_pago")
+        .eq("venta_id", selectedVenta.id)
+        .order("numero_pago", { ascending: false })
+        .limit(1);
+
+      const nextNumero =
+        existingPagos?.length > 0 ? existingPagos[0].numero_pago + 1 : 1;
+
+      const { data: pago, error: pagoError } = await supabase
+        .from("pagos")
+        .insert({
+          venta_id: selectedVenta.id,
+          numero_pago: nextNumero,
+          monto: amountPaid,
+          fecha_programada: receiptData.paymentDate,
+          fecha_pagado: receiptData.paymentDate,
+          estado: "pagado",
+          metodo_pago: receiptData.paymentMethod,
+          registrado_por: user.id,
+          notas: `Recibo ${receiptData.receiptNumber}`,
+        })
+        .select()
+        .single();
+
+      if (pagoError) throw pagoError;
+
+      // Link pago to receipt
+      await supabase
+        .from("receipts")
+        .update({ pago_id: pago.id })
+        .eq("id", receipt.id);
     }
 
-    if (!formData.client_name) {
-      alert("Por favor ingresa el nombre del cliente");
-      return;
-    }
+    alert("Recibo generado exitosamente");
+    navigate("/app/receipts");
+  }
 
-    let ventaToUse = selectedVenta;
-    let pagoToUse = null;
+  async function handleEditReceipt(imageUrl) {
+    const oldAmount = parseFloat(existingReceipt.amount);
+    const newAmount = parseFloat(receiptData.amountPaid);
+    const amountDifference = newAmount - oldAmount;
 
-    // If no venta selected, create a temporary manual venta
-    if (!selectedVenta) {
-      try {
-        // Create a temporary cotizacion first
-        const { data: tempCot, error: cotError } = await supabase
-          .from("cotizaciones")
-          .insert({
-            cliente_nombre: formData.client_name,
-            cliente_telefono: "",
-            destino: "Manual",
-            created_by: user.id,
-            pipeline_stage: "booking_confirmed",
-            is_manual: true,
-          })
-          .select()
-          .single();
+    // Update receipt
+    const { error: updateReceiptError } = await supabase
+      .from("receipts")
+      .update({
+        client_name: receiptData.clientName,
+        client_phone: receiptData.clientPhone || null,
+        client_email: receiptData.clientEmail || null,
+        destination: receiptData.destination,
+        travelers: parseInt(receiptData.travelers) || null,
+        amount: newAmount,
+        payment_method: receiptData.paymentMethod,
+        payment_date: receiptData.paymentDate,
+        notes: receiptData.notes || null,
+        template_type: receiptData.templateType,
+        image_url: imageUrl,
+      })
+      .eq("id", receiptId);
 
-        if (cotError) throw cotError;
+    if (updateReceiptError) throw updateReceiptError;
 
-        // Create a temporary venta
-        const { data: tempVenta, error: ventaError } = await supabase
-          .from("ventas")
-          .insert({
-            cotizacion_id: tempCot.id,
-            precio_total:
-              parseFloat(formData.total_price) || parseFloat(formData.amount),
-            fecha_viaje: formData.fecha_viaje || null,
-            created_by: user.id,
-            is_manual: true,
-          })
-          .select()
-          .single();
+    // If linked to venta, cascade financial updates
+    if (existingReceipt.venta_id) {
+      // Get current venta balances
+      const { data: venta, error: ventaError } = await supabase
+        .from("ventas")
+        .select("monto_pagado, monto_pendiente, precio_total")
+        .eq("id", existingReceipt.venta_id)
+        .single();
 
-        if (ventaError) throw ventaError;
+      if (ventaError) throw ventaError;
 
-        // Create a manual pago
-        const { data: tempPago, error: pagoError } = await supabase
+      // Calculate new balances
+      const newMontoPagado =
+        parseFloat(venta.monto_pagado || 0) + amountDifference;
+      const newMontoPendiente = parseFloat(venta.precio_total) - newMontoPagado;
+
+      // Update venta balances
+      const { error: updateVentaError } = await supabase
+        .from("ventas")
+        .update({
+          monto_pagado: newMontoPagado,
+          monto_pendiente: newMontoPendiente,
+        })
+        .eq("id", existingReceipt.venta_id);
+
+      if (updateVentaError) throw updateVentaError;
+
+      // Update linked pago if exists
+      if (existingReceipt.pago_id) {
+        const { error: pagoError } = await supabase
           .from("pagos")
-          .insert({
-            venta_id: tempVenta.id,
-            numero_pago: 1,
-            monto: parseFloat(formData.amount),
-            fecha_programada: formData.payment_date,
-            fecha_pagado: formData.payment_date,
-            metodo_pago: formData.payment_method,
-            estado: "pagado",
-            registrado_por: user.id,
+          .update({
+            monto: newAmount,
+            fecha_pagado: receiptData.paymentDate,
+            metodo_pago: receiptData.paymentMethod,
+            notas: `Recibo ${receiptData.receiptNumber} (editado)`,
           })
-          .select()
-          .single();
+          .eq("id", existingReceipt.pago_id);
 
         if (pagoError) throw pagoError;
-
-        ventaToUse = {
-          ...tempVenta,
-          cotizaciones: tempCot,
-        };
-        pagoToUse = tempPago;
-        setVentaToUse(ventaToUse);
-        setPagoToUse(pagoToUse);
-      } catch (error) {
-        console.error("Error creating manual venta:", error);
-        alert("Error al crear registro temporal: " + error.message);
-        return;
-      }
-    } else {
-      // Use existing venta, create a new pago entry
-      try {
-        // Get the highest payment number for this venta
-        const { data: existingPagos } = await supabase
-          .from("pagos")
-          .select("numero_pago")
-          .eq("venta_id", selectedVenta.id)
-          .order("numero_pago", { ascending: false })
-          .limit(1);
-
-        const nextNumero = existingPagos && existingPagos.length > 0 
-          ? existingPagos[0].numero_pago + 1 
-          : 1;
-
-        const { data: newPago, error: pagoError } = await supabase
-          .from("pagos")
-          .insert({
-            venta_id: selectedVenta.id,
-            numero_pago: nextNumero,
-            monto: parseFloat(formData.amount),
-            fecha_programada: formData.payment_date,
-            fecha_pagado: formData.payment_date,
-            metodo_pago: formData.payment_method,
-            estado: "pagado",
-            registrado_por: user.id,
-            notas: "Pago manual desde wizard de recibos",
-          })
-          .select()
-          .single();
-
-        if (pagoError) throw pagoError;
-        pagoToUse = newPago;
-        setVentaToUse(selectedVenta);
-        setPagoToUse(pagoToUse);
-      } catch (error) {
-        console.error("Error creating pago:", error);
-        alert("Error al crear registro de pago: " + error.message);
-        return;
       }
     }
 
-    // Open preview with actual venta/pago
-    setShowPreview(true);
+    alert("Recibo actualizado y finanzas sincronizadas");
+    navigate("/app/receipts");
+  }
+
+  if (loading && step === 1) {
+    return <div className="p-8">Cargando...</div>;
   }
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
-          {/* Header */}
-          <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
-            <div>
-              <h2 className="text-2xl font-bold text-primary">
-                Generar Recibo
-              </h2>
-              <p className="text-sm text-gray-600">Paso {step} de 2</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <X size={24} />
-            </button>
-          </div>
-
-          <div className="p-6">
-            {/* Step 1: Template & Source */}
-            {step === 1 && (
-              <div className="space-y-6">
-                {/* Template Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Tipo de Recibo
-                  </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={() => setTemplate("informal")}
-                      className={`p-4 border-2 rounded-lg text-left transition-all ${
-                        template === "informal"
-                          ? "border-primary bg-primary/5"
-                          : "border-gray-300 hover:border-primary/50"
-                      }`}
-                    >
-                      <div className="font-semibold">Informal</div>
-                      <div className="text-sm text-gray-600">
-                        Nota simple con texto personalizado
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => setTemplate("professional")}
-                      className={`p-4 border-2 rounded-lg text-left transition-all ${
-                        template === "professional"
-                          ? "border-primary bg-primary/5"
-                          : "border-gray-300 hover:border-primary/50"
-                      }`}
-                    >
-                      <div className="font-semibold">Profesional</div>
-                      <div className="text-sm text-gray-600">
-                        Formato completo con detalles (+ PDF)
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Search Existing Sale */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Buscar Venta Existente (Opcional)
-                  </label>
-                  <div className="relative">
-                    <Search
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                      size={20}
-                    />
-                    <input
-                      type="text"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Buscar por folio o cliente..."
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-
-                  {ventas.length > 0 && (
-                    <div className="mt-2 border rounded-lg max-h-48 overflow-y-auto">
-                      {ventas.map((venta) => (
-                        <button
-                          key={venta.id}
-                          onClick={() => selectVenta(venta)}
-                          className="w-full p-3 text-left hover:bg-gray-50 border-b last:border-b-0 transition-colors"
-                        >
-                          <div className="font-medium">{venta.folio_venta}</div>
-                          <div className="text-sm text-gray-600">
-                            {venta.cotizaciones.cliente_nombre} - $
-                            {venta.precio_total.toLocaleString("es-MX")}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {selectedVenta && (
-                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-green-900">
-                            {selectedVenta.folio_venta}
-                          </div>
-                          <div className="text-sm text-green-700">
-                            {selectedVenta.cotizaciones.cliente_nombre}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setSelectedVenta(null);
-                            setFormData({
-                              client_name: "",
-                              folio_reference: "",
-                              amount: "",
-                              payment_date: new Date()
-                                .toISOString()
-                                .split("T")[0],
-                              payment_method: "Efectivo",
-                              custom_text: "",
-                              total_price: "",
-                              previous_payments: "",
-                              balance: "",
-                              fecha_viaje: "",
-                              line_items: [],
-                              comision: "",
-                              no_folio_reserva: "",
-                              fecha_hora_reserva: "",
-                              total_reserva: "",
-                              fecha_limite_pago: "",
-                              show_comision: false,
-                              show_fechas: true,
-                              show_reserva_info: true,
-                            });
-                          }}
-                          className="text-red-600 hover:bg-red-100 p-2 rounded"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Navigation */}
-                <div className="flex justify-end gap-3">
-                  <button
-                    onClick={onClose}
-                    className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={() => setStep(2)}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium"
-                  >
-                    Siguiente
-                    <ArrowRight size={20} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Receipt Details */}
-            {step === 2 && (
-              <div className="space-y-6">
-                {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cliente *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.client_name}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          client_name: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                      placeholder="Nombre del cliente"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Folio / Referencia
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.folio_reference}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          folio_reference: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                      placeholder="Folio de referencia"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Monto del Pago *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.amount}
-                      onChange={(e) =>
-                        setFormData({ ...formData, amount: e.target.value })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fecha de Pago
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.payment_date}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          payment_date: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Método de Pago
-                    </label>
-                    <select
-                      value={formData.payment_method}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          payment_method: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                    >
-                      <option>Efectivo</option>
-                      <option>Transferencia</option>
-                      <option>Tarjeta de Crédito</option>
-                      <option>Tarjeta de Débito</option>
-                      <option>Depósito</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fecha de Viaje
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.fecha_viaje}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          fecha_viaje: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                </div>
-
-                {/* Financial Summary (Professional Template) */}
-                {template === "professional" && (
-                  <>
-                    {/* Visibility Controls */}
-                    <div className="border-2 border-gray-200 bg-gray-50 rounded-lg p-4 mb-4">
-                      <h3 className="font-semibold text-gray-900 mb-3">
-                        Mostrar en Recibo
-                      </h3>
-                      <div className="flex flex-wrap gap-4">
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={formData.show_comision}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                show_comision: e.target.checked,
-                              })
-                            }
-                            className="w-4 h-4"
-                          />
-                          <span className="text-sm">Comisión</span>
-                        </label>
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={formData.show_fechas}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                show_fechas: e.target.checked,
-                              })
-                            }
-                            className="w-4 h-4"
-                          />
-                          <span className="text-sm">
-                            Fechas (próximo abono/límite)
-                          </span>
-                        </label>
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={formData.show_reserva_info}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                show_reserva_info: e.target.checked,
-                              })
-                            }
-                            className="w-4 h-4"
-                          />
-                          <span className="text-sm">Info de Reservación</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
-                      <h3 className="font-semibold text-blue-900 mb-3">
-                        Resumen Financiero
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Precio Total
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={formData.total_price}
-                            readOnly
-                            disabled
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
-                            placeholder="0.00"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Pagos Anteriores
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={formData.previous_payments}
-                            readOnly
-                            disabled
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
-                            placeholder="0.00"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Saldo Pendiente
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={formData.balance}
-                            readOnly
-                            disabled
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
-                            placeholder="0.00"
-                          />
-                        </div>
-
-                        {formData.show_comision && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Comisión
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={formData.comision}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  comision: e.target.value,
-                                })
-                              }
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                              placeholder="0.00"
-                            />
-                          </div>
-                        )}
-
-                        {formData.show_fechas && (
-                          <>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Fecha Límite Pago
-                              </label>
-                              <input
-                                type="date"
-                                value={formData.fecha_limite_pago}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    fecha_limite_pago: e.target.value,
-                                  })
-                                }
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                              />
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Custom Line Items (Professional Template) */}
-                {template === "professional" && (
-                  <div className="border-2 border-purple-200 bg-purple-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-purple-900">
-                        Conceptos Adicionales
-                      </h3>
-                      <button
-                        onClick={addLineItem}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
-                      >
-                        <Plus size={16} />
-                        Agregar
-                      </button>
-                    </div>
-
-                    {formData.line_items.length === 0 && (
-                      <p className="text-sm text-gray-600 text-center py-4">
-                        No hay conceptos adicionales. Haz clic en "Agregar" para
-                        añadir.
-                      </p>
-                    )}
-
-                    <div className="space-y-2">
-                      {formData.line_items.map((item, index) => (
-                        <div key={index} className="flex gap-2">
-                          <input
-                            type="text"
-                            value={item.label}
-                            onChange={(e) =>
-                              updateLineItem(index, "label", e.target.value)
-                            }
-                            placeholder="Concepto"
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                          />
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={item.amount}
-                            onChange={(e) =>
-                              updateLineItem(index, "amount", e.target.value)
-                            }
-                            placeholder="0.00"
-                            className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                          />
-                          <button
-                            onClick={() => removeLineItem(index)}
-                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Custom Text (Informal Template) */}
-                {template === "informal" && (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Descripción del Pago
-                      </label>
-                      <button
-                        onClick={generateCustomText}
-                        className="text-sm text-primary hover:underline"
-                      >
-                        Generar automático
-                      </button>
-                    </div>
-                    <textarea
-                      value={formData.custom_text}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          custom_text: e.target.value,
-                        })
-                      }
-                      rows={4}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                      placeholder="Descripción detallada del pago..."
-                    />
-                  </div>
-                )}
-
-                {/* Navigation */}
-                <div className="flex justify-between gap-3">
-                  <button
-                    onClick={() => setStep(1)}
-                    className="flex items-center gap-2 px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
-                  >
-                    <ArrowLeft size={20} />
-                    Anterior
-                  </button>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={onClose}
-                      className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handleGenerate}
-                      className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
-                    >
-                      <Eye size={20} />
-                      Generar Recibo
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <button
+            onClick={() =>
+              step === 1 ? navigate("/app/receipts") : setStep(1)
+            }
+            className="flex items-center gap-2 text-primary hover:text-primary/80 mb-4"
+          >
+            <ArrowLeft size={20} />
+            {step === 1 ? "Volver a Recibos" : "Volver a Selección"}
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <FileText size={32} />
+            {editMode ? "Editar Recibo" : "Nuevo Recibo"}
+          </h1>
         </div>
-      </div>
 
-      {/* Preview Modal */}
-      {showPreview && ventaToUse && pagoToUse && (
-        <ReceiptGenerator
-          venta={ventaToUse}
-          pago={pagoToUse}
-          customData={{
-            template_type: template,
-            custom_text: formData.custom_text,
-            line_items: formData.line_items,
-            show_comision: formData.show_comision,
-            show_fechas: formData.show_fechas,
-            show_reserva_info: formData.show_reserva_info,
-            comision: formData.comision,
-            fecha_limite_pago: formData.fecha_limite_pago,
-          }}
-          onClose={() => setShowPreview(false)}
-          onSuccess={(receipt) => {
-            setShowPreview(false);
-            onClose();
-            onSuccess(receipt);
-          }}
-        />
-      )}
-    </>
+        {/* Step 1: Mode Selection */}
+        {step === 1 && !editMode && (
+          <div className="space-y-4">
+            <div
+              onClick={() => {
+                setMode("from-sale");
+                fetchVentas();
+              }}
+              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition-shadow border-2 border-transparent hover:border-primary"
+            >
+              <h3 className="text-xl font-bold mb-2">Desde una Venta</h3>
+              <p className="text-gray-600">
+                Generar recibo para una venta existente
+              </p>
+            </div>
+
+            <div
+              onClick={async () => {
+                setMode("standalone");
+                const receiptNum = await generateNextReceiptNumber();
+                setReceiptData({
+                  ...receiptData,
+                  receiptNumber: receiptNum,
+                });
+                setStep(2);
+              }}
+              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition-shadow border-2 border-transparent hover:border-primary"
+            >
+              <h3 className="text-xl font-bold mb-2">Recibo Independiente</h3>
+              <p className="text-gray-600">
+                Crear recibo sin vincular a una venta
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Sale Selection (if from-sale mode and not edit) */}
+        {step === 1 && mode === "from-sale" && !editMode && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-bold mb-4">Selecciona una Venta</h2>
+
+            {/* Search */}
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Buscar por folio, cliente o destino..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {ventas
+                .filter((v) => {
+                  const term = searchTerm.toLowerCase();
+                  return (
+                    v.folio_venta?.toLowerCase().includes(term) ||
+                    v.cotizaciones?.cliente_nombre
+                      ?.toLowerCase()
+                      .includes(term) ||
+                    v.cotizaciones?.destino?.toLowerCase().includes(term)
+                  );
+                })
+                .map((venta) => (
+                  <div
+                    key={venta.id}
+                    onClick={() => handleVentaSelect(venta)}
+                    className="p-4 border-2 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-bold text-lg">{venta.folio_venta}</p>
+                        <p className="text-gray-700">
+                          {venta.cotizaciones.cliente_nombre}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {venta.cotizaciones.destino} •{" "}
+                          {venta.cotizaciones.num_adultos +
+                            venta.cotizaciones.num_ninos}{" "}
+                          viajeros
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-green-600">
+                          $
+                          {parseFloat(venta.precio_total).toLocaleString(
+                            "es-MX"
+                          )}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Pagado: $
+                          {parseFloat(venta.monto_pagado || 0).toLocaleString(
+                            "es-MX"
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Receipt Form */}
+        {step === 2 && (
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl mx-auto">
+            <h2 className="text-xl font-bold mb-4">Datos del Recibo</h2>
+
+            {selectedVenta && (
+              <div className="bg-blue-50 rounded-lg p-3 mb-4 text-sm">
+                <p className="font-semibold text-gray-900">
+                  Venta: {selectedVenta.folio_venta}
+                </p>
+                <p className="text-gray-600">
+                  Total: $
+                  {parseFloat(selectedVenta.precio_total).toLocaleString(
+                    "es-MX"
+                  )}{" "}
+                  • Pagado: $
+                  {parseFloat(selectedVenta.monto_pagado || 0).toLocaleString(
+                    "es-MX"
+                  )}
+                </p>
+              </div>
+            )}
+
+            <form className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Número de Recibo *
+                  </label>
+                  <input
+                    type="text"
+                    value={receiptData.receiptNumber}
+                    onChange={(e) =>
+                      setReceiptData({
+                        ...receiptData,
+                        receiptNumber: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Tipo de Template
+                  </label>
+                  <select
+                    value={receiptData.templateType}
+                    onChange={(e) =>
+                      setReceiptData({
+                        ...receiptData,
+                        templateType: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                  >
+                    <option value="professional">Profesional</option>
+                    <option value="informal">Informal</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Cliente *
+                </label>
+                <input
+                  type="text"
+                  value={receiptData.clientName}
+                  onChange={(e) =>
+                    setReceiptData({
+                      ...receiptData,
+                      clientName: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    value={receiptData.clientPhone}
+                    onChange={(e) =>
+                      setReceiptData({
+                        ...receiptData,
+                        clientPhone: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={receiptData.clientEmail}
+                    onChange={(e) =>
+                      setReceiptData({
+                        ...receiptData,
+                        clientEmail: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Destino *
+                  </label>
+                  <input
+                    type="text"
+                    value={receiptData.destination}
+                    onChange={(e) =>
+                      setReceiptData({
+                        ...receiptData,
+                        destination: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Viajeros
+                  </label>
+                  <input
+                    type="number"
+                    value={receiptData.travelers}
+                    onChange={(e) =>
+                      setReceiptData({
+                        ...receiptData,
+                        travelers: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Monto *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={receiptData.amountPaid}
+                    onChange={(e) =>
+                      setReceiptData({
+                        ...receiptData,
+                        amountPaid: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Método *
+                  </label>
+                  <select
+                    value={receiptData.paymentMethod}
+                    onChange={(e) =>
+                      setReceiptData({
+                        ...receiptData,
+                        paymentMethod: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                  >
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                    <option value="Cheque">Cheque</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Fecha *
+                  </label>
+                  <input
+                    type="date"
+                    value={receiptData.paymentDate}
+                    onChange={(e) =>
+                      setReceiptData({
+                        ...receiptData,
+                        paymentDate: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Notas</label>
+                <textarea
+                  value={receiptData.notes}
+                  onChange={(e) =>
+                    setReceiptData({ ...receiptData, notes: e.target.value })
+                  }
+                  rows={3}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                />
+              </div>
+
+              <div className="pt-4">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (
+                      !receiptData.clientName ||
+                      !receiptData.amountPaid ||
+                      !receiptData.destination
+                    ) {
+                      alert("Completa todos los campos requeridos");
+                      return;
+                    }
+
+                    setLoading(true);
+                    try {
+                      // Create hidden div for receipt rendering
+                      const { default: html2canvas } =
+                        await import("html2canvas");
+                      const { default: ProfessionalReceipt } =
+                        await import("../components/receipts/ProfessionalReceipt");
+                      const { default: InformalReceipt } =
+                        await import("../components/receipts/InformalReceipt");
+                      const { createElement } = await import("react");
+                      const { createRoot } = await import("react-dom/client");
+
+                      const tempDiv = document.createElement("div");
+                      tempDiv.style.position = "absolute";
+                      tempDiv.style.left = "-9999px";
+                      tempDiv.style.top = "0";
+                      document.body.appendChild(tempDiv);
+
+                      const amountPaid = parseFloat(
+                        receiptData.amountPaid || 0
+                      );
+                      const totalPrice = selectedVenta
+                        ? parseFloat(selectedVenta.precio_total)
+                        : amountPaid;
+                      const previousPayments = selectedVenta
+                        ? parseFloat(selectedVenta.monto_pagado || 0)
+                        : 0;
+                      const balance =
+                        totalPrice - previousPayments - amountPaid;
+
+                      const formattedData = {
+                        receipt_number: receiptData.receiptNumber,
+                        amount: amountPaid,
+                        payment_date: receiptData.paymentDate,
+                        payment_method: receiptData.paymentMethod,
+                        client_name: receiptData.clientName,
+                        destination: receiptData.destination,
+                        travelers: receiptData.travelers
+                          ? parseInt(receiptData.travelers)
+                          : null,
+                        custom_text:
+                          receiptData.notes ||
+                          `Pago recibido por concepto de viaje a ${receiptData.destination}.`,
+                        folio_venta: receiptData.folioVenta || "",
+                        total_price: totalPrice,
+                        previous_payments: previousPayments,
+                        balance: balance,
+                        show_fechas: balance > 0,
+                        fecha_limite_pago:
+                          selectedVenta?.fecha_limite_pago || null,
+                        show_reserva_info: true,
+                        fecha_viaje: selectedVenta?.fecha_viaje || null,
+                        destino: receiptData.destination,
+                      };
+
+                      const ReceiptComponent =
+                        receiptData.templateType === "professional"
+                          ? ProfessionalReceipt
+                          : InformalReceipt;
+
+                      const root = createRoot(tempDiv);
+                      root.render(
+                        createElement(ReceiptComponent, { data: formattedData })
+                      );
+
+                      setTimeout(async () => {
+                        const canvas = await html2canvas(tempDiv.firstChild, {
+                          scale: 2,
+                          backgroundColor: "#ffffff",
+                        });
+
+                        canvas.toBlob((blob) => {
+                          document.body.removeChild(tempDiv);
+                          if (blob) {
+                            handleGenerateReceipt(blob);
+                          } else {
+                            setLoading(false);
+                            alert("Error al generar imagen");
+                          }
+                        }, "image/png");
+                      }, 500);
+                    } catch (error) {
+                      setLoading(false);
+                      console.error("Error:", error);
+                      alert("Error al generar recibo: " + error.message);
+                    }
+                  }}
+                  disabled={loading}
+                  className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-medium"
+                >
+                  {loading
+                    ? "Generando..."
+                    : editMode
+                      ? "Actualizar Recibo"
+                      : "Generar Recibo"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

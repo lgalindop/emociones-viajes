@@ -254,7 +254,7 @@ export default function ReceiptGenerator({
           payment_method: pago.metodo_pago,
           total_price: venta.precio_total,
           previous_payments: venta.monto_pagado - pago.monto,
-          balance: venta.monto_pendiente,
+          balance: balanceAfterPayment,
           client_name: venta.cotizaciones.cliente_nombre,
           client_phone: venta.cotizaciones.cliente_telefono,
           folio_venta: venta.folio_venta,
@@ -278,6 +278,9 @@ export default function ReceiptGenerator({
     }
   }
 
+  // Calculate balance AFTER this payment
+  const balanceAfterPayment = venta.monto_pendiente - pago.monto;
+  
   const receiptData = {
     receipt_number: receiptNumber,
     amount: pago.monto,
@@ -287,12 +290,12 @@ export default function ReceiptGenerator({
     folio_venta: venta.folio_venta,
     total_price: venta.precio_total,
     previous_payments: venta.monto_pagado - pago.monto,
-    balance: venta.monto_pendiente,
+    balance: balanceAfterPayment,
     custom_text: customText,
     fecha_viaje: venta.fecha_viaje,
     line_items: customData?.line_items || [],
     show_comision: customData?.show_comision || false,
-    show_fechas: customData?.show_fechas !== false,
+    show_fechas: customData?.show_fechas !== false && balanceAfterPayment > 0,
     show_reserva_info: customData?.show_reserva_info !== false,
     comision: customData?.comision || "0.00",
     fecha_proximo_abono: customData?.fecha_proximo_abono || "",

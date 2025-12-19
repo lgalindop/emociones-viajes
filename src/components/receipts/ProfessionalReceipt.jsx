@@ -269,30 +269,32 @@ export default function ProfessionalReceipt({ data }) {
         </div>
       )}
 
-      {/* Payment Deadline */}
-      <div
-        style={{
-          background: "#fef3c7",
-          borderRadius: "8px",
-          padding: "15px 20px",
-          marginBottom: "20px",
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <span style={{ fontSize: "18px", color: "#92400e" }}>
-          Fecha límite de pago:
-        </span>
-        <span style={{ fontSize: "18px", fontWeight: "600", color: "#92400e" }}>
-          {data.fecha_limite_pago
-            ? new Date(data.fecha_limite_pago).toLocaleDateString("es-MX", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              })
-            : "Por definir"}
-        </span>
-      </div>
+      {/* Payment Deadline - Only show if there's still a balance */}
+      {data.show_fechas && data.balance > 0 && (
+        <div
+          style={{
+            background: "#fef3c7",
+            borderRadius: "8px",
+            padding: "15px 20px",
+            marginBottom: "20px",
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <span style={{ fontSize: "18px", color: "#92400e" }}>
+            Fecha límite de pago:
+          </span>
+          <span style={{ fontSize: "18px", fontWeight: "600", color: "#92400e" }}>
+            {data.fecha_limite_pago
+              ? new Date(data.fecha_limite_pago).toLocaleDateString("es-MX", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })
+              : "Por definir"}
+          </span>
+        </div>
+      )}
 
       {/* Reservation Info */}
       {data.show_reserva_info && (

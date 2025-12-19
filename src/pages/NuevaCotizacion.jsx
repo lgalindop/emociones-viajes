@@ -16,6 +16,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     fecha_regreso: "",
     num_adultos: 2,
     num_ninos: 0,
+    num_infantes: 0,
     presupuesto_aprox: "",
     requerimientos: "",
     notas: "",
@@ -24,12 +25,13 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
   const [currentOpcion, setCurrentOpcion] = useState({
     operador_id: "",
     nombre_paquete: "",
-    precio_por_persona: "",
+    precio_adulto: "",
+    precio_menor: "",
+    precio_infante: "",
     precio_total: "",
     incluye: [],
     no_incluye: [],
     disponibilidad: "",
-    link_paquete: "",
     notas: "",
   });
   const [incluye, setIncluye] = useState("");
@@ -160,13 +162,40 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     }
   }
 
+  function calculatePrecioTotal() {
+    const adultos =
+      parseFloat(currentOpcion.precio_adulto || 0) * formData.num_adultos;
+    const menores =
+      parseFloat(currentOpcion.precio_menor || 0) * formData.num_ninos;
+    const infantes =
+      parseFloat(currentOpcion.precio_infante || 0) *
+      (formData.num_infantes || 0);
+    return (adultos + menores + infantes).toFixed(2);
+  }
+
+  function handlePriceChange(field, value) {
+    const updated = { ...currentOpcion, [field]: value };
+
+    // Auto-calculate precio_total when price fields change
+    if (["precio_adulto", "precio_menor", "precio_infante"].includes(field)) {
+      const adultos =
+        parseFloat(updated.precio_adulto || 0) * formData.num_adultos;
+      const menores =
+        parseFloat(updated.precio_menor || 0) * formData.num_ninos;
+      const infantes =
+        parseFloat(updated.precio_infante || 0) * (formData.num_infantes || 0);
+      updated.precio_total = (adultos + menores + infantes).toFixed(2);
+    }
+
+    setCurrentOpcion(updated);
+  }
+
   function handleAddOpcion() {
     if (
-      !currentOpcion.operador_id ||
-      !currentOpcion.nombre_paquete ||
+      (!currentOpcion.operador_id || currentOpcion.operador_id === "otro") &&
       !currentOpcion.precio_total
     ) {
-      alert("Completa los campos obligatorios de la opción");
+      alert("Completa el precio total de la opción");
       return;
     }
 
@@ -174,12 +203,13 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     setCurrentOpcion({
       operador_id: "",
       nombre_paquete: "",
-      precio_por_persona: "",
+      precio_adulto: "",
+      precio_menor: "",
+      precio_infante: "",
       precio_total: "",
       incluye: [],
       no_incluye: [],
       disponibilidad: "",
-      link_paquete: "",
       notas: "",
     });
     setIncluye("");
@@ -247,14 +277,17 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
       if (opciones.length > 0) {
         const opcionesData = opciones.map((op) => ({
           cotizacion_id: cotizacion.id,
-          operador_id: op.operador_id,
-          nombre_paquete: op.nombre_paquete,
-          precio_por_persona: op.precio_por_persona || null,
-          precio_total: op.precio_total,
+          operador_id: op.operador_id === "otro" ? null : op.operador_id,
+          nombre_paquete: op.nombre_paquete || null,
+          precio_adulto: op.precio_adulto ? parseFloat(op.precio_adulto) : null,
+          precio_menor: op.precio_menor ? parseFloat(op.precio_menor) : null,
+          precio_infante: op.precio_infante
+            ? parseFloat(op.precio_infante)
+            : null,
+          precio_total: parseFloat(op.precio_total),
           incluye: op.incluye,
           no_incluye: op.no_incluye,
           disponibilidad: op.disponibilidad || null,
-          link_paquete: op.link_paquete || null,
           notas: op.notas || null,
         }));
 
@@ -504,7 +537,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Adultos
@@ -525,7 +558,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Niños
+                    Menores
                   </label>
                   <input
                     type="number"
@@ -535,6 +568,24 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                       setFormData({
                         ...formData,
                         num_ninos: parseInt(e.target.value),
+                      })
+                    }
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Infantes
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.num_infantes}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        num_infantes: parseInt(e.target.value),
                       })
                     }
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
@@ -643,11 +694,15 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <p className="font-semibold text-primary">
-                              {operador?.nombre}
+                              {opcion.operador_id === "otro"
+                                ? "Otro"
+                                : operador?.nombre}
                             </p>
-                            <p className="text-lg font-bold">
-                              {opcion.nombre_paquete}
-                            </p>
+                            {opcion.nombre_paquete && (
+                              <p className="text-lg font-bold">
+                                {opcion.nombre_paquete}
+                              </p>
+                            )}
                             <p className="text-2xl font-bold text-primary mt-2">
                               $
                               {parseFloat(opcion.precio_total).toLocaleString()}
@@ -678,7 +733,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Operador *
+                    Operador
                   </label>
                   <select
                     value={currentOpcion.operador_id}
@@ -696,12 +751,13 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                         {op.nombre}
                       </option>
                     ))}
+                    <option value="otro">Otro</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nombre del Paquete *
+                    Nombre del Paquete
                   </label>
                   <input
                     type="text"
@@ -716,19 +772,17 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Precio por Persona
+                      Precio por Adulto
                     </label>
                     <input
                       type="number"
-                      value={currentOpcion.precio_por_persona}
+                      step="0.01"
+                      value={currentOpcion.precio_adulto}
                       onChange={(e) =>
-                        setCurrentOpcion({
-                          ...currentOpcion,
-                          precio_por_persona: e.target.value,
-                        })
+                        handlePriceChange("precio_adulto", e.target.value)
                       }
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                     />
@@ -736,20 +790,56 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Precio Total *
+                      Precio por Menor
                     </label>
                     <input
                       type="number"
-                      value={currentOpcion.precio_total}
+                      step="0.01"
+                      value={currentOpcion.precio_menor}
                       onChange={(e) =>
-                        setCurrentOpcion({
-                          ...currentOpcion,
-                          precio_total: e.target.value,
-                        })
+                        handlePriceChange("precio_menor", e.target.value)
                       }
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Precio por Infante
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={currentOpcion.precio_infante}
+                      onChange={(e) =>
+                        handlePriceChange("precio_infante", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Precio Total * (editable)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={currentOpcion.precio_total}
+                    onChange={(e) =>
+                      setCurrentOpcion({
+                        ...currentOpcion,
+                        precio_total: e.target.value,
+                      })
+                    }
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-yellow-50"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Auto-calculado: {formData.num_adultos} adultos +{" "}
+                    {formData.num_ninos} menores + {formData.num_infantes || 0}{" "}
+                    infantes
+                  </p>
                 </div>
 
                 <div>
@@ -847,24 +937,6 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                     }
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                     placeholder="Ej: Disponible hasta fin de mes"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Link del Paquete
-                  </label>
-                  <input
-                    type="url"
-                    value={currentOpcion.link_paquete}
-                    onChange={(e) =>
-                      setCurrentOpcion({
-                        ...currentOpcion,
-                        link_paquete: e.target.value,
-                      })
-                    }
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                    placeholder="https://..."
                   />
                 </div>
 

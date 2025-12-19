@@ -51,6 +51,17 @@ export default function ReceiptWizard({ onClose, onSuccess }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
 
+  // Recalculate balance when amount changes
+  useEffect(() => {
+    if (selectedVenta && formData.amount) {
+      const newBalance = selectedVenta.monto_pendiente - parseFloat(formData.amount || 0);
+      setFormData(prev => ({
+        ...prev,
+        balance: Math.max(0, newBalance)
+      }));
+    }
+  }, [formData.amount, selectedVenta]);
+
   async function searchVentas() {
     try {
       // Search by folio
@@ -249,11 +260,23 @@ export default function ReceiptWizard({ onClose, onSuccess }) {
     } else {
       // Use existing venta, create a new pago entry
       try {
+        // Get the highest payment number for this venta
+        const { data: existingPagos } = await supabase
+          .from("pagos")
+          .select("numero_pago")
+          .eq("venta_id", selectedVenta.id)
+          .order("numero_pago", { ascending: false })
+          .limit(1);
+
+        const nextNumero = existingPagos && existingPagos.length > 0 
+          ? existingPagos[0].numero_pago + 1 
+          : 1;
+
         const { data: newPago, error: pagoError } = await supabase
           .from("pagos")
           .insert({
             venta_id: selectedVenta.id,
-            numero_pago: 999, // Manual entry marker
+            numero_pago: nextNumero,
             monto: parseFloat(formData.amount),
             fecha_programada: formData.payment_date,
             fecha_pagado: formData.payment_date,
@@ -626,13 +649,9 @@ export default function ReceiptWizard({ onClose, onSuccess }) {
                             type="number"
                             step="0.01"
                             value={formData.total_price}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                total_price: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                            readOnly
+                            disabled
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
                             placeholder="0.00"
                           />
                         </div>
@@ -645,13 +664,9 @@ export default function ReceiptWizard({ onClose, onSuccess }) {
                             type="number"
                             step="0.01"
                             value={formData.previous_payments}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                previous_payments: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                            readOnly
+                            disabled
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
                             placeholder="0.00"
                           />
                         </div>
@@ -664,13 +679,9 @@ export default function ReceiptWizard({ onClose, onSuccess }) {
                             type="number"
                             step="0.01"
                             value={formData.balance}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                balance: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                            readOnly
+                            disabled
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
                             placeholder="0.00"
                           />
                         </div>

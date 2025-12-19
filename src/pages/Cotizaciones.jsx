@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "../lib/supabase";
 import {
   Plus,
-  Eye,
   FileText,
   Search,
   X,
@@ -25,12 +24,14 @@ export default function Cotizaciones({ onNewCotizacion }) {
   const [searchTerm, setSearchTerm] = useState(
     localStorage.getItem("filter_search") || ""
   );
-  const [statusFilter, setStatusFilter] = useState(
-    localStorage.getItem("filter_status") || "all"
-  );
-  const [leadOriginFilter, setLeadOriginFilter] = useState(
-    localStorage.getItem("filter_origin") || "all"
-  );
+  const [selectedStages, setSelectedStages] = useState(() => {
+    const saved = localStorage.getItem("filter_stages");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [hideConverted, setHideConverted] = useState(() => {
+    const saved = localStorage.getItem("filter_hide_converted");
+    return saved === "true";
+  });
   const [dateFrom, setDateFrom] = useState(
     localStorage.getItem("filter_from") || ""
   );
@@ -39,6 +40,19 @@ export default function Cotizaciones({ onNewCotizacion }) {
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
+  const pipelineStages = [
+    { key: "lead", label: "Lead" },
+    { key: "qualification", label: "Calificación" },
+    { key: "quote_sent", label: "Cotización Enviada" },
+    { key: "negotiation", label: "Negociación" },
+    { key: "booking_confirmed", label: "Reserva Confirmada" },
+    { key: "deposit_paid", label: "Depósito Pagado" },
+    { key: "payment_pending", label: "Pago Pendiente" },
+    { key: "fully_paid", label: "Pagado Completo" },
+    { key: "travel_documents", label: "Documentos de Viaje" },
+    { key: "delivered", label: "Entregado" },
+  ];
+
   useEffect(() => {
     if (debouncedSearchTerm) {
       localStorage.setItem("filter_search", debouncedSearchTerm);
@@ -46,6 +60,18 @@ export default function Cotizaciones({ onNewCotizacion }) {
       localStorage.removeItem("filter_search");
     }
   }, [debouncedSearchTerm]);
+
+  useEffect(() => {
+    if (selectedStages.length > 0) {
+      localStorage.setItem("filter_stages", JSON.stringify(selectedStages));
+    } else {
+      localStorage.removeItem("filter_stages");
+    }
+  }, [selectedStages]);
+
+  useEffect(() => {
+    localStorage.setItem("filter_hide_converted", hideConverted);
+  }, [hideConverted]);
 
   useEffect(() => {
     fetchCotizaciones();
@@ -69,13 +95,7 @@ export default function Cotizaciones({ onNewCotizacion }) {
 
       if (error) throw error;
 
-      // Filter out fully paid ventas
-      const filtered = (data || []).filter((cot) => {
-        if (!cot.ventas || cot.ventas.length === 0) return true;
-        return cot.ventas[0].monto_pendiente > 0;
-      });
-
-      setCotizaciones(filtered);
+      setCotizaciones(data || []);
     } catch (error) {
       console.error("Error:", error);
     } finally {
@@ -85,6 +105,10 @@ export default function Cotizaciones({ onNewCotizacion }) {
 
   const filteredCotizaciones = useMemo(() => {
     return cotizaciones.filter((cot) => {
+      if (hideConverted && cot.ventas && cot.ventas.length > 0) {
+        return false;
+      }
+
       if (debouncedSearchTerm) {
         const searchLower = debouncedSearchTerm.toLowerCase();
         const matchesSearch =
@@ -97,11 +121,10 @@ export default function Cotizaciones({ onNewCotizacion }) {
         if (!matchesSearch) return false;
       }
 
-      if (statusFilter !== "all" && cot.estatus !== statusFilter) {
-        return false;
-      }
-
-      if (leadOriginFilter !== "all" && cot.origen_lead !== leadOriginFilter) {
+      if (
+        selectedStages.length > 0 &&
+        !selectedStages.includes(cot.pipeline_stage)
+      ) {
         return false;
       }
 
@@ -120,21 +143,15 @@ export default function Cotizaciones({ onNewCotizacion }) {
   }, [
     cotizaciones,
     debouncedSearchTerm,
-    statusFilter,
-    leadOriginFilter,
+    selectedStages,
+    hideConverted,
     dateFrom,
     dateTo,
   ]);
 
   function getStageLabel(stage) {
-    const stages = {
-      lead: "Lead",
-      qualification: "Calificación",
-      quote_sent: "Cotización Enviada",
-      negotiation: "Negociación",
-      booking_confirmed: "Reserva Confirmada",
-    };
-    return stages[stage] || stage;
+    const found = pipelineStages.find((s) => s.key === stage);
+    return found ? found.label : stage;
   }
 
   function getStageBadge(stage) {
@@ -144,19 +161,48 @@ export default function Cotizaciones({ onNewCotizacion }) {
       quote_sent: "bg-purple-100 text-purple-700",
       negotiation: "bg-yellow-100 text-yellow-700",
       booking_confirmed: "bg-green-100 text-green-700",
+      deposit_paid: "bg-teal-100 text-teal-700",
+      payment_pending: "bg-orange-100 text-orange-700",
+      fully_paid: "bg-emerald-100 text-emerald-700",
+      travel_documents: "bg-indigo-100 text-indigo-700",
+      delivered: "bg-green-200 text-green-800",
     };
     return colors[stage] || "bg-gray-100 text-gray-700";
   }
 
+  function getTravelersText(cotizacion) {
+    const parts = [];
+    if (cotizacion.num_adultos > 0)
+      parts.push(`${cotizacion.num_adultos} adultos`);
+    if (cotizacion.num_ninos > 0) parts.push(`${cotizacion.num_ninos} menores`);
+    if (cotizacion.num_infantes > 0)
+      parts.push(`${cotizacion.num_infantes} infantes`);
+    return parts.join(", ") || "0 viajeros";
+  }
+
+  function toggleStage(stage) {
+    setSelectedStages((prev) =>
+      prev.includes(stage) ? prev.filter((s) => s !== stage) : [...prev, stage]
+    );
+  }
+
+  function toggleAllStages() {
+    if (selectedStages.length === pipelineStages.length) {
+      setSelectedStages([]);
+    } else {
+      setSelectedStages(pipelineStages.map((s) => s.key));
+    }
+  }
+
   function clearFilters() {
     setSearchTerm("");
-    setStatusFilter("all");
-    setLeadOriginFilter("all");
+    setSelectedStages([]);
+    setHideConverted(false);
     setDateFrom("");
     setDateTo("");
     localStorage.removeItem("filter_search");
-    localStorage.removeItem("filter_status");
-    localStorage.removeItem("filter_origin");
+    localStorage.removeItem("filter_stages");
+    localStorage.removeItem("filter_hide_converted");
     localStorage.removeItem("filter_from");
     localStorage.removeItem("filter_to");
   }
@@ -223,78 +269,75 @@ export default function Cotizaciones({ onNewCotizacion }) {
 
   const activeFiltersCount = [
     debouncedSearchTerm,
-    statusFilter !== "all",
-    leadOriginFilter !== "all",
+    selectedStages.length > 0,
+    hideConverted,
     dateFrom,
     dateTo,
   ].filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8 pb-24 md:pb-8">
+    <div className="min-h-screen bg-gray-50 p-3 md:p-6 pb-20 md:pb-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 md:mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-primary">
-              Cotizaciones
-            </h1>
-            <p className="text-sm md:text-base text-gray-600 mt-1">
-              {filteredCotizaciones.length} de {cotizaciones.length}{" "}
-              cotizaciones
+            <h1 className="text-xl font-bold text-primary">Cotizaciones</h1>
+            <p className="text-xs text-gray-600">
+              {filteredCotizaciones.length} de {cotizaciones.length}
             </p>
           </div>
 
           <button
             onClick={onNewCotizacion}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors text-sm"
           >
-            <Plus size={20} />
-            <span>Nueva Cotización</span>
+            <Plus size={16} />
+            <span>Nueva</span>
           </button>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow p-3 md:p-4 mb-4 md:mb-6">
-          <div className="relative mb-3">
+        <div className="bg-white rounded-lg shadow p-2 mb-3">
+          <div className="relative mb-2">
             <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={18}
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={14}
             />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por folio, cliente, destino, teléfono, email..."
-              className="w-full pl-10 pr-10 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Buscar..."
+              className="w-full pl-8 pr-8 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                <X size={16} />
+                <X size={12} />
               </button>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors ${
+              className={`flex items-center gap-1 px-2 py-1 text-xs rounded-lg border transition-colors ${
                 showFilters
                   ? "bg-primary text-white border-primary"
                   : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
               }`}
             >
-              <SlidersHorizontal size={16} />
+              <SlidersHorizontal size={12} />
               Filtros
               {activeFiltersCount > 0 && (
-                <span className="bg-white text-primary px-1.5 rounded-full text-xs font-semibold">
+                <span className="bg-white text-primary px-1 rounded-full text-xs font-semibold min-w-[16px] text-center">
                   {activeFiltersCount}
                 </span>
               )}
               <ChevronDown
-                size={16}
+                size={12}
                 className={`transition-transform ${
                   showFilters ? "rotate-180" : ""
                 }`}
@@ -304,70 +347,62 @@ export default function Cotizaciones({ onNewCotizacion }) {
             {activeFiltersCount > 0 && (
               <button
                 onClick={clearFilters}
-                className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               >
-                Limpiar filtros
+                Limpiar
               </button>
             )}
 
             {selectedForDelete.length > 0 && isAdmin() && (
               <button
                 onClick={handleBulkDelete}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors ml-auto"
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors ml-auto"
               >
-                <Trash2 size={16} />
+                <Trash2 size={12} />
                 Eliminar ({selectedForDelete.length})
               </button>
             )}
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t">
+            <div className="mt-2 pt-2 border-t space-y-3">
+              {/* Pipeline Stages - Excel style checkboxes */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Estatus
+                  Etapa del Pipeline
                 </label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    localStorage.setItem("filter_status", e.target.value);
-                  }}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="all">Todos</option>
-                  <option value="nueva">Nueva</option>
-                  <option value="seguimiento">Seguimiento</option>
-                  <option value="cerrada">Cerrada</option>
-                  <option value="perdida">Perdida</option>
-                </select>
+                <div className="bg-gray-50 rounded border p-2 max-h-48 overflow-y-auto">
+                  <label className="flex items-center gap-2 mb-1 cursor-pointer hover:bg-gray-100 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={selectedStages.length === pipelineStages.length}
+                      onChange={toggleAllStages}
+                      className="w-3 h-3 text-primary rounded"
+                    />
+                    <span className="text-xs font-semibold">Todas</span>
+                  </label>
+                  <div className="border-t my-1"></div>
+                  {pipelineStages.map((stage) => (
+                    <label
+                      key={stage.key}
+                      className="flex items-center gap-2 mb-0.5 cursor-pointer hover:bg-gray-100 p-1 rounded"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedStages.includes(stage.key)}
+                        onChange={() => toggleStage(stage.key)}
+                        className="w-3 h-3 text-primary rounded"
+                      />
+                      <span className="text-xs">{stage.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Origen del Lead
-                </label>
-                <select
-                  value={leadOriginFilter}
-                  onChange={(e) => {
-                    setLeadOriginFilter(e.target.value);
-                    localStorage.setItem("filter_origin", e.target.value);
-                  }}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="all">Todos</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="instagram">Instagram</option>
-                  <option value="facebook">Facebook</option>
-                  <option value="referido">Referido</option>
-                  <option value="web">Web</option>
-                  <option value="otro">Otro</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 lg:col-span-2">
+              {/* Date Range + Hide Converted */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
                     Desde
                   </label>
                   <input
@@ -377,11 +412,12 @@ export default function Cotizaciones({ onNewCotizacion }) {
                       setDateFrom(e.target.value);
                       localStorage.setItem("filter_from", e.target.value);
                     }}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border rounded px-2 py-1 text-xs"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
                     Hasta
                   </label>
                   <input
@@ -391,132 +427,144 @@ export default function Cotizaciones({ onNewCotizacion }) {
                       setDateTo(e.target.value);
                       localStorage.setItem("filter_to", e.target.value);
                     }}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border rounded px-2 py-1 text-xs"
                   />
+                </div>
+
+                <div className="flex items-end">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hideConverted}
+                      onChange={(e) => setHideConverted(e.target.checked)}
+                      className="w-3 h-3 text-primary rounded"
+                    />
+                    <span className="text-xs text-gray-700">
+                      Ocultar convertidas a ventas
+                    </span>
+                  </label>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Select All (only for admins) */}
+        {/* Select All */}
         {isAdmin() && filteredCotizaciones.length > 0 && (
-          <div className="mb-3 flex items-center gap-2">
+          <div className="mb-2 flex items-center gap-1.5">
             <input
               type="checkbox"
               checked={selectedForDelete.length === filteredCotizaciones.length}
               onChange={toggleSelectAll}
-              className="w-4 h-4 text-primary rounded"
+              className="w-3 h-3 text-primary rounded"
             />
-            <span className="text-sm text-gray-600">
-              Seleccionar todas ({filteredCotizaciones.length})
+            <span className="text-xs text-gray-600">
+              Todas ({filteredCotizaciones.length})
             </span>
           </div>
         )}
 
         {filteredCotizaciones.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <FileText size={48} className="mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-600 mb-2">
+          <div className="text-center py-8 bg-white rounded-lg shadow">
+            <FileText size={32} className="mx-auto text-gray-300 mb-2" />
+            <h3 className="text-sm font-semibold text-gray-600 mb-1">
               No hay cotizaciones
             </h3>
-            <p className="text-gray-500 mb-4">
+            <p className="text-xs text-gray-500">
               {activeFiltersCount > 0
                 ? "Intenta ajustar los filtros"
                 : "Comienza creando tu primera cotización"}
             </p>
-            {activeFiltersCount > 0 && (
-              <button
-                onClick={clearFilters}
-                className="text-primary hover:underline"
-              >
-                Limpiar filtros
-              </button>
-            )}
           </div>
         )}
 
         {/* Cotizaciones List */}
-        <div className="space-y-3 md:space-y-4">
+        <div className="space-y-1">
           {filteredCotizaciones.map((cotizacion) => (
             <div
               key={cotizacion.id}
-              className={`bg-white rounded-lg shadow hover:shadow-md transition-all ${
+              onClick={() => setSelectedCotizacionId(cotizacion.id)}
+              className={`bg-white rounded-lg shadow hover:shadow-md transition-all cursor-pointer ${
                 selectedForDelete.includes(cotizacion.id)
                   ? "ring-2 ring-red-500"
                   : ""
               }`}
             >
-              <div className="p-4 md:p-6">
-                <div className="flex items-start gap-3">
-                  {isAdmin() && (
-                    <input
-                      type="checkbox"
-                      checked={selectedForDelete.includes(cotizacion.id)}
-                      onChange={() => toggleSelectForDelete(cotizacion.id)}
-                      className="mt-1 w-4 h-4 text-primary rounded"
-                      onClick={(e) => e.stopPropagation()}
-                    />
+              <div className="p-1.5 flex items-center gap-3 text-xs">
+                {isAdmin() && (
+                  <input
+                    type="checkbox"
+                    checked={selectedForDelete.includes(cotizacion.id)}
+                    onChange={() => toggleSelectForDelete(cotizacion.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-3 h-3 text-primary rounded flex-shrink-0"
+                  />
+                )}
+
+                <div className="flex flex-col items-center gap-0.5 min-w-[90px]">
+                  <span className="font-semibold text-gray-500">
+                    {cotizacion.folio}
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full whitespace-nowrap ${getStageBadge(
+                      cotizacion.pipeline_stage
+                    )}`}
+                  >
+                    {getStageLabel(cotizacion.pipeline_stage)}
+                  </span>
+                </div>
+
+                <div className="flex flex-col items-center min-w-0 flex-1">
+                  <span className="font-bold text-gray-900 truncate w-full text-center">
+                    {cotizacion.cliente_nombre}
+                  </span>
+                  {cotizacion.cliente_telefono && (
+                    <span className="text-gray-500 whitespace-nowrap">
+                      {cotizacion.cliente_telefono}
+                    </span>
                   )}
+                </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-gray-500">
-                          {cotizacion.folio}
-                        </span>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${getStageBadge(cotizacion.pipeline_stage)}`}
-                        >
-                          {getStageLabel(cotizacion.pipeline_stage)}
-                        </span>
-                      </div>
-                      <LeadOriginIcon
-                        origen={cotizacion.origen_lead}
-                        size={18}
-                      />
-                    </div>
+                <div className="hidden sm:flex flex-col items-center min-w-[120px]">
+                  <span className="text-gray-600 truncate w-full text-center">
+                    {cotizacion.destino}
+                  </span>
+                </div>
 
-                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
-                      {cotizacion.cliente_nombre}
-                    </h3>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600 mb-4">
-                      <p>
-                        <span className="font-medium">Destino:</span>{" "}
-                        {cotizacion.destino}
-                      </p>
-                      {cotizacion.fecha_salida && (
-                        <p>
-                          <span className="font-medium">Salida:</span>{" "}
-                          {new Date(cotizacion.fecha_salida).toLocaleDateString(
-                            "es-MX"
-                          )}
-                        </p>
+                <div className="hidden lg:flex flex-col items-center gap-0.5 min-w-[100px]">
+                  {cotizacion.fecha_salida && (
+                    <span className="text-gray-600 whitespace-nowrap">
+                      Viaje:{" "}
+                      {new Date(cotizacion.fecha_salida).toLocaleDateString(
+                        "es-MX"
                       )}
-                      <p>
-                        <span className="font-medium">Viajeros:</span>{" "}
-                        {cotizacion.num_adultos + cotizacion.num_ninos}
-                      </p>
-                    </div>
-
-                    {cotizacion.presupuesto_aprox && (
-                      <p className="text-sm font-semibold text-primary mb-3">
-                        Presupuesto: $
-                        {parseFloat(
-                          cotizacion.presupuesto_aprox
-                        ).toLocaleString("es-MX")}
-                      </p>
+                    </span>
+                  )}
+                  <span className="text-gray-500 whitespace-nowrap">
+                    Creada:{" "}
+                    {new Date(cotizacion.created_at).toLocaleDateString(
+                      "es-MX"
                     )}
+                  </span>
+                </div>
 
-                    <button
-                      onClick={() => setSelectedCotizacionId(cotizacion.id)}
-                      className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm"
-                    >
-                      <Eye size={16} />
-                      Ver Detalles
-                    </button>
-                  </div>
+                <div className="hidden xl:flex flex-col items-center min-w-[130px]">
+                  <span className="text-gray-600 text-center">
+                    {getTravelersText(cotizacion)}
+                  </span>
+                </div>
+
+                <div className="hidden md:flex flex-col items-center gap-1 min-w-[80px]">
+                  {cotizacion.presupuesto_aprox && (
+                    <span className="text-primary font-semibold whitespace-nowrap">
+                      $
+                      {parseFloat(cotizacion.presupuesto_aprox).toLocaleString(
+                        "es-MX",
+                        { maximumFractionDigits: 0 }
+                      )}
+                    </span>
+                  )}
+                  <LeadOriginIcon origen={cotizacion.origen_lead} size={14} />
                 </div>
               </div>
             </div>

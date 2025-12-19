@@ -162,17 +162,6 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     }
   }
 
-  function calculatePrecioTotal() {
-    const adultos =
-      parseFloat(currentOpcion.precio_adulto || 0) * formData.num_adultos;
-    const menores =
-      parseFloat(currentOpcion.precio_menor || 0) * formData.num_ninos;
-    const infantes =
-      parseFloat(currentOpcion.precio_infante || 0) *
-      (formData.num_infantes || 0);
-    return (adultos + menores + infantes).toFixed(2);
-  }
-
   function handlePriceChange(field, value) {
     const updated = { ...currentOpcion, [field]: value };
 

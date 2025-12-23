@@ -3,7 +3,6 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, FileText } from "lucide-react";
-import ReceiptPreview from "../components/receipts/ReceiptPreview";
 
 export default function ReceiptWizard() {
   const navigate = useNavigate();
@@ -68,6 +67,8 @@ export default function ReceiptWizard() {
             id,
             folio_venta,
             precio_total,
+            monto_pagado,
+            fecha_limite_pago,
             cotizaciones (
               cliente_nombre,
               cliente_telefono,
@@ -86,7 +87,7 @@ export default function ReceiptWizard() {
 
       setExistingReceipt(receipt);
       setSelectedVenta(receipt.ventas);
-      setMode("from-sale");
+      setMode(receipt.venta_id ? "from-sale" : "standalone");
 
       // Populate form with existing data
       setReceiptData({
@@ -231,6 +232,32 @@ export default function ReceiptWizard() {
   }
 
   async function handleCreateReceipt(imageUrl) {
+    const amountPaid = parseFloat(receiptData.amountPaid);
+
+    // Calculate financial data for receipt display
+    let receiptDisplayData = {
+      total_price: amountPaid,
+      previous_payments: 0,
+      balance: 0,
+      show_fechas: false,
+      fecha_limite_pago: null,
+    };
+
+    if (selectedVenta) {
+      const totalPrice = parseFloat(selectedVenta.precio_total);
+      const previousPayments = parseFloat(selectedVenta.monto_pagado || 0);
+      const newBalance = totalPrice - previousPayments - amountPaid;
+
+      receiptDisplayData = {
+        total_price: totalPrice,
+        previous_payments: previousPayments,
+        balance: newBalance,
+        show_fechas: newBalance > 0,
+        fecha_limite_pago:
+          newBalance > 0 ? selectedVenta.fecha_limite_pago : null,
+      };
+    }
+
     // Insert new receipt
     const { data: receipt, error: receiptError } = await supabase
       .from("receipts")
@@ -242,7 +269,7 @@ export default function ReceiptWizard() {
         client_email: receiptData.clientEmail || null,
         destination: receiptData.destination,
         travelers: parseInt(receiptData.travelers) || null,
-        amount: parseFloat(receiptData.amountPaid),
+        amount: amountPaid,
         payment_method: receiptData.paymentMethod,
         payment_date: receiptData.paymentDate,
         notes: receiptData.notes || null,
@@ -251,6 +278,11 @@ export default function ReceiptWizard() {
         receipt_stage: "generated",
         created_by: user.id,
         folio_venta: receiptData.folioVenta || null,
+        // Store calculated financial data for receipt
+        total_price: receiptDisplayData.total_price,
+        previous_payments: receiptDisplayData.previous_payments,
+        balance: receiptDisplayData.balance,
+        fecha_limite_pago: receiptDisplayData.fecha_limite_pago,
       })
       .select()
       .single();
@@ -259,7 +291,6 @@ export default function ReceiptWizard() {
 
     // If from sale, update venta and create pago
     if (selectedVenta) {
-      const amountPaid = parseFloat(receiptData.amountPaid);
       const currentPagado = parseFloat(selectedVenta.monto_pagado || 0);
       const newMontoPagado = currentPagado + amountPaid;
       const newMontoPendiente =
@@ -321,32 +352,23 @@ export default function ReceiptWizard() {
     const newAmount = parseFloat(receiptData.amountPaid);
     const amountDifference = newAmount - oldAmount;
 
-    // Update receipt
-    const { error: updateReceiptError } = await supabase
-      .from("receipts")
-      .update({
-        client_name: receiptData.clientName,
-        client_phone: receiptData.clientPhone || null,
-        client_email: receiptData.clientEmail || null,
-        destination: receiptData.destination,
-        travelers: parseInt(receiptData.travelers) || null,
-        amount: newAmount,
-        payment_method: receiptData.paymentMethod,
-        payment_date: receiptData.paymentDate,
-        notes: receiptData.notes || null,
-        template_type: receiptData.templateType,
-        image_url: imageUrl,
-      })
-      .eq("id", receiptId);
-
-    if (updateReceiptError) throw updateReceiptError;
+    // Calculate financial data for receipt display
+    let receiptDisplayData = {
+      total_price: newAmount,
+      previous_payments: 0,
+      balance: 0,
+      show_fechas: false,
+      fecha_limite_pago: null,
+    };
 
     // If linked to venta, cascade financial updates
     if (existingReceipt.venta_id) {
       // Get current venta balances
       const { data: venta, error: ventaError } = await supabase
         .from("ventas")
-        .select("monto_pagado, monto_pendiente, precio_total")
+        .select(
+          "monto_pagado, monto_pendiente, precio_total, fecha_limite_pago"
+        )
         .eq("id", existingReceipt.venta_id)
         .single();
 
@@ -356,6 +378,18 @@ export default function ReceiptWizard() {
       const newMontoPagado =
         parseFloat(venta.monto_pagado || 0) + amountDifference;
       const newMontoPendiente = parseFloat(venta.precio_total) - newMontoPagado;
+
+      // Calculate what other receipts paid (excluding this one)
+      const previousPayments = newMontoPagado - newAmount;
+
+      receiptDisplayData = {
+        total_price: parseFloat(venta.precio_total),
+        previous_payments: previousPayments,
+        balance: newMontoPendiente,
+        show_fechas: newMontoPendiente > 0,
+        fecha_limite_pago:
+          newMontoPendiente > 0 ? venta.fecha_limite_pago : null,
+      };
 
       // Update venta balances
       const { error: updateVentaError } = await supabase
@@ -383,6 +417,31 @@ export default function ReceiptWizard() {
         if (pagoError) throw pagoError;
       }
     }
+
+    // Update receipt with new financial data
+    const { error: updateReceiptError } = await supabase
+      .from("receipts")
+      .update({
+        client_name: receiptData.clientName,
+        client_phone: receiptData.clientPhone || null,
+        client_email: receiptData.clientEmail || null,
+        destination: receiptData.destination,
+        travelers: parseInt(receiptData.travelers) || null,
+        amount: newAmount,
+        payment_method: receiptData.paymentMethod,
+        payment_date: receiptData.paymentDate,
+        notes: receiptData.notes || null,
+        template_type: receiptData.templateType,
+        image_url: imageUrl,
+        // Update calculated financial data for receipt
+        total_price: receiptDisplayData.total_price,
+        previous_payments: receiptDisplayData.previous_payments,
+        balance: receiptDisplayData.balance,
+        fecha_limite_pago: receiptDisplayData.fecha_limite_pago,
+      })
+      .eq("id", receiptId);
+
+    if (updateReceiptError) throw updateReceiptError;
 
     alert("Recibo actualizado y finanzas sincronizadas");
     navigate("/app/receipts");
@@ -751,6 +810,33 @@ export default function ReceiptWizard() {
                       return;
                     }
 
+                    // Check for overpayment if linked to sale
+                    if (selectedVenta) {
+                      const amountPaid = parseFloat(
+                        receiptData.amountPaid || 0
+                      );
+                      const totalPrice = parseFloat(selectedVenta.precio_total);
+                      const previousPayments = parseFloat(
+                        selectedVenta.monto_pagado || 0
+                      );
+                      const remainingBalance = totalPrice - previousPayments;
+
+                      if (amountPaid > remainingBalance) {
+                        const overpayment = amountPaid - remainingBalance;
+                        const confirmed = confirm(
+                          `⚠️ SOBREPAGO DETECTADO\n\n` +
+                            `Saldo pendiente: $${remainingBalance.toLocaleString("es-MX")}\n` +
+                            `Monto a pagar: $${amountPaid.toLocaleString("es-MX")}\n` +
+                            `Sobrepago: $${overpayment.toLocaleString("es-MX")}\n\n` +
+                            `¿Estás seguro de continuar con este pago?`
+                        );
+
+                        if (!confirmed) {
+                          return;
+                        }
+                      }
+                    }
+
                     setLoading(true);
                     try {
                       // Create hidden div for receipt rendering
@@ -772,14 +858,24 @@ export default function ReceiptWizard() {
                       const amountPaid = parseFloat(
                         receiptData.amountPaid || 0
                       );
-                      const totalPrice = selectedVenta
-                        ? parseFloat(selectedVenta.precio_total)
-                        : amountPaid;
-                      const previousPayments = selectedVenta
-                        ? parseFloat(selectedVenta.monto_pagado || 0)
-                        : 0;
-                      const balance =
-                        totalPrice - previousPayments - amountPaid;
+
+                      // Calculate financial data
+                      let totalPrice = amountPaid;
+                      let previousPayments = 0;
+                      let balance = 0;
+                      let showFechas = false;
+                      let fechaLimitePago = null;
+
+                      if (selectedVenta) {
+                        totalPrice = parseFloat(selectedVenta.precio_total);
+                        previousPayments = parseFloat(
+                          selectedVenta.monto_pagado || 0
+                        );
+                        balance = totalPrice - previousPayments - amountPaid;
+                        showFechas = balance > 0;
+                        fechaLimitePago =
+                          balance > 0 ? selectedVenta.fecha_limite_pago : null;
+                      }
 
                       const formattedData = {
                         receipt_number: receiptData.receiptNumber,
@@ -798,9 +894,8 @@ export default function ReceiptWizard() {
                         total_price: totalPrice,
                         previous_payments: previousPayments,
                         balance: balance,
-                        show_fechas: balance > 0,
-                        fecha_limite_pago:
-                          selectedVenta?.fecha_limite_pago || null,
+                        show_fechas: showFechas,
+                        fecha_limite_pago: fechaLimitePago,
                         show_reserva_info: true,
                         fecha_viaje: selectedVenta?.fecha_viaje || null,
                         destino: receiptData.destination,

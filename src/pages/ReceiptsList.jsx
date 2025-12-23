@@ -17,6 +17,8 @@ export default function ReceiptsList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStage, setFilterStage] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     fetchReceipts();
@@ -53,6 +55,33 @@ export default function ReceiptsList() {
 
   async function handleDelete(receipt) {
     const amount = receipt.amount ? parseFloat(receipt.amount) : 0;
+
+    // Check if independent receipt
+    if (!receipt.venta_id) {
+      if (
+        !confirm(`¿Eliminar recibo independiente ${receipt.receipt_number}?`)
+      ) {
+        return;
+      }
+
+      try {
+        const { error: deleteError } = await supabase
+          .from("receipts")
+          .delete()
+          .eq("id", receipt.id);
+
+        if (deleteError) throw deleteError;
+
+        alert("Recibo eliminado");
+        fetchReceipts();
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Error al eliminar recibo: " + error.message);
+      }
+      return;
+    }
+
+    // Linked to sale - show financial impact
     if (
       !confirm(
         `¿Eliminar recibo ${receipt.receipt_number}?\n\nEsto revertirá:\n- Monto pagado en venta: $${amount.toLocaleString("es-MX")}\n- Estado del recibo\n- Balance financiero\n\n¿Continuar?`
@@ -76,8 +105,7 @@ export default function ReceiptsList() {
         parseFloat(venta.monto_pagado || 0) - parseFloat(receipt.amount || 0);
       const newMontoPendiente = parseFloat(venta.precio_total) - newMontoPagado;
 
-      // Start transaction
-      // 1. Update venta balances
+      // Update venta balances
       const { error: updateVentaError } = await supabase
         .from("ventas")
         .update({
@@ -88,7 +116,7 @@ export default function ReceiptsList() {
 
       if (updateVentaError) throw updateVentaError;
 
-      // 2. Mark associated pago as cancelled if exists
+      // Mark associated pago as cancelled if exists
       if (receipt.pago_id) {
         const { error: pagoError } = await supabase
           .from("pagos")
@@ -101,7 +129,7 @@ export default function ReceiptsList() {
         if (pagoError) throw pagoError;
       }
 
-      // 3. Delete receipt
+      // Delete receipt
       const { error: deleteError } = await supabase
         .from("receipts")
         .delete()
@@ -144,22 +172,22 @@ export default function ReceiptsList() {
     const matchesStage =
       filterStage === "all" || r.receipt_stage === filterStage;
 
-    return matchesSearch && matchesStage;
+    const matchesDate = (() => {
+      if (!startDate && !endDate) return true;
+      const receiptDate = new Date(r.payment_date);
+      if (startDate && !endDate) {
+        return receiptDate >= new Date(startDate);
+      }
+      if (!startDate && endDate) {
+        return receiptDate <= new Date(endDate);
+      }
+      return (
+        receiptDate >= new Date(startDate) && receiptDate <= new Date(endDate)
+      );
+    })();
+
+    return matchesSearch && matchesStage && matchesDate;
   });
-
-  const stageLabels = {
-    draft: "Borrador",
-    generated: "Generado",
-    sent: "Enviado",
-    confirmed: "Confirmado",
-  };
-
-  const stageBadgeColors = {
-    draft: "bg-gray-100 text-gray-700",
-    generated: "bg-blue-100 text-blue-700",
-    sent: "bg-yellow-100 text-yellow-700",
-    confirmed: "bg-green-100 text-green-700",
-  };
 
   if (loading) {
     return <div className="p-8">Cargando...</div>;
@@ -205,6 +233,23 @@ export default function ReceiptsList() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+                placeholder="Desde"
+              />
+              <span className="text-gray-500">-</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+                placeholder="Hasta"
               />
             </div>
             <div className="flex items-center gap-2">

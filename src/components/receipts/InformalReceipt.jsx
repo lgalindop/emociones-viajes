@@ -1,9 +1,14 @@
+import { getReceiptLogo } from "../../lib/logoConstants";
+
 export default function InformalReceipt({ data }) {
+  const logoSrc = getReceiptLogo();
+
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     const day = date.getDate();
     const month = date
       .toLocaleDateString("es-MX", { month: "short" })
+      .replace(".", "")
       .toUpperCase();
     const year = date.getFullYear();
     return { day, month, year };
@@ -15,335 +20,269 @@ export default function InformalReceipt({ data }) {
     <div
       style={{
         width: "1080px",
-        height: "1920px",
-        background:
-          "linear-gradient(to bottom right, #f0f9ff 0%, #ffffff 50%, #f0f9ff 100%)",
-        padding: "80px 60px",
+        minHeight: "1750px",
+        backgroundColor: "#4A9FBD",
+        padding: "60px 50px",
         fontFamily: "Arial, sans-serif",
-        position: "relative",
-        overflow: "hidden",
+        boxSizing: "border-box",
       }}
     >
-      {/* Decorative elements */}
+      {/* White content box */}
       <div
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100px",
-          height: "100%",
-          background: "linear-gradient(180deg, #6eb6d4 0%, #4a9bbc 100%)",
-        }}
-      />
-
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          right: 0,
-          width: "150px",
-          height: "100%",
-          background: "linear-gradient(180deg, #6eb6d4 0%, #4a9bbc 100%)",
-        }}
-      />
-
-      {/* Header with Logo */}
-      <div
-        style={{
-          textAlign: "center",
-          marginBottom: "60px",
-          position: "relative",
-          zIndex: 1,
+          backgroundColor: "white",
+          padding: "60px 70px",
+          borderRadius: "0px",
+          minHeight: "1400px",
         }}
       >
+        {/* Header with logo and date */}
         <div
           style={{
-            display: "inline-block",
-            marginBottom: "20px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: "50px",
           }}
         >
-          {/* Logo placeholder - using gradient circle */}
+          {/* Logo */}
+          <div style={{ flex: "0 0 auto" }}>
+            <img
+              src={logoSrc}
+              alt="Emociones Viajes"
+              style={{
+                height: "200px",
+                width: "auto",
+                display: "block",
+              }}
+            />
+          </div>
+
+          {/* Date calendar */}
           <div
             style={{
-              width: "180px",
-              height: "180px",
-              margin: "0 auto",
-              background: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "6px solid white",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+              backgroundColor: "#4A9FBD",
+              borderRadius: "12px",
+              overflow: "hidden",
+              minWidth: "220px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             }}
           >
-            <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
-              <path
-                d="M60 30 L75 60 L60 90 L45 60 Z"
-                fill="white"
-                opacity="0.3"
-              />
-              <circle
-                cx="60"
-                cy="60"
-                r="25"
-                stroke="white"
-                strokeWidth="4"
-                fill="none"
-              />
-              <path
-                d="M35 60 Q60 40, 85 60"
-                stroke="white"
-                strokeWidth="3"
-                fill="none"
-              />
-            </svg>
+            <div
+              style={{
+                backgroundColor: "#4A9FBD",
+                padding: "20px 24px",
+                textAlign: "center",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "700",
+                  color: "white",
+                  textTransform: "uppercase",
+                }}
+              >
+                {paymentDate.month}
+              </div>
+            </div>
+            <div
+              style={{
+                backgroundColor: "white",
+                padding: "0px 20px 30px 20px",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "100px",
+                  fontWeight: "700",
+                  color: "#1a1a1a",
+                  lineHeight: "1",
+                  marginBottom: "8px",
+                }}
+              >
+                {paymentDate.day}
+              </div>
+              <div
+                style={{
+                  fontSize: "36px",
+                  fontWeight: "400",
+                  color: "#666",
+                }}
+              >
+                {paymentDate.year}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div
-          style={{
-            fontSize: "52px",
-            color: "#5eb6d4",
-            fontWeight: "300",
-            letterSpacing: "3px",
-            fontStyle: "italic",
-            marginBottom: "8px",
-          }}
-        >
-          emociones
-        </div>
-        <div
-          style={{
-            fontSize: "36px",
-            color: "#1e40af",
-            fontWeight: "bold",
-            letterSpacing: "4px",
-          }}
-        >
-          viajes
-        </div>
-        <div
-          style={{
-            fontSize: "20px",
-            color: "#64748b",
-            marginTop: "12px",
-            letterSpacing: "2px",
-          }}
-        >
-          by FRAVEO
-        </div>
-
+        {/* RECIBO title */}
         <h1
           style={{
             fontSize: "96px",
-            fontWeight: "bold",
-            color: "#1e293b",
-            margin: "40px 0 0 0",
-            letterSpacing: "2px",
+            fontWeight: "700",
+            color: "#1a1a1a",
+            textAlign: "center",
+            margin: "40px 0 60px 0",
+            letterSpacing: "4px",
           }}
         >
           RECIBO
         </h1>
-      </div>
 
-      {/* Date Calendar */}
-      <div
-        style={{
-          position: "absolute",
-          top: "80px",
-          right: "200px",
-          background: "white",
-          borderRadius: "16px",
-          overflow: "hidden",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
-          border: "3px solid #e2e8f0",
-        }}
-      >
+        {/* Amount box */}
         <div
           style={{
-            background: "#6eb6d4",
-            color: "white",
-            padding: "16px 40px",
-            fontSize: "32px",
-            fontWeight: "bold",
+            backgroundColor: "#FDB913",
+            padding: "20px 40px",
             textAlign: "center",
+            marginBottom: "50px",
+            borderRadius: "8px",
           }}
         >
-          {paymentDate.month}
+          <span
+            style={{
+              fontSize: "36px",
+              fontWeight: "700",
+              color: "#1a1a1a",
+            }}
+          >
+            BUENO POR: $
+            {parseFloat(data.amount).toLocaleString("es-MX", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
         </div>
+
+        {/* Custom text description */}
         <div
           style={{
-            padding: "30px 40px",
-            textAlign: "center",
+            fontSize: "34px",
+            lineHeight: "1.7",
+            color: "#1a1a1a",
+            marginBottom: "60px",
+            textAlign: "left",
           }}
         >
-          <div
-            style={{
-              fontSize: "96px",
-              fontWeight: "bold",
-              color: "#1e293b",
-              lineHeight: "1",
-            }}
-          >
-            {paymentDate.day}
-          </div>
-          <div
-            style={{
-              fontSize: "48px",
-              color: "#64748b",
-              marginTop: "8px",
-            }}
-          >
-            {paymentDate.year}
-          </div>
+          {data.custom_text}
         </div>
       </div>
 
-      {/* Amount Badge */}
+      {/* Financial Summary Box - Outside white box, in blue area */}
       <div
         style={{
-          background: "#fbbf24",
-          color: "#1e293b",
-          padding: "24px 60px",
-          fontSize: "42px",
-          fontWeight: "bold",
-          textAlign: "center",
-          margin: "0 auto 60px",
-          maxWidth: "700px",
+          backgroundColor: "rgba(255, 255, 255, 0.3)",
+          padding: "50px 60px",
+          marginTop: "40px",
           borderRadius: "12px",
-          boxShadow: "0 8px 24px rgba(251, 191, 36, 0.4)",
-        }}
-      >
-        BUENO POR: $
-        {data.amount.toLocaleString("es-MX", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}
-      </div>
-
-      {/* Description */}
-      <div
-        style={{
-          fontSize: "36px",
-          lineHeight: "1.8",
-          color: "#1e293b",
-          textAlign: "justify",
-          marginBottom: "80px",
-          padding: "0 40px",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
-        {data.custom_text}
-      </div>
-
-      {/* Financial Summary Box */}
-      <div
-        style={{
-          background: "linear-gradient(135deg, #6eb6d4 0%, #4a9bbc 100%)",
-          color: "#1e293b",
-          padding: "50px",
-          borderRadius: "20px",
-          marginBottom: "80px",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
-          position: "relative",
-          zIndex: 1,
         }}
       >
         <div
           style={{
-            marginBottom: "30px",
+            marginBottom: "24px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
-          <span style={{ fontSize: "38px", fontWeight: "600" }}>Precio:</span>
-          <span style={{ fontSize: "48px", fontWeight: "bold" }}>
-            ${data.total_price.toLocaleString("es-MX")}
+          <span
+            style={{ fontSize: "36px", fontWeight: "600", color: "#1a1a1a" }}
+          >
+            Precio:
+          </span>
+          <span
+            style={{ fontSize: "40px", fontWeight: "700", color: "#1a1a1a" }}
+          >
+            ${parseFloat(data.total_price || 0).toLocaleString("es-MX")}
           </span>
         </div>
         <div
           style={{
-            marginBottom: "30px",
+            marginBottom: "24px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
-          <span style={{ fontSize: "38px", fontWeight: "600" }}>Anticipo:</span>
-          <span style={{ fontSize: "48px", fontWeight: "bold" }}>
-            ${data.previous_payments.toLocaleString("es-MX")}
+          <span
+            style={{ fontSize: "36px", fontWeight: "600", color: "#1a1a1a" }}
+          >
+            Pago:
           </span>
-        </div>
-        <div
-          style={{
-            marginBottom: "30px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <span style={{ fontSize: "38px", fontWeight: "600" }}>Pago:</span>
-          <span style={{ fontSize: "48px", fontWeight: "bold" }}>
-            ${data.amount.toLocaleString("es-MX")}
+          <span
+            style={{ fontSize: "40px", fontWeight: "700", color: "#1a1a1a" }}
+          >
+            ${parseFloat(data.amount).toLocaleString("es-MX")}
           </span>
         </div>
         {data.balance > 0 && (
           <div
             style={{
-              paddingTop: "30px",
-              borderTop: "4px solid rgba(0,0,0,0.2)",
+              paddingTop: "24px",
+              borderTop: "3px solid rgba(0,0,0,0.2)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
             }}
           >
-            <span style={{ fontSize: "42px", fontWeight: "bold" }}>Saldo:</span>
-            <span style={{ fontSize: "52px", fontWeight: "bold" }}>
-              ${data.balance.toLocaleString("es-MX")}
+            <span
+              style={{ fontSize: "40px", fontWeight: "700", color: "#1a1a1a" }}
+            >
+              Saldo:
+            </span>
+            <span
+              style={{ fontSize: "44px", fontWeight: "700", color: "#1a1a1a" }}
+            >
+              ${parseFloat(data.balance).toLocaleString("es-MX")}
             </span>
           </div>
         )}
       </div>
 
-      {/* Signature */}
+      {/* Signature - In white box at bottom */}
       <div
         style={{
+          backgroundColor: "white",
+          padding: "60px 80px",
+          marginTop: "40px",
+          borderRadius: "0px",
           textAlign: "center",
-          marginTop: "80px",
-          position: "relative",
-          zIndex: 1,
         }}
       >
-        {/* Signature image placeholder */}
+        {/* Signature line with decorative wave */}
         <div
           style={{
             margin: "0 auto",
-            width: "400px",
-            height: "120px",
-            borderBottom: "3px solid #1e293b",
+            width: "600px",
+            paddingBottom: "5px",
+            borderBottom: "3px solid #1a1a1a",
+            marginBottom: "25px",
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-end",
             justifyContent: "center",
-            marginBottom: "20px",
+            position: "relative",
           }}
         >
-          <svg width="300" height="80" viewBox="0 0 300 80" fill="none">
-            <path
-              d="M 20 40 Q 40 10, 60 40 T 100 40 Q 120 10, 140 40 T 180 40 Q 200 60, 220 40 T 260 40 L 280 35"
-              stroke="#1e293b"
-              strokeWidth="3"
-              fill="none"
-              strokeLinecap="round"
-            />
-          </svg>
+          <img
+            src="/firma-maribel-ornelas.png"
+            alt="Firma"
+            style={{
+              display: "block",
+              height: "360px",
+              width: "auto",
+              marginBottom: "0px",
+            }}
+          />
         </div>
         <div
           style={{
-            fontSize: "34px",
-            color: "#1e293b",
+            fontSize: "28px",
+            color: "#1a1a1a",
             fontWeight: "500",
           }}
         >

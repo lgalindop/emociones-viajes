@@ -1,10 +1,13 @@
 import React from "react";
+import { getReceiptLogo } from "../../lib/logoConstants.js";
 
 export default function WhatsAppExportTemplate({
   cotizacion,
   opciones,
   operadores,
 }) {
+  const logoSrc = getReceiptLogo();
+
   function getOperadorNombre(operadorId) {
     const op = operadores.find((o) => o.id === operadorId);
     return op?.nombre || "Operador";
@@ -25,335 +28,329 @@ export default function WhatsAppExportTemplate({
       style={{
         width: "1080px",
         backgroundColor: "#ffffff",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: "Arial, sans-serif",
         padding: "40px",
-        boxSizing: "border-box",
+        color: "#333",
       }}
     >
-      {/* Header with Logo */}
+      {/* Header */}
       <div
         style={{
           textAlign: "center",
-          marginBottom: "40px",
-          borderBottom: "4px solid #1e3a5f",
+          marginBottom: "30px",
+          borderBottom: "3px solid #FF6B35",
           paddingBottom: "20px",
         }}
       >
-        <div
+        <img
+          src={logoSrc}
+          alt="Emociones Viajes"
           style={{
-            width: "200px",
-            height: "80px",
-            margin: "0 auto 20px",
-            backgroundColor: "#f0f0f0",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: "8px",
+            maxWidth: "300px",
+            height: "auto",
+            marginBottom: "15px",
           }}
-        >
-          <span
-            style={{ color: "#1e3a5f", fontSize: "24px", fontWeight: "bold" }}
-          >
-            EMOCIONES
-          </span>
-        </div>
+        />
         <h1
           style={{
-            color: "#1e3a5f",
-            fontSize: "32px",
-            margin: "0",
-            fontWeight: "700",
+            fontSize: "36px",
+            color: "#FF6B35",
+            margin: "10px 0",
+            fontWeight: "bold",
           }}
         >
           Propuesta de Viaje
         </h1>
-        <p
-          style={{
-            color: "#5eb3d4",
-            fontSize: "18px",
-            margin: "8px 0 0",
-            fontWeight: "500",
-          }}
-        >
-          {cotizacion.folio}
-        </p>
       </div>
 
-      {/* Client & Travel Info */}
+      {/* Cliente Info */}
       <div
         style={{
+          marginBottom: "30px",
+          padding: "20px",
           backgroundColor: "#f8f9fa",
-          padding: "30px",
-          borderRadius: "12px",
-          marginBottom: "40px",
-          border: "2px solid #e9ecef",
+          borderRadius: "8px",
         }}
       >
+        <div style={{ marginBottom: "10px" }}>
+          <strong style={{ color: "#FF6B35" }}>Cliente:</strong>{" "}
+          {cotizacion.cliente}
+        </div>
+        <div style={{ marginBottom: "10px" }}>
+          <strong style={{ color: "#FF6B35" }}>Destino:</strong>{" "}
+          {cotizacion.destino}
+        </div>
+        <div style={{ marginBottom: "10px" }}>
+          <strong style={{ color: "#FF6B35" }}>Fecha de Viaje:</strong>{" "}
+          {formatDate(cotizacion.fecha_viaje)}
+        </div>
+        <div style={{ marginBottom: "10px" }}>
+          <strong style={{ color: "#FF6B35" }}>Duración:</strong>{" "}
+          {cotizacion.duracion_dias} días / {cotizacion.duracion_noches} noches
+        </div>
+        <div>
+          <strong style={{ color: "#FF6B35" }}>Pasajeros:</strong>{" "}
+          {cotizacion.num_personas}
+        </div>
+      </div>
+
+      {/* Opciones de Paquete */}
+      <div style={{ marginBottom: "30px" }}>
+        <h2
+          style={{
+            fontSize: "28px",
+            color: "#FF6B35",
+            marginBottom: "20px",
+            borderBottom: "2px solid #FF6B35",
+            paddingBottom: "10px",
+          }}
+        >
+          Opciones de Paquete
+        </h2>
+
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
-            gap: "30px",
+            gap: "20px",
           }}
         >
-          <div>
-            <h3
+          {opciones.map((opcion, idx) => (
+            <div
+              key={opcion.id}
               style={{
-                color: "#1e3a5f",
-                fontSize: "18px",
-                marginBottom: "15px",
-                fontWeight: "600",
+                border: "2px solid #FF6B35",
+                borderRadius: "8px",
+                padding: "20px",
+                backgroundColor: "#fff",
               }}
             >
-              📋 Cliente
-            </h3>
-            <p style={{ margin: "8px 0", fontSize: "16px", color: "#333" }}>
-              <strong>Nombre:</strong> {cotizacion.cliente_nombre}
-            </p>
-            {cotizacion.cliente_telefono && (
-              <p style={{ margin: "8px 0", fontSize: "16px", color: "#333" }}>
-                <strong>Teléfono:</strong> {cotizacion.cliente_telefono}
-              </p>
-            )}
-          </div>
+              <h3
+                style={{
+                  fontSize: "24px",
+                  color: "#FF6B35",
+                  marginBottom: "15px",
+                  fontWeight: "bold",
+                }}
+              >
+                Opción {idx + 1}
+              </h3>
 
-          <div>
-            <h3
-              style={{
-                color: "#1e3a5f",
-                fontSize: "18px",
-                marginBottom: "15px",
-                fontWeight: "600",
-              }}
-            >
-              ✈️ Detalles del Viaje
-            </h3>
-            <p style={{ margin: "8px 0", fontSize: "16px", color: "#333" }}>
-              <strong>Destino:</strong> {cotizacion.destino}
-            </p>
-            <p style={{ margin: "8px 0", fontSize: "16px", color: "#333" }}>
-              <strong>Fechas:</strong> {formatDate(cotizacion.fecha_salida)} -{" "}
-              {formatDate(cotizacion.fecha_regreso)}
-            </p>
-            <p style={{ margin: "8px 0", fontSize: "16px", color: "#333" }}>
-              <strong>Viajeros:</strong> {cotizacion.num_adultos} adulto(s),{" "}
-              {cotizacion.num_ninos} niño(s)
-            </p>
-          </div>
+              <div style={{ marginBottom: "15px" }}>
+                <div
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "bold",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {getOperadorNombre(opcion.operador_id)}
+                </div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "#666",
+                    marginBottom: "5px",
+                  }}
+                >
+                  {opcion.num_personas} {opcion.tipo_habitacion}
+                </div>
+              </div>
+
+              {/* Vuelos */}
+              {opcion.vuelo_ida_fecha && (
+                <div
+                  style={{
+                    marginBottom: "12px",
+                    padding: "10px",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "5px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: "bold",
+                      marginBottom: "5px",
+                      color: "#FF6B35",
+                    }}
+                  >
+                    ✈️ Vuelos
+                  </div>
+                  <div style={{ fontSize: "14px" }}>
+                    <div>
+                      <strong>Ida:</strong> {formatDate(opcion.vuelo_ida_fecha)}{" "}
+                      - {opcion.vuelo_ida_salida || "N/A"}
+                    </div>
+                    <div>
+                      <strong>Regreso:</strong>{" "}
+                      {formatDate(opcion.vuelo_regreso_fecha)} -{" "}
+                      {opcion.vuelo_regreso_salida || "N/A"}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Hotel */}
+              {opcion.hotel && (
+                <div
+                  style={{
+                    marginBottom: "12px",
+                    padding: "10px",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "5px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: "bold",
+                      marginBottom: "5px",
+                      color: "#FF6B35",
+                    }}
+                  >
+                    🏨 Hotel
+                  </div>
+                  <div style={{ fontSize: "14px" }}>{opcion.hotel}</div>
+                  {opcion.regimen_alimenticio && (
+                    <div style={{ fontSize: "14px", color: "#666" }}>
+                      {opcion.regimen_alimenticio}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Traslados */}
+              {opcion.traslados && (
+                <div
+                  style={{
+                    marginBottom: "12px",
+                    padding: "10px",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "5px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: "bold",
+                      marginBottom: "5px",
+                      color: "#FF6B35",
+                    }}
+                  >
+                    🚗 Traslados
+                  </div>
+                  <div style={{ fontSize: "14px" }}>{opcion.traslados}</div>
+                </div>
+              )}
+
+              {/* Tours */}
+              {opcion.tours && (
+                <div
+                  style={{
+                    marginBottom: "12px",
+                    padding: "10px",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "5px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: "bold",
+                      marginBottom: "5px",
+                      color: "#FF6B35",
+                    }}
+                  >
+                    🎯 Tours
+                  </div>
+                  <div style={{ fontSize: "14px" }}>{opcion.tours}</div>
+                </div>
+              )}
+
+              {/* Extras */}
+              {opcion.extras && (
+                <div
+                  style={{
+                    marginBottom: "12px",
+                    padding: "10px",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "5px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: "bold",
+                      marginBottom: "5px",
+                      color: "#FF6B35",
+                    }}
+                  >
+                    ⭐ Extras
+                  </div>
+                  <div style={{ fontSize: "14px" }}>{opcion.extras}</div>
+                </div>
+              )}
+
+              {/* Precio */}
+              <div
+                style={{
+                  marginTop: "15px",
+                  paddingTop: "15px",
+                  borderTop: "2px solid #FF6B35",
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "32px",
+                    fontWeight: "bold",
+                    color: "#FF6B35",
+                  }}
+                >
+                  ${opcion.precio_total?.toLocaleString("es-MX") || "0"} MXN
+                </div>
+                <div style={{ fontSize: "14px", color: "#666" }}>
+                  {opcion.tipo_tarifa}
+                </div>
+              </div>
+
+              {/* Notas */}
+              {opcion.notas && (
+                <div
+                  style={{
+                    marginTop: "15px",
+                    padding: "10px",
+                    backgroundColor: "#fff9e6",
+                    borderRadius: "5px",
+                    fontSize: "13px",
+                    color: "#666",
+                  }}
+                >
+                  <strong>Notas:</strong> {opcion.notas}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Package Options */}
-      <h2
+      {/* Footer / Contact */}
+      <div
         style={{
-          color: "#1e3a5f",
-          fontSize: "28px",
-          marginBottom: "30px",
-          fontWeight: "700",
+          marginTop: "40px",
+          padding: "20px",
+          backgroundColor: "#FF6B35",
+          color: "#fff",
+          borderRadius: "8px",
           textAlign: "center",
         }}
       >
-        Opciones de Paquetes
-      </h2>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: opciones.length <= 2 ? "1fr 1fr" : "1fr 1fr",
-          gap: "30px",
-        }}
-      >
-        {opciones.map((opcion, idx) => (
-          <div
-            key={opcion.id || idx}
-            style={{
-              border: "3px solid #1e3a5f",
-              borderRadius: "12px",
-              padding: "25px",
-              backgroundColor: "#ffffff",
-              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-              position: "relative",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: "-15px",
-                left: "20px",
-                backgroundColor: "#5eb3d4",
-                color: "#ffffff",
-                padding: "8px 20px",
-                borderRadius: "20px",
-                fontSize: "14px",
-                fontWeight: "700",
-              }}
-            >
-              OPCIÓN {idx + 1}
-            </div>
-
-            <div style={{ marginTop: "10px" }}>
-              <h3
-                style={{
-                  color: "#1e3a5f",
-                  fontSize: "20px",
-                  marginBottom: "10px",
-                  fontWeight: "700",
-                  minHeight: "50px",
-                }}
-              >
-                {opcion.nombre_paquete}
-              </h3>
-              <p
-                style={{
-                  color: "#666",
-                  fontSize: "14px",
-                  marginBottom: "15px",
-                  fontStyle: "italic",
-                }}
-              >
-                {getOperadorNombre(opcion.operador_id)}
-              </p>
-              <p
-                style={{
-                  color: "#666",
-                  fontSize: "14px",
-                  marginBottom: "15px",
-                }}
-              >
-                <strong>Viajeros:</strong>{" "}
-                {cotizacion.num_adultos + cotizacion.num_ninos} persona(s)
-              </p>
-
-              <div
-                style={{
-                  backgroundColor: "#1e3a5f",
-                  color: "#ffffff",
-                  padding: "20px",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                  marginBottom: "20px",
-                }}
-              >
-                <div style={{ fontSize: "16px", marginBottom: "5px" }}>
-                  Precio Total
-                </div>
-                <div style={{ fontSize: "36px", fontWeight: "700" }}>
-                  ${parseFloat(opcion.precio_total).toLocaleString("es-MX")}
-                </div>
-                {opcion.precio_por_persona > 0 && (
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      marginTop: "5px",
-                      opacity: "0.9",
-                    }}
-                  >
-                    $
-                    {parseFloat(opcion.precio_por_persona).toLocaleString(
-                      "es-MX"
-                    )}{" "}
-                    por persona
-                  </div>
-                )}
-              </div>
-
-              {opcion.incluye && opcion.incluye.length > 0 && (
-                <div style={{ marginBottom: "15px" }}>
-                  <h4
-                    style={{
-                      color: "#22c55e",
-                      fontSize: "16px",
-                      marginBottom: "10px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    ✓ Incluye:
-                  </h4>
-                  <ul
-                    style={{
-                      margin: 0,
-                      paddingLeft: "20px",
-                      fontSize: "14px",
-                      lineHeight: "1.8",
-                      color: "#333",
-                    }}
-                  >
-                    {opcion.incluye.slice(0, 5).map((item, i) => (
-                      <li key={i} style={{ marginBottom: "4px" }}>
-                        {item.trim()}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {opcion.no_incluye && opcion.no_incluye.length > 0 && (
-                <div>
-                  <h4
-                    style={{
-                      color: "#ef4444",
-                      fontSize: "16px",
-                      marginBottom: "10px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    ✗ No incluye:
-                  </h4>
-                  <ul
-                    style={{
-                      margin: 0,
-                      paddingLeft: "20px",
-                      fontSize: "14px",
-                      lineHeight: "1.8",
-                      color: "#333",
-                    }}
-                  >
-                    {opcion.no_incluye.slice(0, 3).map((item, i) => (
-                      <li key={i} style={{ marginBottom: "4px" }}>
-                        {item.trim()}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Footer */}
-      <div
-        style={{
-          marginTop: "50px",
-          paddingTop: "30px",
-          borderTop: "3px solid #1e3a5f",
-          textAlign: "center",
-        }}
-      >
-        <p
-          style={{
-            fontSize: "16px",
-            color: "#1e3a5f",
-            fontWeight: "600",
-            marginBottom: "10px",
-          }}
-        >
-          ¿Listo para tu próxima aventura?
-        </p>
-        <p style={{ fontSize: "14px", color: "#666", margin: "5px 0" }}>
-          📞 Contáctanos para más información o reservar
-        </p>
-        <p
-          style={{
-            fontSize: "14px",
-            color: "#5eb3d4",
-            fontWeight: "600",
-            margin: "10px 0",
-          }}
-        >
-          Emociones Viajes - Creando momentos inolvidables
-        </p>
+        <h3 style={{ fontSize: "24px", marginBottom: "10px" }}>
+          ¡Gracias por tu confianza!
+        </h3>
+        <div style={{ fontSize: "16px", marginBottom: "5px" }}>
+          📞 +52 614 397 2021
+        </div>
+        <div style={{ fontSize: "16px", marginBottom: "5px" }}>
+          📧 emocionesviajes@gmail.com
+        </div>
+        <div style={{ fontSize: "16px" }}>💬 WhatsApp: +52 614 397 2021</div>
       </div>
     </div>
   );

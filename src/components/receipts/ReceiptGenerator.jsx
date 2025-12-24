@@ -174,7 +174,25 @@ export default function ReceiptGenerator({
 
       document.body.appendChild(clone);
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Wait for all images to load
+      const images = clone.getElementsByTagName("img");
+      const imagePromises = Array.from(images).map(
+        (img) =>
+          new Promise((resolve) => {
+            if (img.complete) {
+              resolve();
+            } else {
+              img.onload = resolve;
+              img.onerror = resolve;
+              // Fallback timeout per image
+              setTimeout(resolve, 3000);
+            }
+          })
+      );
+      await Promise.all(imagePromises);
+
+      // Extra wait for rendering
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Get actual rendered height
       const actualHeight = clone.scrollHeight;
@@ -280,7 +298,7 @@ export default function ReceiptGenerator({
 
   // Calculate balance AFTER this payment
   const balanceAfterPayment = venta.monto_pendiente - pago.monto;
-  
+
   const receiptData = {
     receipt_number: receiptNumber,
     amount: pago.monto,

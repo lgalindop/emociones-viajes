@@ -4,6 +4,87 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, FileText } from "lucide-react";
 
+// Helper function for number to words conversion
+function convertNumberToWords(num) {
+  const units = [
+    "",
+    "un",
+    "dos",
+    "tres",
+    "cuatro",
+    "cinco",
+    "seis",
+    "siete",
+    "ocho",
+    "nueve",
+  ];
+  const tens = [
+    "",
+    "",
+    "veinte",
+    "treinta",
+    "cuarenta",
+    "cincuenta",
+    "sesenta",
+    "setenta",
+    "ochenta",
+    "noventa",
+  ];
+  const hundreds = [
+    "",
+    "cien",
+    "doscientos",
+    "trescientos",
+    "cuatrocientos",
+    "quinientos",
+    "seiscientos",
+    "setecientos",
+    "ochocientos",
+    "novecientos",
+  ];
+
+  if (num === 0) return "cero";
+  if (num >= 1000000)
+    return Math.floor(num / 1000).toLocaleString("es-MX") + " mil";
+  if (num >= 1000) {
+    const thousand = Math.floor(num / 1000);
+    const remainder = num % 1000;
+    return (
+      (thousand === 1 ? "mil" : units[thousand] + " mil") +
+      (remainder > 0 ? " " + convertNumberToWords(remainder) : "")
+    );
+  }
+  if (num >= 100) {
+    const hundred = Math.floor(num / 100);
+    const remainder = num % 100;
+    return (
+      hundreds[hundred] +
+      (remainder > 0 ? " " + convertNumberToWords(remainder) : "")
+    );
+  }
+  if (num >= 20) {
+    const ten = Math.floor(num / 10);
+    const unit = num % 10;
+    return tens[ten] + (unit > 0 ? " y " + units[unit] : "");
+  }
+  if (num >= 10) {
+    const specials = [
+      "diez",
+      "once",
+      "doce",
+      "trece",
+      "catorce",
+      "quince",
+      "dieciséis",
+      "diecisiete",
+      "dieciocho",
+      "diecinueve",
+    ];
+    return specials[num - 10];
+  }
+  return units[num];
+}
+
 export default function ReceiptWizard() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,6 +135,32 @@ export default function ReceiptWizard() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ventaIdFromNav, ventas]);
+
+  // Auto-generate custom text when template type changes to informal
+  useEffect(() => {
+    if (
+      receiptData.templateType === "informal" &&
+      selectedVenta &&
+      receiptData.amountPaid &&
+      !receiptData.notes
+    ) {
+      const amountText = convertNumberToWords(
+        parseFloat(receiptData.amountPaid)
+      );
+      const defaultText = `Se recibió un pago de $${parseFloat(
+        receiptData.amountPaid
+      ).toLocaleString("es-MX", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })} (${amountText} pesos 00/100 M.N.) como abono para la reservación de ${receiptData.destination || "viaje"}, a nombre de ${receiptData.clientName}, con fecha de viaje del ${selectedVenta.fecha_viaje ? new Date(selectedVenta.fecha_viaje).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" }) : "por confirmar"}.`;
+
+      setReceiptData({
+        ...receiptData,
+        notes: defaultText,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [receiptData.templateType, selectedVenta, receiptData.amountPaid]);
 
   async function loadReceiptForEdit() {
     try {
@@ -282,7 +389,6 @@ export default function ReceiptWizard() {
         total_price: receiptDisplayData.total_price,
         previous_payments: receiptDisplayData.previous_payments,
         balance: receiptDisplayData.balance,
-        fecha_limite_pago: receiptDisplayData.fecha_limite_pago,
       })
       .select()
       .single();
@@ -437,7 +543,6 @@ export default function ReceiptWizard() {
         total_price: receiptDisplayData.total_price,
         previous_payments: receiptDisplayData.previous_payments,
         balance: receiptDisplayData.balance,
-        fecha_limite_pago: receiptDisplayData.fecha_limite_pago,
       })
       .eq("id", receiptId);
 
@@ -842,10 +947,12 @@ export default function ReceiptWizard() {
                       // Create hidden div for receipt rendering
                       const { default: html2canvas } =
                         await import("html2canvas");
-                      const { default: ProfessionalReceipt } =
-                        await import("../components/receipts/ProfessionalReceipt");
-                      const { default: InformalReceipt } =
-                        await import("../components/receipts/InformalReceipt");
+                      const ProfessionalReceipt = (
+                        await import("../components/receipts/ProfessionalReceipt")
+                      ).default;
+                      const InformalReceipt = (
+                        await import("../components/receipts/InformalReceipt")
+                      ).default;
                       const { createElement } = await import("react");
                       const { createRoot } = await import("react-dom/client");
 

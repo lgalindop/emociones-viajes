@@ -1,4 +1,8 @@
+import { getReceiptLogo } from "../../lib/logoConstants";
+
 export default function ProfessionalReceipt({ data }) {
+  const logoSrc = getReceiptLogo();
+
   return (
     <div
       style={{
@@ -284,7 +288,9 @@ export default function ProfessionalReceipt({ data }) {
           <span style={{ fontSize: "18px", color: "#92400e" }}>
             Fecha límite de pago:
           </span>
-          <span style={{ fontSize: "18px", fontWeight: "600", color: "#92400e" }}>
+          <span
+            style={{ fontSize: "18px", fontWeight: "600", color: "#92400e" }}
+          >
             {data.fecha_limite_pago
               ? new Date(data.fecha_limite_pago).toLocaleDateString("es-MX", {
                   day: "2-digit",
@@ -364,7 +370,7 @@ export default function ProfessionalReceipt({ data }) {
         </div>
       )}
 
-      {/* Footer */}
+      {/* Footer with Logo */}
       <div
         style={{
           borderTop: "2px solid #e2e8f0",
@@ -404,21 +410,24 @@ export default function ProfessionalReceipt({ data }) {
           style={{
             fontSize: "14px",
             color: "#64748b",
+            marginBottom: "15px",
           }}
         >
           Dirección: Chihuahua, Chihuahua, México
         </div>
-        <div
-          style={{
-            marginTop: "20px",
-            fontSize: "18px",
-            fontWeight: "bold",
-            color: "#3b82f6",
-          }}
-        >
-          emociones
-          <br />
-          viajes
+
+        {/* Logo */}
+        <div style={{ marginTop: "20px" }}>
+          <img
+            src={logoSrc}
+            alt="Emociones Viajes"
+            style={{
+              height: "60px",
+              width: "auto",
+              display: "block",
+              margin: "0 auto",
+            }}
+          />
         </div>
       </div>
     </div>

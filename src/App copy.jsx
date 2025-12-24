@@ -102,11 +102,12 @@ function MainApp() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <img
-                src="/emociones-logo-full.png"
-                alt="Emociones Viajes"
-                className="h-10 w-auto"
-              />
+              <button
+                onClick={() => navigate("/")}
+                className="text-xl font-bold hover:opacity-80 transition-opacity"
+              >
+                Emociones Viajes
+              </button>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleNavClick("/app")}
@@ -177,24 +178,22 @@ function MainApp() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="text-right min-w-[120px]">
-                <p className="text-sm font-medium whitespace-nowrap">
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm font-medium">
                   {profile?.full_name || user?.email}
                 </p>
-                <div className="mt-1">
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(profile?.role)}`}
-                  >
-                    {getRoleLabel(profile?.role)}
-                  </span>
-                </div>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(profile?.role)}`}
+                >
+                  {getRoleLabel(profile?.role)}
+                </span>
               </div>
               <button
                 onClick={signOut}
-                className="px-4 py-2 rounded hover:bg-white/10 flex items-center gap-2 whitespace-nowrap"
+                className="px-4 py-2 rounded hover:bg-white/10 flex items-center gap-2"
               >
-                <LogOut size={24} />
+                <LogOut size={20} />
                 Salir
               </button>
             </div>
@@ -316,16 +315,7 @@ function MainApp() {
       </div>
 
       {/* Main Content */}
-      <main className="pb-20 md:pb-0 relative">
-        {/* Watermark */}
-        <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
-          <img
-            src="/emociones-logo-icon.png"
-            alt=""
-            className="w-1/2 max-w-2xl opacity-5"
-          />
-        </div>
-
+      <main className="pb-20 md:pb-0">
         <Routes>
           <Route
             index

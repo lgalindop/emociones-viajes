@@ -102,11 +102,16 @@ function MainApp() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <img
-                src="/emociones-logo-full.png"
-                alt="Emociones Viajes"
-                className="h-10 w-auto"
-              />
+              <button
+                onClick={() => navigate("/")}
+                className="hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src="/emociones-logo-full.png"
+                  alt="Emociones Viajes"
+                  className="h-10 w-auto"
+                />
+              </button>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleNavClick("/app")}

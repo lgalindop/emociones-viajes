@@ -1,7 +1,14 @@
 import { getReceiptLogo } from "../../lib/logoConstants";
 
-export default function ProfessionalReceipt({ data }) {
+export default function ProfessionalReceipt({ data, companyInfo }) {
   const logoSrc = getReceiptLogo();
+
+  // Use passed company info or fallback to defaults
+  const company = companyInfo || {
+    email: "emocionesviajes@gmail.com",
+    phone: "+52 614 397 2021",
+    address: "Chihuahua, Chihuahua, México",
+  };
 
   return (
     <div
@@ -370,7 +377,7 @@ export default function ProfessionalReceipt({ data }) {
         </div>
       )}
 
-      {/* Footer with Logo */}
+      {/* Footer with Logo - USING COMPANY INFO */}
       <div
         style={{
           borderTop: "2px solid #e2e8f0",
@@ -395,7 +402,7 @@ export default function ProfessionalReceipt({ data }) {
             marginBottom: "5px",
           }}
         >
-          Contacto: emocionesviajes@gmail.com
+          Contacto: {company.email}
         </div>
         <div
           style={{
@@ -404,7 +411,7 @@ export default function ProfessionalReceipt({ data }) {
             marginBottom: "5px",
           }}
         >
-          Teléfono: +52 614 397 2021
+          Teléfono: {company.phone}
         </div>
         <div
           style={{
@@ -413,7 +420,7 @@ export default function ProfessionalReceipt({ data }) {
             marginBottom: "15px",
           }}
         >
-          Dirección: Chihuahua, Chihuahua, México
+          Dirección: {company.address}
         </div>
 
         {/* Logo */}

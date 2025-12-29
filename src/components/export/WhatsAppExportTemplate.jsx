@@ -14,6 +14,7 @@ export default function WhatsAppExportTemplate({
   }
 
   function formatDate(dateString) {
+    if (!dateString) return "";
     const date = new Date(dateString);
     return date.toLocaleDateString("es-MX", {
       year: "numeric",
@@ -61,6 +62,47 @@ export default function WhatsAppExportTemplate({
         >
           Propuesta de Viaje
         </h1>
+        <div style={{ fontSize: "18px", color: "#666", marginTop: "10px" }}>
+          <strong>Folio:</strong> {cotizacion.folio}
+        </div>
+      </div>
+
+      {/* Cotización Dates */}
+      <div
+        style={{
+          marginBottom: "30px",
+          padding: "20px",
+          backgroundColor: "#E3F2FD",
+          borderRadius: "8px",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: "15px",
+        }}
+      >
+        {cotizacion.fecha_registro && (
+          <div>
+            <strong style={{ color: "#1976D2" }}>Fecha Registro:</strong>
+            <div style={{ marginTop: "5px" }}>
+              {formatDate(cotizacion.fecha_registro)}
+            </div>
+          </div>
+        )}
+        {cotizacion.fecha_reserva && (
+          <div>
+            <strong style={{ color: "#1976D2" }}>Fecha Reserva:</strong>
+            <div style={{ marginTop: "5px" }}>
+              {formatDate(cotizacion.fecha_reserva)}
+            </div>
+          </div>
+        )}
+        {cotizacion.vigente_hasta && (
+          <div>
+            <strong style={{ color: "#1976D2" }}>Vigente Hasta:</strong>
+            <div style={{ marginTop: "5px" }}>
+              {formatDate(cotizacion.vigente_hasta)}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Cliente Info */}
@@ -72,25 +114,71 @@ export default function WhatsAppExportTemplate({
           borderRadius: "8px",
         }}
       >
+        <h2
+          style={{
+            fontSize: "24px",
+            color: "#FF6B35",
+            marginBottom: "15px",
+            borderBottom: "2px solid #FF6B35",
+            paddingBottom: "8px",
+          }}
+        >
+          Información del Cliente
+        </h2>
         <div style={{ marginBottom: "10px" }}>
           <strong style={{ color: "#FF6B35" }}>Cliente:</strong>{" "}
-          {cotizacion.cliente}
+          {cotizacion.cliente_nombre}
         </div>
+        {cotizacion.cliente_telefono && (
+          <div style={{ marginBottom: "10px" }}>
+            <strong style={{ color: "#FF6B35" }}>Teléfono:</strong>{" "}
+            {cotizacion.cliente_telefono}
+          </div>
+        )}
+        {cotizacion.cliente_email && (
+          <div style={{ marginBottom: "10px" }}>
+            <strong style={{ color: "#FF6B35" }}>Email:</strong>{" "}
+            {cotizacion.cliente_email}
+          </div>
+        )}
+      </div>
+
+      {/* Viaje Info */}
+      <div
+        style={{
+          marginBottom: "30px",
+          padding: "20px",
+          backgroundColor: "#f8f9fa",
+          borderRadius: "8px",
+        }}
+      >
+        <h2
+          style={{
+            fontSize: "24px",
+            color: "#FF6B35",
+            marginBottom: "15px",
+            borderBottom: "2px solid #FF6B35",
+            paddingBottom: "8px",
+          }}
+        >
+          Detalles del Viaje
+        </h2>
         <div style={{ marginBottom: "10px" }}>
           <strong style={{ color: "#FF6B35" }}>Destino:</strong>{" "}
           {cotizacion.destino}
         </div>
         <div style={{ marginBottom: "10px" }}>
-          <strong style={{ color: "#FF6B35" }}>Fecha de Viaje:</strong>{" "}
-          {formatDate(cotizacion.fecha_viaje)}
+          <strong style={{ color: "#FF6B35" }}>Fechas de Viaje:</strong>{" "}
+          {formatDate(cotizacion.fecha_salida)} -{" "}
+          {formatDate(cotizacion.fecha_regreso)}
         </div>
         <div style={{ marginBottom: "10px" }}>
-          <strong style={{ color: "#FF6B35" }}>Duración:</strong>{" "}
-          {cotizacion.duracion_dias} días / {cotizacion.duracion_noches} noches
+          <strong style={{ color: "#FF6B35" }}>Viajeros:</strong>{" "}
+          {cotizacion.num_adultos} adulto(s), {cotizacion.num_ninos} niño(s)
         </div>
         <div>
-          <strong style={{ color: "#FF6B35" }}>Pasajeros:</strong>{" "}
-          {cotizacion.num_personas}
+          <strong style={{ color: "#FF6B35" }}>Cotizado en:</strong>{" "}
+          {cotizacion.divisa || "MXN"}
         </div>
       </div>
 
@@ -105,13 +193,13 @@ export default function WhatsAppExportTemplate({
             paddingBottom: "10px",
           }}
         >
-          Opciones de Paquete
+          Opciones de Paquetes
         </h2>
 
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            display: "flex",
+            flexDirection: "column",
             gap: "20px",
           }}
         >
@@ -136,67 +224,53 @@ export default function WhatsAppExportTemplate({
                 Opción {idx + 1}
               </h3>
 
-              <div style={{ marginBottom: "15px" }}>
-                <div
-                  style={{
-                    fontSize: "18px",
-                    fontWeight: "bold",
-                    marginBottom: "8px",
-                  }}
-                >
-                  {getOperadorNombre(opcion.operador_id)}
-                </div>
-                <div
-                  style={{
-                    fontSize: "14px",
-                    color: "#666",
-                    marginBottom: "5px",
-                  }}
-                >
-                  {opcion.num_personas} {opcion.tipo_habitacion}
-                </div>
+              {/* Package Name */}
+              <div
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                  marginBottom: "12px",
+                  color: "#333",
+                }}
+              >
+                {opcion.nombre_paquete}
               </div>
 
-              {/* Vuelos */}
-              {opcion.vuelo_ida_fecha && (
+              {/* Service Description */}
+              {opcion.servicio_descripcion && (
                 <div
                   style={{
-                    marginBottom: "12px",
-                    padding: "10px",
-                    backgroundColor: "#f8f9fa",
+                    marginBottom: "15px",
+                    padding: "12px",
+                    backgroundColor: "#FFF3E0",
                     borderRadius: "5px",
+                    fontSize: "14px",
+                    color: "#666",
                   }}
                 >
-                  <div
-                    style={{
-                      fontWeight: "bold",
-                      marginBottom: "5px",
-                      color: "#FF6B35",
-                    }}
-                  >
-                    ✈️ Vuelos
-                  </div>
-                  <div style={{ fontSize: "14px" }}>
-                    <div>
-                      <strong>Ida:</strong> {formatDate(opcion.vuelo_ida_fecha)}{" "}
-                      - {opcion.vuelo_ida_salida || "N/A"}
-                    </div>
-                    <div>
-                      <strong>Regreso:</strong>{" "}
-                      {formatDate(opcion.vuelo_regreso_fecha)} -{" "}
-                      {opcion.vuelo_regreso_salida || "N/A"}
-                    </div>
-                  </div>
+                  {opcion.servicio_descripcion}
                 </div>
               )}
 
+              {/* Operador */}
+              <div
+                style={{
+                  fontSize: "14px",
+                  color: "#666",
+                  marginBottom: "12px",
+                  fontStyle: "italic",
+                }}
+              >
+                Operador: {getOperadorNombre(opcion.operador_id)}
+              </div>
+
               {/* Hotel */}
-              {opcion.hotel && (
+              {opcion.hotel_nombre && (
                 <div
                   style={{
                     marginBottom: "12px",
                     padding: "10px",
-                    backgroundColor: "#f8f9fa",
+                    backgroundColor: "#E3F2FD",
                     borderRadius: "5px",
                   }}
                 >
@@ -204,50 +278,73 @@ export default function WhatsAppExportTemplate({
                     style={{
                       fontWeight: "bold",
                       marginBottom: "5px",
-                      color: "#FF6B35",
+                      color: "#1976D2",
                     }}
                   >
                     🏨 Hotel
                   </div>
-                  <div style={{ fontSize: "14px" }}>{opcion.hotel}</div>
-                  {opcion.regimen_alimenticio && (
-                    <div style={{ fontSize: "14px", color: "#666" }}>
-                      {opcion.regimen_alimenticio}
+                  <div style={{ fontSize: "14px" }}>{opcion.hotel_nombre}</div>
+                  {opcion.ocupacion && (
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#666",
+                        marginTop: "3px",
+                      }}
+                    >
+                      Ocupación: {opcion.ocupacion}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Traslados */}
-              {opcion.traslados && (
+              {/* Vuelos */}
+              {(opcion.vuelo_ida_fecha || opcion.vuelo_regreso_fecha) && (
                 <div
                   style={{
                     marginBottom: "12px",
                     padding: "10px",
-                    backgroundColor: "#f8f9fa",
+                    backgroundColor: "#E8F5E9",
                     borderRadius: "5px",
                   }}
                 >
                   <div
                     style={{
                       fontWeight: "bold",
-                      marginBottom: "5px",
-                      color: "#FF6B35",
+                      marginBottom: "8px",
+                      color: "#388E3C",
                     }}
                   >
-                    🚗 Traslados
+                    ✈️ Vuelos
                   </div>
-                  <div style={{ fontSize: "14px" }}>{opcion.traslados}</div>
+                  {opcion.vuelo_ida_fecha && (
+                    <div style={{ fontSize: "14px", marginBottom: "5px" }}>
+                      <strong>Ida:</strong> {formatDate(opcion.vuelo_ida_fecha)}
+                      {opcion.vuelo_ida_horario &&
+                        ` • ${opcion.vuelo_ida_horario}`}
+                      {opcion.vuelo_ida_ruta && ` • ${opcion.vuelo_ida_ruta}`}
+                    </div>
+                  )}
+                  {opcion.vuelo_regreso_fecha && (
+                    <div style={{ fontSize: "14px" }}>
+                      <strong>Regreso:</strong>{" "}
+                      {formatDate(opcion.vuelo_regreso_fecha)}
+                      {opcion.vuelo_regreso_horario &&
+                        ` • ${opcion.vuelo_regreso_horario}`}
+                      {opcion.vuelo_regreso_ruta &&
+                        ` • ${opcion.vuelo_regreso_ruta}`}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Tours */}
-              {opcion.tours && (
+              {/* Incluye */}
+              {opcion.incluye && (
                 <div
                   style={{
                     marginBottom: "12px",
                     padding: "10px",
-                    backgroundColor: "#f8f9fa",
+                    backgroundColor: "#F1F8E9",
                     borderRadius: "5px",
                   }}
                 >
@@ -255,37 +352,82 @@ export default function WhatsAppExportTemplate({
                     style={{
                       fontWeight: "bold",
                       marginBottom: "5px",
-                      color: "#FF6B35",
+                      color: "#558B2F",
                     }}
                   >
-                    🎯 Tours
+                    ✓ Incluye
                   </div>
-                  <div style={{ fontSize: "14px" }}>{opcion.tours}</div>
+                  <div style={{ fontSize: "13px", color: "#666" }}>
+                    {typeof opcion.incluye === "string"
+                      ? opcion.incluye
+                      : Array.isArray(opcion.incluye)
+                        ? opcion.incluye.join(", ")
+                        : ""}
+                  </div>
                 </div>
               )}
 
-              {/* Extras */}
-              {opcion.extras && (
+              {/* No Incluye */}
+              {opcion.no_incluye &&
+                Array.isArray(opcion.no_incluye) &&
+                opcion.no_incluye.length > 0 && (
+                  <div
+                    style={{
+                      marginBottom: "12px",
+                      padding: "10px",
+                      backgroundColor: "#FFEBEE",
+                      borderRadius: "5px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: "bold",
+                        marginBottom: "5px",
+                        color: "#C62828",
+                      }}
+                    >
+                      ✗ No incluye
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#666" }}>
+                      {opcion.no_incluye.join(", ")}
+                    </div>
+                  </div>
+                )}
+
+              {/* Disponibilidad */}
+              {opcion.disponibilidad && (
                 <div
                   style={{
                     marginBottom: "12px",
-                    padding: "10px",
-                    backgroundColor: "#f8f9fa",
-                    borderRadius: "5px",
+                    fontSize: "13px",
+                    color: "#666",
+                    fontStyle: "italic",
                   }}
                 >
-                  <div
-                    style={{
-                      fontWeight: "bold",
-                      marginBottom: "5px",
-                      color: "#FF6B35",
-                    }}
-                  >
-                    ⭐ Extras
-                  </div>
-                  <div style={{ fontSize: "14px" }}>{opcion.extras}</div>
+                  {opcion.disponibilidad}
                 </div>
               )}
+
+              {/* Links */}
+              <div
+                style={{
+                  marginBottom: "15px",
+                  display: "flex",
+                  gap: "10px",
+                  flexWrap: "wrap",
+                }}
+              >
+                {opcion.link_paquete && (
+                  <div style={{ fontSize: "12px", color: "#1976D2" }}>
+                    🔗 Ver paquete
+                  </div>
+                )}
+                {opcion.tour_link && (
+                  <div style={{ fontSize: "12px", color: "#7B1FA2" }}>
+                    🎯 Ver tours
+                  </div>
+                )}
+              </div>
 
               {/* Precio */}
               <div
@@ -303,11 +445,21 @@ export default function WhatsAppExportTemplate({
                     color: "#FF6B35",
                   }}
                 >
-                  ${opcion.precio_total?.toLocaleString("es-MX") || "0"} MXN
+                  ${(opcion.precio_total || 0).toLocaleString("es-MX")}{" "}
+                  {cotizacion.divisa}
                 </div>
-                <div style={{ fontSize: "14px", color: "#666" }}>
-                  {opcion.tipo_tarifa}
-                </div>
+                {opcion.precio_por_persona > 0 && (
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#666",
+                      marginTop: "5px",
+                    }}
+                  >
+                    ${(opcion.precio_por_persona || 0).toLocaleString("es-MX")}{" "}
+                    por persona
+                  </div>
+                )}
               </div>
 
               {/* Notas */}
@@ -316,7 +468,7 @@ export default function WhatsAppExportTemplate({
                   style={{
                     marginTop: "15px",
                     padding: "10px",
-                    backgroundColor: "#fff9e6",
+                    backgroundColor: "#FFF9C4",
                     borderRadius: "5px",
                     fontSize: "13px",
                     color: "#666",
@@ -327,6 +479,35 @@ export default function WhatsAppExportTemplate({
               )}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Important Notes / Disclaimers */}
+      <div
+        style={{
+          marginTop: "30px",
+          padding: "20px",
+          backgroundColor: "#FFEBEE",
+          borderRadius: "8px",
+          borderLeft: "4px solid #D32F2F",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "16px",
+            fontWeight: "bold",
+            color: "#D32F2F",
+            marginBottom: "10px",
+          }}
+        >
+          IMPORTANTE
+        </div>
+        <div style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
+          • POR PROXIMIDAD SE PAGA AL RESERVAR
+        </div>
+        <div style={{ fontSize: "13px", color: "#666" }}>
+          • TARIFAS SUJETAS A DISPONIBILIDAD Y CAMBIOS SIN PREVIO AVISO. ESTO ES
+          UNA COTIZACIÓN Y NO CONSTITUYE UNA RESERVA.
         </div>
       </div>
 

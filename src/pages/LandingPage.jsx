@@ -17,23 +17,31 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchPublishedContent();
+    let mounted = true;
+
+    async function loadContent() {
+      const { data } = await supabase
+        .from("landing_page_content")
+        .select("*")
+        .eq("status", "published");
+
+      if (!mounted) return;
+
+      const contentMap = {};
+      data?.forEach((item) => {
+        contentMap[item.section] = item.content;
+      });
+
+      setContent(contentMap);
+      setLoading(false);
+    }
+
+    loadContent();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
-
-  async function fetchPublishedContent() {
-    const { data } = await supabase
-      .from("landing_page_content")
-      .select("*")
-      .eq("status", "published");
-
-    const contentMap = {};
-    data?.forEach((item) => {
-      contentMap[item.section] = item.content;
-    });
-
-    setContent(contentMap);
-    setLoading(false);
-  }
 
   if (loading) {
     return (

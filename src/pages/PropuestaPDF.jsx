@@ -1,19 +1,32 @@
-// pages/PropuestaPDF.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import { parseMoneyToNumber } from "../lib/money";
+import { getCompanySettings } from "../lib/useCompanySettings";
 
 export default function PropuestaPDF({ cotizacion, onBack }) {
+  const [companySettings, setCompanySettings] = useState(null);
   const opciones = cotizacion.opciones_cotizacion || [];
 
-  function generarPDF() {
+  useEffect(() => {
+    getCompanySettings().then(setCompanySettings);
+  }, []);
+
+  async function generarPDF() {
+    // Wait for company settings if not loaded
+    let settings = companySettings;
+    if (!settings) {
+      settings = await getCompanySettings();
+    }
+
     const doc = new jsPDF("p", "pt", "a4");
     const margin = 40;
     let y = margin;
 
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text("EMOCIONES VIAJES", 210, y, { align: "center" });
+    doc.text(settings?.company_name || "EMOCIONES VIAJES", 210, y, {
+      align: "center",
+    });
     y += 26;
 
     doc.setFontSize(12);

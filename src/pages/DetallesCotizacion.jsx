@@ -1,6 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
-import { ArrowLeft, Edit2, Trash2, Save, X, Plus } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit2,
+  Trash2,
+  Save,
+  X,
+  Plus,
+  Calendar,
+  Plane,
+} from "lucide-react";
 import LeadOriginIcon from "../components/LeadOriginIcon";
 import ExportToWhatsApp from "../components/export/ExportToWhatsApp";
 import ExportToPDF from "../components/export/ExportToPDF";
@@ -20,12 +29,22 @@ export default function DetallesCotizacion({
   const [newOpcion, setNewOpcion] = useState({
     operador_id: "",
     nombre_paquete: "",
+    servicio_descripcion: "",
+    hotel_nombre: "",
+    ocupacion: "",
+    vuelo_ida_fecha: "",
+    vuelo_ida_horario: "",
+    vuelo_ida_ruta: "",
+    vuelo_regreso_fecha: "",
+    vuelo_regreso_horario: "",
+    vuelo_regreso_ruta: "",
     precio_por_persona: "",
     precio_total: "",
     incluye: "",
     no_incluye: "",
     disponibilidad: "",
     link_paquete: "",
+    tour_link: "",
   });
   const [showAddOpcion, setShowAddOpcion] = useState(false);
 
@@ -95,6 +114,15 @@ export default function DetallesCotizacion({
           cotizacion_id: cotizacionId,
           operador_id: op.operador_id,
           nombre_paquete: op.nombre_paquete,
+          servicio_descripcion: op.servicio_descripcion,
+          hotel_nombre: op.hotel_nombre,
+          ocupacion: op.ocupacion,
+          vuelo_ida_fecha: op.vuelo_ida_fecha,
+          vuelo_ida_horario: op.vuelo_ida_horario,
+          vuelo_ida_ruta: op.vuelo_ida_ruta,
+          vuelo_regreso_fecha: op.vuelo_regreso_fecha,
+          vuelo_regreso_horario: op.vuelo_regreso_horario,
+          vuelo_regreso_ruta: op.vuelo_regreso_ruta,
           precio_por_persona: parseFloat(op.precio_por_persona) || 0,
           precio_total: parseFloat(op.precio_total),
           incluye:
@@ -107,6 +135,7 @@ export default function DetallesCotizacion({
               : op.no_incluye,
           disponibilidad: op.disponibilidad,
           link_paquete: op.link_paquete,
+          tour_link: op.tour_link,
         };
 
         if (op.id) {
@@ -172,12 +201,22 @@ export default function DetallesCotizacion({
     setNewOpcion({
       operador_id: "",
       nombre_paquete: "",
+      servicio_descripcion: "",
+      hotel_nombre: "",
+      ocupacion: "",
+      vuelo_ida_fecha: "",
+      vuelo_ida_horario: "",
+      vuelo_ida_ruta: "",
+      vuelo_regreso_fecha: "",
+      vuelo_regreso_horario: "",
+      vuelo_regreso_ruta: "",
       precio_por_persona: "",
       precio_total: "",
       incluye: "",
       no_incluye: "",
       disponibilidad: "",
       link_paquete: "",
+      tour_link: "",
     });
     setShowAddOpcion(false);
   }
@@ -189,6 +228,7 @@ export default function DetallesCotizacion({
   }
 
   function formatDate(dateString) {
+    if (!dateString) return "";
     const date = new Date(dateString);
     return date.toLocaleDateString("es-MX", {
       year: "numeric",
@@ -212,56 +252,54 @@ export default function DetallesCotizacion({
       <div className="max-w-6xl mx-auto">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-gray-600 hover:text-primary mb-6"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
         >
           <ArrowLeft size={20} />
-          Regresar
+          Volver
         </button>
 
-        <div className="bg-white rounded-xl shadow-lg p-4 md:p-8">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
+        {/* Header Card */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-primary">
-                {cotizacion.folio}
-              </h1>
-              <p className="text-sm md:text-base text-gray-600 mt-1">
-                Creada el {formatDate(cotizacion.created_at)}
-              </p>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {cotizacion.folio}
+                </h1>
+                <LeadOriginIcon origin={cotizacion.origen} />
+              </div>
+              <p className="text-gray-600">{cotizacion.cliente_nombre}</p>
             </div>
 
-            <div className="flex flex-wrap gap-2 w-full md:w-auto">
-              {!editing && (
+            <div className="flex flex-wrap gap-2">
+              <ExportToPDF
+                cotizacion={cotizacion}
+                opciones={opciones}
+                operadores={operadores}
+              />
+              <ExportToWhatsApp
+                cotizacion={cotizacion}
+                opciones={opciones}
+                operadores={operadores}
+              />
+              {!editing ? (
                 <>
                   <button
                     onClick={() => setEditing(true)}
-                    className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm md:text-base"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
-                    <Edit2 size={16} className="md:w-[18px] md:h-[18px]" />
-                    <span className="hidden sm:inline">Editar</span>
-                    <span className="sm:hidden">Edit</span>
+                    <Edit2 size={18} />
+                    Editar
                   </button>
-                  <ExportToWhatsApp
-                    cotizacion={cotizacion}
-                    opciones={opciones}
-                    operadores={operadores}
-                  />
-                  <ExportToPDF
-                    cotizacion={cotizacion}
-                    opciones={opciones}
-                    operadores={operadores}
-                  />
                   <button
                     onClick={handleDelete}
-                    className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm md:text-base"
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                   >
-                    <Trash2 size={16} className="md:w-[18px] md:h-[18px]" />
-                    <span className="hidden sm:inline">Eliminar</span>
-                    <span className="sm:hidden">Del</span>
+                    <Trash2 size={18} />
+                    Eliminar
                   </button>
                 </>
-              )}
-
-              {editing && (
+              ) : (
                 <>
                   <button
                     onClick={handleSave}
@@ -287,37 +325,134 @@ export default function DetallesCotizacion({
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="border-l-4 border-primary pl-4">
-              <h3 className="font-semibold text-gray-700 mb-4">
-                Datos del Cliente
-              </h3>
-              {!editing ? (
-                <div className="space-y-2 text-sm">
-                  <p>
-                    <span className="font-medium">Nombre:</span>{" "}
-                    {cotizacion.cliente_nombre}
-                  </p>
-                  {cotizacion.cliente_telefono && (
-                    <p>
-                      <span className="font-medium">Teléfono:</span>{" "}
-                      {cotizacion.cliente_telefono}
-                    </p>
-                  )}
-                  {cotizacion.cliente_email && (
-                    <p>
-                      <span className="font-medium">Email:</span>{" "}
-                      {cotizacion.cliente_email}
-                    </p>
-                  )}
-                  <p className="flex items-center gap-2">
-                    <span className="font-medium">Contactó por:</span>
-                    <LeadOriginIcon origen={cotizacion.origen_lead} size={18} />
-                    <span className="capitalize">{cotizacion.origen_lead}</span>
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
+          {/* Cotización Dates - Professional Display */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div>
+              <p className="text-xs font-semibold text-blue-700 mb-1">
+                Fecha Registro
+              </p>
+              <p className="text-sm text-gray-900">
+                {cotizacion.fecha_registro
+                  ? formatDate(cotizacion.fecha_registro)
+                  : "No especificada"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-blue-700 mb-1">
+                Fecha Reserva
+              </p>
+              <p className="text-sm text-gray-900">
+                {cotizacion.fecha_reserva
+                  ? formatDate(cotizacion.fecha_reserva)
+                  : "No especificada"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-blue-700 mb-1">
+                Vigente Hasta
+              </p>
+              <p className="text-sm text-gray-900">
+                {cotizacion.vigente_hasta
+                  ? formatDate(cotizacion.vigente_hasta)
+                  : "No especificada"}
+              </p>
+            </div>
+          </div>
+
+          {/* Edit Mode for Dates */}
+          {editing && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Fecha Registro
+                </label>
+                <input
+                  type="date"
+                  value={editData.fecha_registro || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, fecha_registro: e.target.value })
+                  }
+                  className="w-full border rounded-lg px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Fecha Reserva
+                </label>
+                <input
+                  type="date"
+                  value={editData.fecha_reserva || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, fecha_reserva: e.target.value })
+                  }
+                  className="w-full border rounded-lg px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Vigente Hasta
+                </label>
+                <input
+                  type="date"
+                  value={editData.vigente_hasta || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, vigente_hasta: e.target.value })
+                  }
+                  className="w-full border rounded-lg px-3 py-2"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Status */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-600">Estatus:</span>
+            {editing ? (
+              <select
+                value={editData.estatus}
+                onChange={(e) =>
+                  setEditData({ ...editData, estatus: e.target.value })
+                }
+                className="border rounded-lg px-3 py-1"
+              >
+                <option value="nueva">Nueva</option>
+                <option value="enviada">Enviada</option>
+                <option value="seguimiento">Seguimiento</option>
+                <option value="cerrada">Cerrada</option>
+                <option value="perdida">Perdida</option>
+              </select>
+            ) : (
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  cotizacion.estatus === "nueva"
+                    ? "bg-blue-100 text-blue-800"
+                    : cotizacion.estatus === "enviada"
+                      ? "bg-purple-100 text-purple-800"
+                      : cotizacion.estatus === "seguimiento"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : cotizacion.estatus === "cerrada"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                }`}
+              >
+                {cotizacion.estatus?.charAt(0).toUpperCase() +
+                  cotizacion.estatus?.slice(1)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Details Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Client Info */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Información del Cliente
+            </h2>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Nombre</p>
+                {editing ? (
                   <input
                     type="text"
                     value={editData.cliente_nombre}
@@ -327,90 +462,84 @@ export default function DetallesCotizacion({
                         cliente_nombre: e.target.value,
                       })
                     }
-                    className="w-full border rounded-lg px-4 py-2"
-                    placeholder="Nombre"
+                    className="w-full border rounded-lg px-3 py-2"
                   />
-                  <div className="grid grid-cols-2 gap-4">
-                    <input
-                      type="tel"
-                      value={editData.cliente_telefono || ""}
-                      onChange={(e) =>
-                        setEditData({
-                          ...editData,
-                          cliente_telefono: e.target.value,
-                        })
-                      }
-                      className="w-full border rounded-lg px-4 py-2"
-                      placeholder="Teléfono"
-                    />
-                    <input
-                      type="email"
-                      value={editData.cliente_email || ""}
-                      onChange={(e) =>
-                        setEditData({
-                          ...editData,
-                          cliente_email: e.target.value,
-                        })
-                      }
-                      className="w-full border rounded-lg px-4 py-2"
-                      placeholder="Email"
-                    />
-                  </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm font-medium text-gray-900">
+                    {cotizacion.cliente_nombre}
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Teléfono</p>
+                {editing ? (
+                  <input
+                    type="text"
+                    value={editData.cliente_telefono || ""}
+                    onChange={(e) =>
+                      setEditData({
+                        ...editData,
+                        cliente_telefono: e.target.value,
+                      })
+                    }
+                    className="w-full border rounded-lg px-3 py-2"
+                  />
+                ) : (
+                  <p className="text-sm text-gray-700">
+                    {cotizacion.cliente_telefono || "N/A"}
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Email</p>
+                {editing ? (
+                  <input
+                    type="email"
+                    value={editData.cliente_email || ""}
+                    onChange={(e) =>
+                      setEditData({
+                        ...editData,
+                        cliente_email: e.target.value,
+                      })
+                    }
+                    className="w-full border rounded-lg px-3 py-2"
+                  />
+                ) : (
+                  <p className="text-sm text-gray-700">
+                    {cotizacion.cliente_email || "N/A"}
+                  </p>
+                )}
+              </div>
             </div>
+          </div>
 
-            <div className="border-l-4 border-primary-light pl-4">
-              <h3 className="font-semibold text-gray-700 mb-4">
-                Detalles del Viaje
-              </h3>
-              {!editing ? (
-                <div className="space-y-2 text-sm">
-                  <p>
-                    <span className="font-medium">Destino:</span>{" "}
-                    {cotizacion.destino}
-                  </p>
-                  <p>
-                    <span className="font-medium">Fechas:</span>{" "}
-                    {formatDate(cotizacion.fecha_salida)} -{" "}
-                    {formatDate(cotizacion.fecha_regreso)}
-                  </p>
-                  <p>
-                    <span className="font-medium">Viajeros:</span>{" "}
-                    {cotizacion.num_adultos} adulto(s), {cotizacion.num_ninos}{" "}
-                    niño(s)
-                  </p>
-                  {cotizacion.presupuesto_aprox && (
-                    <p>
-                      <span className="font-medium">Presupuesto:</span> $
-                      {presupuesto.toLocaleString("es-MX")}
-                    </p>
-                  )}
-                  {cotizacion.requerimientos && (
-                    <p>
-                      <span className="font-medium">Requerimientos:</span>{" "}
-                      {cotizacion.requerimientos}
-                    </p>
-                  )}
-                  {cotizacion.notas && (
-                    <p>
-                      <span className="font-medium">Notas:</span>{" "}
-                      {cotizacion.notas}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
+          {/* Trip Details */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Detalles del Viaje
+            </h2>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Destino</p>
+                {editing ? (
                   <input
                     type="text"
                     value={editData.destino}
                     onChange={(e) =>
                       setEditData({ ...editData, destino: e.target.value })
                     }
-                    className="w-full border rounded-lg px-4 py-2"
-                    placeholder="Destino"
+                    className="w-full border rounded-lg px-3 py-2"
                   />
-                  <div className="grid grid-cols-2 gap-4">
+                ) : (
+                  <p className="text-sm font-medium text-gray-900">
+                    {cotizacion.destino}
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Fechas</p>
+                {editing ? (
+                  <div className="grid grid-cols-2 gap-2">
                     <input
                       type="date"
                       value={editData.fecha_salida}
@@ -420,7 +549,7 @@ export default function DetallesCotizacion({
                           fecha_salida: e.target.value,
                         })
                       }
-                      className="w-full border rounded-lg px-4 py-2"
+                      className="border rounded-lg px-3 py-2"
                     />
                     <input
                       type="date"
@@ -431,10 +560,20 @@ export default function DetallesCotizacion({
                           fecha_regreso: e.target.value,
                         })
                       }
-                      className="w-full border rounded-lg px-4 py-2"
+                      className="border rounded-lg px-3 py-2"
                     />
                   </div>
-                  <div className="grid grid-cols-3 gap-4">
+                ) : (
+                  <p className="text-sm text-gray-700">
+                    {formatDate(cotizacion.fecha_salida)} -{" "}
+                    {formatDate(cotizacion.fecha_regreso)}
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Viajeros</p>
+                {editing ? (
+                  <div className="grid grid-cols-2 gap-2">
                     <input
                       type="number"
                       value={editData.num_adultos}
@@ -444,7 +583,7 @@ export default function DetallesCotizacion({
                           num_adultos: parseInt(e.target.value),
                         })
                       }
-                      className="w-full border rounded-lg px-4 py-2"
+                      className="border rounded-lg px-3 py-2"
                       placeholder="Adultos"
                     />
                     <input
@@ -456,413 +595,711 @@ export default function DetallesCotizacion({
                           num_ninos: parseInt(e.target.value),
                         })
                       }
-                      className="w-full border rounded-lg px-4 py-2"
+                      className="border rounded-lg px-3 py-2"
                       placeholder="Niños"
                     />
-                    <input
-                      type="number"
-                      value={editData.presupuesto_aprox || ""}
-                      onChange={(e) =>
-                        setEditData({
-                          ...editData,
-                          presupuesto_aprox: e.target.value,
-                        })
-                      }
-                      className="w-full border rounded-lg px-4 py-2"
-                      placeholder="Presupuesto"
-                    />
                   </div>
-                  <textarea
-                    value={editData.requerimientos || ""}
+                ) : (
+                  <p className="text-sm text-gray-700">
+                    {cotizacion.num_adultos} adulto(s), {cotizacion.num_ninos}{" "}
+                    niño(s)
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Budget */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Presupuesto
+            </h2>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">
+                  Presupuesto Aproximado
+                </p>
+                {editing ? (
+                  <input
+                    type="number"
+                    value={editData.presupuesto_aprox || ""}
                     onChange={(e) =>
                       setEditData({
                         ...editData,
-                        requerimientos: e.target.value,
+                        presupuesto_aprox: e.target.value,
                       })
                     }
-                    className="w-full border rounded-lg px-4 py-2"
-                    rows="2"
-                    placeholder="Requerimientos"
+                    className="w-full border rounded-lg px-3 py-2"
+                    step="0.01"
                   />
-                  <textarea
-                    value={editData.notas || ""}
+                ) : (
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${presupuesto.toLocaleString("es-MX")} {cotizacion.divisa}
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Divisa</p>
+                {editing ? (
+                  <select
+                    value={editData.divisa}
                     onChange={(e) =>
-                      setEditData({ ...editData, notas: e.target.value })
+                      setEditData({ ...editData, divisa: e.target.value })
                     }
-                    className="w-full border rounded-lg px-4 py-2"
-                    rows="2"
-                    placeholder="Notas internas"
-                  />
-                </div>
+                    className="w-full border rounded-lg px-3 py-2"
+                  >
+                    <option value="MXN">MXN</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                ) : (
+                  <p className="text-sm text-gray-700">{cotizacion.divisa}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Package Options */}
+        <div className="mt-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Opciones de Paquetes
+              </h2>
+              {editing && (
+                <button
+                  onClick={() => setShowAddOpcion(!showAddOpcion)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  <Plus size={18} />
+                  Agregar Opción
+                </button>
               )}
             </div>
 
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-gray-700">
-                  Opciones de Paquetes (
-                  {editing ? editingOpciones.length : opciones.length})
-                </h3>
-                {editing && (
-                  <button
-                    onClick={() => setShowAddOpcion(!showAddOpcion)}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+            {/* Add New Option Form */}
+            {editing && showAddOpcion && (
+              <div className="mb-6 p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
+                <h3 className="font-semibold mb-4">Nueva Opción</h3>
+                <div className="space-y-3">
+                  <select
+                    value={newOpcion.operador_id}
+                    onChange={(e) =>
+                      setNewOpcion({
+                        ...newOpcion,
+                        operador_id: e.target.value,
+                      })
+                    }
+                    className="w-full border rounded-lg px-4 py-2"
                   >
-                    <Plus size={16} />
-                    Agregar Opción
-                  </button>
-                )}
-              </div>
-
-              {editing && showAddOpcion && (
-                <div className="bg-blue-50 border-2 border-dashed border-blue-300 rounded-lg p-6 mb-4">
-                  <h4 className="font-semibold mb-4">Nueva Opción</h4>
-                  <div className="space-y-4">
-                    <select
-                      value={newOpcion.operador_id}
+                    <option value="">Selecciona operador</option>
+                    {operadores.map((op) => (
+                      <option key={op.id} value={op.id}>
+                        {op.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={newOpcion.nombre_paquete}
+                    onChange={(e) =>
+                      setNewOpcion({
+                        ...newOpcion,
+                        nombre_paquete: e.target.value,
+                      })
+                    }
+                    className="w-full border rounded-lg px-4 py-2"
+                    placeholder="Nombre del paquete"
+                  />
+                  <textarea
+                    value={newOpcion.servicio_descripcion}
+                    onChange={(e) =>
+                      setNewOpcion({
+                        ...newOpcion,
+                        servicio_descripcion: e.target.value,
+                      })
+                    }
+                    className="w-full border rounded-lg px-4 py-2"
+                    placeholder="Descripción del servicio"
+                    rows="2"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={newOpcion.hotel_nombre}
                       onChange={(e) =>
                         setNewOpcion({
                           ...newOpcion,
-                          operador_id: e.target.value,
+                          hotel_nombre: e.target.value,
                         })
                       }
-                      className="w-full border rounded-lg px-4 py-2"
+                      className="border rounded-lg px-4 py-2"
+                      placeholder="Hotel"
+                    />
+                    <input
+                      type="text"
+                      value={newOpcion.ocupacion}
+                      onChange={(e) =>
+                        setNewOpcion({
+                          ...newOpcion,
+                          ocupacion: e.target.value,
+                        })
+                      }
+                      className="border rounded-lg px-4 py-2"
+                      placeholder="Ocupación (ej: DOUBLE DBL)"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <input
+                      type="number"
+                      value={newOpcion.precio_por_persona}
+                      onChange={(e) =>
+                        setNewOpcion({
+                          ...newOpcion,
+                          precio_por_persona: e.target.value,
+                        })
+                      }
+                      className="border rounded-lg px-4 py-2"
+                      placeholder="Precio por persona"
+                    />
+                    <input
+                      type="number"
+                      value={newOpcion.precio_total}
+                      onChange={(e) =>
+                        setNewOpcion({
+                          ...newOpcion,
+                          precio_total: e.target.value,
+                        })
+                      }
+                      className="border rounded-lg px-4 py-2"
+                      placeholder="Precio total"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleAddOpcion}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                     >
-                      <option value="">Selecciona operador</option>
-                      {operadores.map((op) => (
-                        <option key={op.id} value={op.id}>
-                          {op.nombre}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="text"
-                      value={newOpcion.nombre_paquete}
-                      onChange={(e) =>
-                        setNewOpcion({
-                          ...newOpcion,
-                          nombre_paquete: e.target.value,
-                        })
-                      }
-                      className="w-full border rounded-lg px-4 py-2"
-                      placeholder="Nombre del paquete"
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <input
-                        type="number"
-                        value={newOpcion.precio_por_persona}
-                        onChange={(e) =>
-                          setNewOpcion({
-                            ...newOpcion,
-                            precio_por_persona: e.target.value,
-                          })
-                        }
-                        className="w-full border rounded-lg px-4 py-2"
-                        placeholder="Precio por persona"
-                      />
-                      <input
-                        type="number"
-                        value={newOpcion.precio_total}
-                        onChange={(e) =>
-                          setNewOpcion({
-                            ...newOpcion,
-                            precio_total: e.target.value,
-                          })
-                        }
-                        className="w-full border rounded-lg px-4 py-2"
-                        placeholder="Precio total"
-                      />
-                    </div>
-                    <input
-                      type="text"
-                      value={newOpcion.incluye}
-                      onChange={(e) =>
-                        setNewOpcion({ ...newOpcion, incluye: e.target.value })
-                      }
-                      className="w-full border rounded-lg px-4 py-2"
-                      placeholder="Incluye (separado por comas)"
-                    />
-                    <input
-                      type="text"
-                      value={newOpcion.no_incluye}
-                      onChange={(e) =>
-                        setNewOpcion({
-                          ...newOpcion,
-                          no_incluye: e.target.value,
-                        })
-                      }
-                      className="w-full border rounded-lg px-4 py-2"
-                      placeholder="No incluye (separado por comas)"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleAddOpcion}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                      >
-                        Agregar
-                      </button>
-                      <button
-                        onClick={() => setShowAddOpcion(false)}
-                        className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
+                      Agregar
+                    </button>
+                    <button
+                      onClick={() => setShowAddOpcion(false)}
+                      className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                    >
+                      Cancelar
+                    </button>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              <div className="space-y-4">
-                {(editing ? editingOpciones : opciones).map((op, idx) => {
-                  const precioOpcion = parseFloat(op.precio_total);
-                  const diferencia = presupuesto - precioOpcion;
-                  const incluyeArray =
-                    typeof op.incluye === "string"
-                      ? op.incluye.split(",")
-                      : op.incluye || [];
-                  const noIncluyeArray =
-                    typeof op.no_incluye === "string"
-                      ? op.no_incluye.split(",")
-                      : op.no_incluye || [];
+            {/* Options List */}
+            <div className="space-y-4">
+              {(editing ? editingOpciones : opciones).map((op, idx) => {
+                const precioOpcion = parseFloat(op.precio_total) || 0;
+                const diferencia = presupuesto - precioOpcion;
+                const incluyeArray = Array.isArray(op.incluye)
+                  ? op.incluye
+                  : typeof op.incluye === "string"
+                    ? op.incluye.split(",")
+                    : [];
+                const noIncluyeArray = Array.isArray(op.no_incluye)
+                  ? op.no_incluye
+                  : typeof op.no_incluye === "string"
+                    ? op.no_incluye.split(",")
+                    : [];
 
-                  return (
-                    <div
-                      key={op.id || op.temp_id || idx}
-                      className="border rounded-lg p-6 bg-gray-50"
-                    >
-                      {presupuesto > 0 && !editing && (
-                        <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4 text-sm">
-                          <div className="grid grid-cols-3 gap-2">
-                            <div>
-                              <p className="text-gray-600 text-xs">
-                                Presupuesto:
-                              </p>
-                              <p className="font-bold">
-                                ${presupuesto.toLocaleString("es-MX")}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600 text-xs">
-                                Esta opción:
-                              </p>
-                              <p className="font-bold text-primary">
-                                ${precioOpcion.toLocaleString("es-MX")}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600 text-xs">
-                                Diferencia:
-                              </p>
-                              <p
-                                className={`font-bold ${diferencia >= 0 ? "text-green-600" : "text-red-600"}`}
-                              >
-                                {diferencia >= 0 ? "-" : "+"} $
-                                {Math.abs(diferencia).toLocaleString("es-MX")}
-                              </p>
-                              {diferencia >= 0 ? (
-                                <p className="text-xs text-green-600">
-                                  Dentro de presupuesto
-                                </p>
-                              ) : (
-                                <p className="text-xs text-red-600">
-                                  Excede{" "}
-                                  {(
-                                    (Math.abs(diferencia) / presupuesto) *
-                                    100
-                                  ).toFixed(1)}
-                                  %
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {editing ? (
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-start">
-                            <h4 className="font-semibold text-lg">
-                              Opción {idx + 1}
-                            </h4>
-                            <button
-                              onClick={() => handleRemoveOpcion(idx)}
-                              className="text-red-600 hover:bg-red-50 p-2 rounded"
+                return (
+                  <div
+                    key={op.id || op.temp_id}
+                    className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                  >
+                    {/* Budget Comparison */}
+                    {presupuesto > 0 && !editing && (
+                      <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Comparación con presupuesto
+                            </p>
+                            <p
+                              className={`text-lg font-bold ${
+                                diferencia >= 0
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
                             >
-                              <Trash2 size={18} />
-                            </button>
+                              {diferencia >= 0 ? "-" : "+"} $
+                              {Math.abs(diferencia).toLocaleString("es-MX")}
+                            </p>
+                            {diferencia >= 0 ? (
+                              <p className="text-xs text-green-600">
+                                Dentro de presupuesto
+                              </p>
+                            ) : (
+                              <p className="text-xs text-red-600">
+                                Excede{" "}
+                                {(
+                                  (Math.abs(diferencia) / presupuesto) *
+                                  100
+                                ).toFixed(1)}
+                                %
+                              </p>
+                            )}
                           </div>
-                          <select
-                            value={op.operador_id}
-                            onChange={(e) =>
-                              handleUpdateOpcion(
-                                idx,
-                                "operador_id",
-                                e.target.value
-                              )
-                            }
-                            className="w-full border rounded-lg px-4 py-2"
+                        </div>
+                      </div>
+                    )}
+
+                    {editing ? (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start">
+                          <h4 className="font-semibold text-lg">
+                            Opción {idx + 1}
+                          </h4>
+                          <button
+                            onClick={() => handleRemoveOpcion(idx)}
+                            className="text-red-600 hover:bg-red-50 p-2 rounded"
                           >
-                            <option value="">Selecciona operador</option>
-                            {operadores.map((operador) => (
-                              <option key={operador.id} value={operador.id}>
-                                {operador.nombre}
-                              </option>
-                            ))}
-                          </select>
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+
+                        <select
+                          value={op.operador_id}
+                          onChange={(e) =>
+                            handleUpdateOpcion(
+                              idx,
+                              "operador_id",
+                              e.target.value
+                            )
+                          }
+                          className="w-full border rounded-lg px-4 py-2"
+                        >
+                          <option value="">Selecciona operador</option>
+                          {operadores.map((operador) => (
+                            <option key={operador.id} value={operador.id}>
+                              {operador.nombre}
+                            </option>
+                          ))}
+                        </select>
+
+                        <input
+                          type="text"
+                          value={op.nombre_paquete}
+                          onChange={(e) =>
+                            handleUpdateOpcion(
+                              idx,
+                              "nombre_paquete",
+                              e.target.value
+                            )
+                          }
+                          className="w-full border rounded-lg px-4 py-2"
+                          placeholder="Nombre del paquete"
+                        />
+
+                        <textarea
+                          value={op.servicio_descripcion || ""}
+                          onChange={(e) =>
+                            handleUpdateOpcion(
+                              idx,
+                              "servicio_descripcion",
+                              e.target.value
+                            )
+                          }
+                          className="w-full border rounded-lg px-4 py-2"
+                          placeholder="Descripción del servicio"
+                          rows="2"
+                        />
+
+                        <div className="grid grid-cols-2 gap-2">
                           <input
                             type="text"
-                            value={op.nombre_paquete}
+                            value={op.hotel_nombre || ""}
                             onChange={(e) =>
                               handleUpdateOpcion(
                                 idx,
-                                "nombre_paquete",
+                                "hotel_nombre",
                                 e.target.value
                               )
                             }
-                            className="w-full border rounded-lg px-4 py-2"
-                            placeholder="Nombre del paquete"
-                          />
-                          <div className="grid grid-cols-2 gap-4">
-                            <input
-                              type="number"
-                              value={op.precio_por_persona}
-                              onChange={(e) =>
-                                handleUpdateOpcion(
-                                  idx,
-                                  "precio_por_persona",
-                                  e.target.value
-                                )
-                              }
-                              className="w-full border rounded-lg px-4 py-2"
-                              placeholder="Precio por persona"
-                            />
-                            <input
-                              type="number"
-                              value={op.precio_total}
-                              onChange={(e) =>
-                                handleUpdateOpcion(
-                                  idx,
-                                  "precio_total",
-                                  e.target.value
-                                )
-                              }
-                              className="w-full border rounded-lg px-4 py-2"
-                              placeholder="Precio total"
-                            />
-                          </div>
-                          <input
-                            type="text"
-                            value={
-                              typeof op.incluye === "string"
-                                ? op.incluye
-                                : op.incluye?.join(", ") || ""
-                            }
-                            onChange={(e) =>
-                              handleUpdateOpcion(idx, "incluye", e.target.value)
-                            }
-                            className="w-full border rounded-lg px-4 py-2"
-                            placeholder="Incluye (separado por comas)"
+                            className="border rounded-lg px-4 py-2"
+                            placeholder="Hotel"
                           />
                           <input
                             type="text"
-                            value={
-                              typeof op.no_incluye === "string"
-                                ? op.no_incluye
-                                : op.no_incluye?.join(", ") || ""
-                            }
+                            value={op.ocupacion || ""}
                             onChange={(e) =>
                               handleUpdateOpcion(
                                 idx,
-                                "no_incluye",
+                                "ocupacion",
                                 e.target.value
                               )
                             }
-                            className="w-full border rounded-lg px-4 py-2"
-                            placeholder="No incluye (separado por comas)"
+                            className="border rounded-lg px-4 py-2"
+                            placeholder="Ocupación"
                           />
                         </div>
-                      ) : (
-                        <>
-                          <div className="flex justify-between items-start mb-4">
-                            <h4 className="font-semibold text-lg">
-                              Opción {idx + 1}
-                            </h4>
-                            <span className="text-2xl font-bold text-primary">
-                              ${precioOpcion.toLocaleString("es-MX")}
-                            </span>
+
+                        <div className="p-3 bg-gray-50 rounded">
+                          <label className="text-sm font-medium text-gray-700 block mb-2">
+                            <Plane size={16} className="inline mr-1" />
+                            Vuelo de Ida
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            <input
+                              type="date"
+                              value={op.vuelo_ida_fecha || ""}
+                              onChange={(e) =>
+                                handleUpdateOpcion(
+                                  idx,
+                                  "vuelo_ida_fecha",
+                                  e.target.value
+                                )
+                              }
+                              className="border rounded-lg px-3 py-2"
+                            />
+                            <input
+                              type="text"
+                              value={op.vuelo_ida_horario || ""}
+                              onChange={(e) =>
+                                handleUpdateOpcion(
+                                  idx,
+                                  "vuelo_ida_horario",
+                                  e.target.value
+                                )
+                              }
+                              className="border rounded-lg px-3 py-2"
+                              placeholder="08:30 - 12:40"
+                            />
+                            <input
+                              type="text"
+                              value={op.vuelo_ida_ruta || ""}
+                              onChange={(e) =>
+                                handleUpdateOpcion(
+                                  idx,
+                                  "vuelo_ida_ruta",
+                                  e.target.value
+                                )
+                              }
+                              className="border rounded-lg px-3 py-2"
+                              placeholder="CUU-CUN"
+                            />
                           </div>
-                          <p className="font-medium text-gray-900">
-                            {op.nombre_paquete}
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            Operador: {getOperadorNombre(op.operador_id)}
-                          </p>
-                          <p className="text-sm text-gray-600 mb-2">
-                            <strong>Viajeros:</strong>{" "}
-                            {cotizacion.num_adultos + cotizacion.num_ninos}{" "}
-                            persona(s)
-                          </p>
+                        </div>
 
-                          {op.precio_por_persona > 0 && (
-                            <p className="text-sm text-gray-600 mt-2">
-                              Precio por persona: $
-                              {parseFloat(op.precio_por_persona).toLocaleString(
-                                "es-MX"
-                              )}
+                        <div className="p-3 bg-gray-50 rounded">
+                          <label className="text-sm font-medium text-gray-700 block mb-2">
+                            <Plane size={16} className="inline mr-1" />
+                            Vuelo de Regreso
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            <input
+                              type="date"
+                              value={op.vuelo_regreso_fecha || ""}
+                              onChange={(e) =>
+                                handleUpdateOpcion(
+                                  idx,
+                                  "vuelo_regreso_fecha",
+                                  e.target.value
+                                )
+                              }
+                              className="border rounded-lg px-3 py-2"
+                            />
+                            <input
+                              type="text"
+                              value={op.vuelo_regreso_horario || ""}
+                              onChange={(e) =>
+                                handleUpdateOpcion(
+                                  idx,
+                                  "vuelo_regreso_horario",
+                                  e.target.value
+                                )
+                              }
+                              className="border rounded-lg px-3 py-2"
+                              placeholder="13:25 - 15:40"
+                            />
+                            <input
+                              type="text"
+                              value={op.vuelo_regreso_ruta || ""}
+                              onChange={(e) =>
+                                handleUpdateOpcion(
+                                  idx,
+                                  "vuelo_regreso_ruta",
+                                  e.target.value
+                                )
+                              }
+                              className="border rounded-lg px-3 py-2"
+                              placeholder="CUN-CUU"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <input
+                            type="number"
+                            value={op.precio_por_persona}
+                            onChange={(e) =>
+                              handleUpdateOpcion(
+                                idx,
+                                "precio_por_persona",
+                                e.target.value
+                              )
+                            }
+                            className="w-full border rounded-lg px-4 py-2"
+                            placeholder="Precio por persona"
+                          />
+                          <input
+                            type="number"
+                            value={op.precio_total}
+                            onChange={(e) =>
+                              handleUpdateOpcion(
+                                idx,
+                                "precio_total",
+                                e.target.value
+                              )
+                            }
+                            className="w-full border rounded-lg px-4 py-2"
+                            placeholder="Precio total"
+                          />
+                        </div>
+
+                        <input
+                          type="text"
+                          value={
+                            typeof op.incluye === "string"
+                              ? op.incluye
+                              : op.incluye?.join(", ") || ""
+                          }
+                          onChange={(e) =>
+                            handleUpdateOpcion(idx, "incluye", e.target.value)
+                          }
+                          className="w-full border rounded-lg px-4 py-2"
+                          placeholder="Incluye (separado por comas)"
+                        />
+
+                        <input
+                          type="text"
+                          value={
+                            typeof op.no_incluye === "string"
+                              ? op.no_incluye
+                              : op.no_incluye?.join(", ") || ""
+                          }
+                          onChange={(e) =>
+                            handleUpdateOpcion(
+                              idx,
+                              "no_incluye",
+                              e.target.value
+                            )
+                          }
+                          className="w-full border rounded-lg px-4 py-2"
+                          placeholder="No incluye (separado por comas)"
+                        />
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="url"
+                            value={op.link_paquete || ""}
+                            onChange={(e) =>
+                              handleUpdateOpcion(
+                                idx,
+                                "link_paquete",
+                                e.target.value
+                              )
+                            }
+                            className="border rounded-lg px-4 py-2"
+                            placeholder="Link del paquete"
+                          />
+                          <input
+                            type="url"
+                            value={op.tour_link || ""}
+                            onChange={(e) =>
+                              handleUpdateOpcion(
+                                idx,
+                                "tour_link",
+                                e.target.value
+                              )
+                            }
+                            className="border rounded-lg px-4 py-2"
+                            placeholder="Link de tours"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-start mb-4">
+                          <h4 className="font-semibold text-lg">
+                            Opción {idx + 1}
+                          </h4>
+                          <span className="text-2xl font-bold text-primary">
+                            ${precioOpcion.toLocaleString("es-MX")}{" "}
+                            {cotizacion.divisa}
+                          </span>
+                        </div>
+
+                        <p className="font-medium text-gray-900 mb-2">
+                          {op.nombre_paquete}
+                        </p>
+
+                        {op.servicio_descripcion && (
+                          <p className="text-sm text-gray-600 mb-3 bg-gray-50 p-3 rounded">
+                            {op.servicio_descripcion}
+                          </p>
+                        )}
+
+                        {op.hotel_nombre && (
+                          <div className="mb-3 p-3 bg-blue-50 rounded">
+                            <p className="text-sm font-medium text-blue-900">
+                              🏨 {op.hotel_nombre}
                             </p>
-                          )}
-
-                          {incluyeArray.length > 0 && (
-                            <div className="mt-4">
-                              <p className="text-sm font-medium text-gray-700">
-                                Incluye:
+                            {op.ocupacion && (
+                              <p className="text-xs text-blue-700 mt-1">
+                                Ocupación: {op.ocupacion}
                               </p>
-                              <ul className="text-sm text-gray-600 ml-4 mt-1 list-disc">
-                                {incluyeArray.map((item, i) => (
-                                  <li key={i}>{item.trim()}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                            )}
+                          </div>
+                        )}
 
-                          {noIncluyeArray.length > 0 && (
-                            <div className="mt-3">
-                              <p className="text-sm font-medium text-gray-700">
-                                No incluye:
-                              </p>
-                              <ul className="text-sm text-gray-600 ml-4 mt-1 list-disc">
-                                {noIncluyeArray.map((item, i) => (
-                                  <li key={i}>{item.trim()}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                        {(op.vuelo_ida_fecha || op.vuelo_regreso_fecha) && (
+                          <div className="mb-3 p-3 bg-green-50 rounded space-y-2">
+                            {op.vuelo_ida_fecha && (
+                              <div>
+                                <p className="text-xs font-medium text-green-700">
+                                  ✈️ Vuelo de Ida
+                                </p>
+                                <p className="text-sm text-gray-900">
+                                  {formatDate(op.vuelo_ida_fecha)}
+                                  {op.vuelo_ida_horario &&
+                                    ` • ${op.vuelo_ida_horario}`}
+                                  {op.vuelo_ida_ruta &&
+                                    ` • ${op.vuelo_ida_ruta}`}
+                                </p>
+                              </div>
+                            )}
+                            {op.vuelo_regreso_fecha && (
+                              <div>
+                                <p className="text-xs font-medium text-green-700">
+                                  ✈️ Vuelo de Regreso
+                                </p>
+                                <p className="text-sm text-gray-900">
+                                  {formatDate(op.vuelo_regreso_fecha)}
+                                  {op.vuelo_regreso_horario &&
+                                    ` • ${op.vuelo_regreso_horario}`}
+                                  {op.vuelo_regreso_ruta &&
+                                    ` • ${op.vuelo_regreso_ruta}`}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
-                          {op.disponibilidad && (
-                            <p className="text-sm text-gray-500 mt-3 italic">
-                              {op.disponibilidad}
+                        <p className="text-sm text-gray-600 mb-2">
+                          Operador: {getOperadorNombre(op.operador_id)}
+                        </p>
+
+                        <p className="text-sm text-gray-600 mb-2">
+                          <strong>Viajeros:</strong>{" "}
+                          {cotizacion.num_adultos + cotizacion.num_ninos}{" "}
+                          persona(s)
+                        </p>
+
+                        {op.precio_por_persona > 0 && (
+                          <p className="text-sm text-gray-600 mt-2">
+                            Precio por persona: $
+                            {parseFloat(op.precio_por_persona).toLocaleString(
+                              "es-MX"
+                            )}
+                          </p>
+                        )}
+
+                        {incluyeArray.length > 0 && (
+                          <div className="mt-4">
+                            <p className="text-sm font-medium text-gray-700">
+                              Incluye:
                             </p>
-                          )}
+                            <ul className="text-sm text-gray-600 ml-4 mt-1 list-disc">
+                              {incluyeArray.map((item, i) => (
+                                <li key={i}>{item.trim()}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
 
+                        {noIncluyeArray.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-sm font-medium text-gray-700">
+                              No incluye:
+                            </p>
+                            <ul className="text-sm text-gray-600 ml-4 mt-1 list-disc">
+                              {noIncluyeArray.map((item, i) => (
+                                <li key={i}>{item.trim()}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {op.disponibilidad && (
+                          <p className="text-sm text-gray-500 mt-3 italic">
+                            {op.disponibilidad}
+                          </p>
+                        )}
+
+                        <div className="mt-3 flex gap-2">
                           {op.link_paquete && (
                             <a
                               href={op.link_paquete}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-blue-600 hover:underline mt-2 inline-block"
+                              className="text-sm text-blue-600 hover:underline"
                             >
                               Ver paquete original
                             </a>
                           )}
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                          {op.tour_link && (
+                            <a
+                              href={op.tour_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-purple-600 hover:underline"
+                            >
+                              Ver tours disponibles
+                            </a>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
+
+        {/* Notes */}
+        {cotizacion.notas && !editing && (
+          <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h3 className="font-semibold text-gray-900 mb-2">Notas</h3>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+              {cotizacion.notas}
+            </p>
+          </div>
+        )}
+
+        {editing && (
+          <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="font-semibold text-gray-900 mb-2">Notas</h3>
+            <textarea
+              value={editData.notas || ""}
+              onChange={(e) =>
+                setEditData({ ...editData, notas: e.target.value })
+              }
+              className="w-full border rounded-lg px-4 py-2"
+              rows="4"
+              placeholder="Notas adicionales..."
+            />
+          </div>
+        )}
       </div>
     </div>
   );

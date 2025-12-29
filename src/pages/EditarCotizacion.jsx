@@ -18,12 +18,15 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
     notas: "",
     divisa: "MXN",
     estatus: "nueva",
+    fecha_registro: "",
+    fecha_reserva: "",
+    vigente_hasta: "",
   });
 
   const [opciones, setOpciones] = useState([]);
+  const [editingOpcionId, setEditingOpcionId] = useState(null);
 
   useEffect(() => {
-    // Check permissions before allowing edit
     if (!canEditThis()) {
       alert("No tienes permisos para editar esta cotización");
       onBack();
@@ -45,6 +48,9 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
       notas: cotizacion.notas || "",
       divisa: cotizacion.divisa || "MXN",
       estatus: cotizacion.estatus || "nueva",
+      fecha_registro: cotizacion.fecha_registro || "",
+      fecha_reserva: cotizacion.fecha_reserva || "",
+      vigente_hasta: cotizacion.vigente_hasta || "",
     });
 
     if (cotizacion.opciones_cotizacion)
@@ -55,15 +61,9 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
 
   function canEditThis() {
     if (!cotizacion || !user || !profile) return false;
-
-    // Admins can edit everything
     if (isAdmin()) return true;
-
-    // Agents can edit only their own
     if (profile.role === "agent" && cotizacion.created_by === user.id)
       return true;
-
-    // Viewers cannot edit
     return false;
   }
 
@@ -91,7 +91,6 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
         .eq("id", cotizacion.id);
 
       if (error) {
-        // Check if error is due to RLS
         if (error.code === "42501" || error.message.includes("policy")) {
           alert("Error: No tienes permisos para editar esta cotización");
           onBack();
@@ -108,40 +107,52 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
     }
   }
 
-  async function guardarOpciones() {
+  async function guardarOpcion(opcion) {
     if (!canEditThis()) {
       alert("No tienes permisos para editar esta cotización");
       return;
     }
 
     try {
-      // actualizar cada opcion por id
-      for (const op of opciones) {
-        if (!op.id) continue;
-        const { error } = await supabase
-          .from("opciones_cotizacion")
-          .update({
-            nombre_paquete: op.nombre_paquete,
-            precio_por_persona: parseFloat(op.precio_por_persona) || 0,
-            precio_total: parseFloat(op.precio_total) || 0,
-            disponibilidad: op.disponibilidad || "",
-            notas: op.notas || "",
-            link_paquete: op.link_paquete || "",
-          })
-          .eq("id", op.id);
+      if (!opcion.id) return;
 
-        if (error) {
-          if (error.code === "42501" || error.message.includes("policy")) {
-            alert("Error: No tienes permisos para editar esta cotización");
-            return;
-          }
-          throw error;
+      const { error } = await supabase
+        .from("opciones_cotizacion")
+        .update({
+          nombre_paquete: opcion.nombre_paquete,
+          servicio_descripcion: opcion.servicio_descripcion,
+          hotel_nombre: opcion.hotel_nombre,
+          ocupacion: opcion.ocupacion,
+          vuelo_ida_fecha: opcion.vuelo_ida_fecha,
+          vuelo_ida_horario: opcion.vuelo_ida_horario,
+          vuelo_ida_ruta: opcion.vuelo_ida_ruta,
+          vuelo_regreso_fecha: opcion.vuelo_regreso_fecha,
+          vuelo_regreso_horario: opcion.vuelo_regreso_horario,
+          vuelo_regreso_ruta: opcion.vuelo_regreso_ruta,
+          precio_por_persona: parseFloat(opcion.precio_por_persona) || 0,
+          precio_total: parseFloat(opcion.precio_total) || 0,
+          disponibilidad: opcion.disponibilidad || "",
+          incluye: opcion.incluye || "",
+          notas: opcion.notas || "",
+          link_paquete: opcion.link_paquete || "",
+          tour_link: opcion.tour_link || "",
+        })
+        .eq("id", opcion.id);
+
+      if (error) {
+        if (error.code === "42501" || error.message.includes("policy")) {
+          alert("Error: No tienes permisos para editar esta cotización");
+          return;
         }
+        throw error;
       }
-      alert("Opciones guardadas exitosamente");
+
+      alert("Opción guardada exitosamente");
+      setEditingOpcionId(null);
+      fetchOpcionesLocal();
     } catch (err) {
-      console.error("Error guardando opciones:", err);
-      alert("Error guardando opciones: " + err.message);
+      console.error("Error guardando opción:", err);
+      alert("Error guardando opción: " + err.message);
     }
   }
 
@@ -151,13 +162,12 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
     setOpciones(copy);
   }
 
-  // If no permission, show nothing (already redirected in useEffect)
   if (!canEditThis()) {
     return null;
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-8 max-w-5xl mx-auto">
       <button
         onClick={onBack}
         className="mb-4 text-gray-600 hover:text-gray-900"
@@ -167,8 +177,11 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
       <h1 className="text-2xl font-bold mb-4">Editar Cotización</h1>
 
       <form onSubmit={guardarCotizacion} className="space-y-4">
-        <div className="bg-white rounded p-4">
-          <h2 className="font-semibold mb-2">Cliente</h2>
+        {/* Cliente */}
+        <div className="bg-white rounded p-4 shadow">
+          <h2 className="font-semibold mb-3 text-lg">
+            Información del Cliente
+          </h2>
           <input
             className="w-full border rounded px-3 py-2 mb-2"
             value={formData.cliente_nombre}
@@ -197,8 +210,55 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
           </div>
         </div>
 
-        <div className="bg-white rounded p-4">
-          <h2 className="font-semibold mb-2">Viaje</h2>
+        {/* Fechas de Cotización */}
+        <div className="bg-white rounded p-4 shadow">
+          <h2 className="font-semibold mb-3 text-lg">Fechas de Cotización</h2>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-xs text-gray-600 block mb-1">
+                Fecha Registro
+              </label>
+              <input
+                type="date"
+                className="w-full border rounded px-3 py-2"
+                value={formData.fecha_registro}
+                onChange={(e) =>
+                  setFormData({ ...formData, fecha_registro: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600 block mb-1">
+                Fecha Reserva
+              </label>
+              <input
+                type="date"
+                className="w-full border rounded px-3 py-2"
+                value={formData.fecha_reserva}
+                onChange={(e) =>
+                  setFormData({ ...formData, fecha_reserva: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600 block mb-1">
+                Vigente Hasta
+              </label>
+              <input
+                type="date"
+                className="w-full border rounded px-3 py-2"
+                value={formData.vigente_hasta}
+                onChange={(e) =>
+                  setFormData({ ...formData, vigente_hasta: e.target.value })
+                }
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Viaje */}
+        <div className="bg-white rounded p-4 shadow">
+          <h2 className="font-semibold mb-3 text-lg">Detalles del Viaje</h2>
           <input
             className="w-full border rounded px-3 py-2 mb-2"
             value={formData.destino}
@@ -208,27 +268,39 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
             placeholder="Destino"
           />
           <div className="grid grid-cols-2 gap-2 mb-2">
-            <input
-              type="date"
-              className="border rounded px-3 py-2"
-              value={formData.fecha_salida}
-              onChange={(e) =>
-                setFormData({ ...formData, fecha_salida: e.target.value })
-              }
-            />
-            <input
-              type="date"
-              className="border rounded px-3 py-2"
-              value={formData.fecha_regreso}
-              onChange={(e) =>
-                setFormData({ ...formData, fecha_regreso: e.target.value })
-              }
-            />
+            <div>
+              <label className="text-xs text-gray-600 block mb-1">
+                Fecha Salida
+              </label>
+              <input
+                type="date"
+                className="w-full border rounded px-3 py-2"
+                value={formData.fecha_salida}
+                onChange={(e) =>
+                  setFormData({ ...formData, fecha_salida: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600 block mb-1">
+                Fecha Regreso
+              </label>
+              <input
+                type="date"
+                className="w-full border rounded px-3 py-2"
+                value={formData.fecha_regreso}
+                onChange={(e) =>
+                  setFormData({ ...formData, fecha_regreso: e.target.value })
+                }
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <div>
-              <label className="text-xs text-gray-600">Adultos</label>
+              <label className="text-xs text-gray-600 block mb-1">
+                Adultos
+              </label>
               <input
                 type="number"
                 className="w-full border rounded px-3 py-2"
@@ -243,7 +315,7 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
               />
             </div>
             <div>
-              <label className="text-xs text-gray-600">Niños</label>
+              <label className="text-xs text-gray-600 block mb-1">Niños</label>
               <input
                 type="number"
                 className="w-full border rounded px-3 py-2"
@@ -258,7 +330,25 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
               />
             </div>
             <div>
-              <label className="text-xs text-gray-600">Divisa</label>
+              <label className="text-xs text-gray-600 block mb-1">
+                Presupuesto Aprox.
+              </label>
+              <input
+                type="number"
+                className="w-full border rounded px-3 py-2"
+                value={formData.presupuesto_aprox}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    presupuesto_aprox: e.target.value,
+                  })
+                }
+                placeholder="0.00"
+                step="0.01"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600 block mb-1">Divisa</label>
               <select
                 className="w-full border rounded px-3 py-2"
                 value={formData.divisa}
@@ -274,8 +364,9 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
           </div>
         </div>
 
-        <div className="bg-white rounded p-4">
-          <h2 className="font-semibold mb-2">Estatus</h2>
+        {/* Estatus */}
+        <div className="bg-white rounded p-4 shadow">
+          <h2 className="font-semibold mb-3 text-lg">Estatus</h2>
           <select
             className="w-full border rounded px-3 py-2"
             value={formData.estatus}
@@ -291,89 +382,270 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
           </select>
         </div>
 
-        <div className="bg-white rounded p-4">
-          <h2 className="font-semibold mb-2">Opciones de Paquetes</h2>
+        {/* Opciones de Paquetes */}
+        <div className="bg-white rounded p-4 shadow">
+          <h2 className="font-semibold mb-3 text-lg">Opciones de Paquetes</h2>
           {opciones.length === 0 && (
             <p className="text-sm text-gray-500">No hay opciones</p>
           )}
           {opciones.map((op, i) => (
-            <div key={op.id || op.temp_id} className="border rounded p-3 mb-3">
-              <input
-                className="w-full border rounded px-3 py-2 mb-2"
-                value={op.nombre_paquete || ""}
-                onChange={(e) =>
-                  updateOption(i, "nombre_paquete", e.target.value)
-                }
-                placeholder="Nombre del paquete"
-              />
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <div>
-                  <label className="text-xs text-gray-600">Precio Total</label>
+            <div
+              key={op.id || op.temp_id}
+              className="border rounded p-4 mb-4 bg-gray-50"
+            >
+              {editingOpcionId === op.id ? (
+                // EDIT MODE
+                <div className="space-y-3">
                   <input
-                    type="number"
                     className="w-full border rounded px-3 py-2"
-                    value={op.precio_total || ""}
+                    value={op.nombre_paquete || ""}
                     onChange={(e) =>
-                      updateOption(i, "precio_total", e.target.value)
+                      updateOption(i, "nombre_paquete", e.target.value)
                     }
-                    placeholder="0.00"
-                    step="0.01"
+                    placeholder="Nombre del paquete"
                   />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-600">Por Persona</label>
+
+                  <textarea
+                    className="w-full border rounded px-3 py-2"
+                    value={op.servicio_descripcion || ""}
+                    onChange={(e) =>
+                      updateOption(i, "servicio_descripcion", e.target.value)
+                    }
+                    placeholder="Descripción del servicio"
+                    rows="2"
+                  />
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="border rounded px-3 py-2"
+                      value={op.hotel_nombre || ""}
+                      onChange={(e) =>
+                        updateOption(i, "hotel_nombre", e.target.value)
+                      }
+                      placeholder="Hotel"
+                    />
+                    <input
+                      className="border rounded px-3 py-2"
+                      value={op.ocupacion || ""}
+                      onChange={(e) =>
+                        updateOption(i, "ocupacion", e.target.value)
+                      }
+                      placeholder="Ocupación"
+                    />
+                  </div>
+
+                  <div className="bg-white p-3 rounded">
+                    <label className="text-sm font-semibold text-gray-700 block mb-2">
+                      Vuelo de Ida
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <input
+                        type="date"
+                        className="border rounded px-3 py-2"
+                        value={op.vuelo_ida_fecha || ""}
+                        onChange={(e) =>
+                          updateOption(i, "vuelo_ida_fecha", e.target.value)
+                        }
+                      />
+                      <input
+                        className="border rounded px-3 py-2"
+                        value={op.vuelo_ida_horario || ""}
+                        onChange={(e) =>
+                          updateOption(i, "vuelo_ida_horario", e.target.value)
+                        }
+                        placeholder="Horario"
+                      />
+                      <input
+                        className="border rounded px-3 py-2"
+                        value={op.vuelo_ida_ruta || ""}
+                        onChange={(e) =>
+                          updateOption(i, "vuelo_ida_ruta", e.target.value)
+                        }
+                        placeholder="Ruta"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded">
+                    <label className="text-sm font-semibold text-gray-700 block mb-2">
+                      Vuelo de Regreso
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <input
+                        type="date"
+                        className="border rounded px-3 py-2"
+                        value={op.vuelo_regreso_fecha || ""}
+                        onChange={(e) =>
+                          updateOption(i, "vuelo_regreso_fecha", e.target.value)
+                        }
+                      />
+                      <input
+                        className="border rounded px-3 py-2"
+                        value={op.vuelo_regreso_horario || ""}
+                        onChange={(e) =>
+                          updateOption(
+                            i,
+                            "vuelo_regreso_horario",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Horario"
+                      />
+                      <input
+                        className="border rounded px-3 py-2"
+                        value={op.vuelo_regreso_ruta || ""}
+                        onChange={(e) =>
+                          updateOption(i, "vuelo_regreso_ruta", e.target.value)
+                        }
+                        placeholder="Ruta"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-gray-600 block mb-1">
+                        Precio Total
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full border rounded px-3 py-2"
+                        value={op.precio_total || ""}
+                        onChange={(e) =>
+                          updateOption(i, "precio_total", e.target.value)
+                        }
+                        placeholder="0.00"
+                        step="0.01"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600 block mb-1">
+                        Por Persona
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full border rounded px-3 py-2"
+                        value={op.precio_por_persona || ""}
+                        onChange={(e) =>
+                          updateOption(i, "precio_por_persona", e.target.value)
+                        }
+                        placeholder="0.00"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+
+                  <textarea
+                    className="w-full border rounded px-3 py-2"
+                    value={op.incluye || ""}
+                    onChange={(e) => updateOption(i, "incluye", e.target.value)}
+                    placeholder="Incluye"
+                    rows="2"
+                  />
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="url"
+                      className="border rounded px-3 py-2"
+                      value={op.link_paquete || ""}
+                      onChange={(e) =>
+                        updateOption(i, "link_paquete", e.target.value)
+                      }
+                      placeholder="Link del paquete"
+                    />
+                    <input
+                      type="url"
+                      className="border rounded px-3 py-2"
+                      value={op.tour_link || ""}
+                      onChange={(e) =>
+                        updateOption(i, "tour_link", e.target.value)
+                      }
+                      placeholder="Link de tours"
+                    />
+                  </div>
+
                   <input
-                    type="number"
                     className="w-full border rounded px-3 py-2"
-                    value={op.precio_por_persona || ""}
+                    value={op.disponibilidad || ""}
                     onChange={(e) =>
-                      updateOption(i, "precio_por_persona", e.target.value)
+                      updateOption(i, "disponibilidad", e.target.value)
                     }
-                    placeholder="0.00"
-                    step="0.01"
+                    placeholder="Disponibilidad"
                   />
+
+                  <textarea
+                    className="w-full border rounded px-3 py-2"
+                    value={op.notas || ""}
+                    onChange={(e) => updateOption(i, "notas", e.target.value)}
+                    placeholder="Notas"
+                    rows="2"
+                  />
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => guardarOpcion(op)}
+                      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingOpcionId(null)}
+                      className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <input
-                className="w-full border rounded px-3 py-2 mb-2"
-                value={op.disponibilidad || ""}
-                onChange={(e) =>
-                  updateOption(i, "disponibilidad", e.target.value)
-                }
-                placeholder="Disponibilidad"
-              />
-              <input
-                type="url"
-                className="w-full border rounded px-3 py-2 mb-2"
-                value={op.link_paquete || ""}
-                onChange={(e) =>
-                  updateOption(i, "link_paquete", e.target.value)
-                }
-                placeholder="Link del paquete"
-              />
-              <textarea
-                className="w-full border rounded px-3 py-2"
-                value={op.notas || ""}
-                onChange={(e) => updateOption(i, "notas", e.target.value)}
-                placeholder="Notas"
-                rows="2"
-              />
+              ) : (
+                // VIEW MODE
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="font-semibold text-lg">
+                      {op.nombre_paquete}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingOpcionId(op.id)}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      Editar
+                    </button>
+                  </div>
+                  {op.hotel_nombre && (
+                    <div className="text-sm text-gray-600 mb-1">
+                      <span className="font-medium">Hotel:</span>{" "}
+                      {op.hotel_nombre} {op.ocupacion && `(${op.ocupacion})`}
+                    </div>
+                  )}
+                  {op.vuelo_ida_fecha && (
+                    <div className="text-sm text-gray-600 mb-1">
+                      <span className="font-medium">Vuelo Ida:</span>{" "}
+                      {op.vuelo_ida_fecha} {op.vuelo_ida_horario}{" "}
+                      {op.vuelo_ida_ruta}
+                    </div>
+                  )}
+                  {op.vuelo_regreso_fecha && (
+                    <div className="text-sm text-gray-600 mb-1">
+                      <span className="font-medium">Vuelo Regreso:</span>{" "}
+                      {op.vuelo_regreso_fecha} {op.vuelo_regreso_horario}{" "}
+                      {op.vuelo_regreso_ruta}
+                    </div>
+                  )}
+                  <div className="text-sm text-gray-600 mt-2">
+                    <span className="font-medium">Precio Total:</span> $
+                    {parseFloat(op.precio_total || 0).toLocaleString("es-MX")}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
-
-          {opciones.length > 0 && (
-            <button
-              type="button"
-              onClick={guardarOpciones}
-              className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
-            >
-              Guardar Opciones
-            </button>
-          )}
         </div>
 
-        <div className="bg-white rounded p-4">
-          <h2 className="font-semibold mb-2">Notas Generales</h2>
+        {/* Notas Generales */}
+        <div className="bg-white rounded p-4 shadow">
+          <h2 className="font-semibold mb-3 text-lg">Notas Generales</h2>
           <textarea
             className="w-full border rounded px-3 py-2"
             rows={3}
@@ -388,14 +660,14 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
         <div className="flex gap-2">
           <button
             type="submit"
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
           >
             Guardar Cotización
           </button>
           <button
             type="button"
             onClick={onBack}
-            className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+            className="bg-gray-200 px-6 py-2 rounded hover:bg-gray-300"
           >
             Cancelar
           </button>

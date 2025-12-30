@@ -312,7 +312,18 @@ export default function DetallesCotizacion({
                     onClick={() => {
                       setEditing(false);
                       setEditData(cotizacion);
-                      setEditingOpciones(opciones);
+                      setEditingOpciones(
+                        opciones.map((op) => ({
+                          ...op,
+                          precio_por_persona: op.precio_por_persona ?? "",
+                          vuelo_ida_fecha: op.vuelo_ida_fecha ?? "",
+                          vuelo_ida_horario: op.vuelo_ida_horario ?? "",
+                          vuelo_ida_ruta: op.vuelo_ida_ruta ?? "",
+                          vuelo_regreso_fecha: op.vuelo_regreso_fecha ?? "",
+                          vuelo_regreso_horario: op.vuelo_regreso_horario ?? "",
+                          vuelo_regreso_ruta: op.vuelo_regreso_ruta ?? "",
+                        }))
+                      );
                       setShowAddOpcion(false);
                     }}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"

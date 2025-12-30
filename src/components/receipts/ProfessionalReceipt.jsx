@@ -10,6 +10,31 @@ export default function ProfessionalReceipt({ data, companyInfo }) {
     address: "Chihuahua, Chihuahua, México",
   };
 
+  // Inline date formatting to ensure it works in PDF capture
+  function formatDateShort(dateStr) {
+    if (!dateStr) return "";
+    const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+    const date = new Date(dateOnly + "T00:00:00");
+    if (isNaN(date.getTime())) return "";
+    return date.toLocaleDateString("es-MX", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
+  function formatDateLong(dateStr) {
+    if (!dateStr) return "";
+    const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+    const date = new Date(dateOnly + "T00:00:00");
+    if (isNaN(date.getTime())) return "";
+    return date.toLocaleDateString("es-MX", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  }
+
   return (
     <div
       style={{
@@ -149,11 +174,7 @@ export default function ProfessionalReceipt({ data, companyInfo }) {
           <span
             style={{ fontSize: "18px", fontWeight: "600", color: "#1e293b" }}
           >
-            {new Date(data.payment_date).toLocaleDateString("es-MX", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            })}
+            {formatDateShort(data.payment_date)}
           </span>
         </div>
         <div
@@ -280,8 +301,8 @@ export default function ProfessionalReceipt({ data, companyInfo }) {
         </div>
       )}
 
-      {/* Payment Deadline - Only show if there's still a balance */}
-      {data.show_fechas && data.balance > 0 && (
+      {/* Payment Deadline - Always show if there's a balance and fecha_limite exists */}
+      {data.balance > 0 && data.fecha_limite_pago && (
         <div
           style={{
             background: "#fef3c7",
@@ -298,19 +319,13 @@ export default function ProfessionalReceipt({ data, companyInfo }) {
           <span
             style={{ fontSize: "18px", fontWeight: "600", color: "#92400e" }}
           >
-            {data.fecha_limite_pago
-              ? new Date(data.fecha_limite_pago).toLocaleDateString("es-MX", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                })
-              : "Por definir"}
+            {formatDateShort(data.fecha_limite_pago)}
           </span>
         </div>
       )}
 
-      {/* Reservation Info */}
-      {data.show_reserva_info && (
+      {/* Reservation Info - Always show if destino or fecha_viaje exists */}
+      {(data.destino || data.fecha_viaje) && (
         <div
           style={{
             borderTop: "1px solid #e2e8f0",
@@ -350,11 +365,7 @@ export default function ProfessionalReceipt({ data, companyInfo }) {
                   color: "#1e293b",
                 }}
               >
-                {new Date(data.fecha_viaje).toLocaleDateString("es-MX", {
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric",
-                })}
+                {formatDateLong(data.fecha_viaje)}
               </span>
             </div>
           )}

@@ -21,7 +21,7 @@ export default function ReceiptGenerator({
   const [customText, setCustomText] = useState(customData?.custom_text || "");
   const [generating, setGenerating] = useState(false);
   const [preview, setPreview] = useState(false);
-  const [receiptNumber, setReceiptNumber] = useState("REC-2025-XXXXX");
+  const [receiptNumber, setReceiptNumber] = useState("");
   const [companySettings, setCompanySettings] = useState(null);
   const receiptRef = useRef();
   const { user } = useAuth();
@@ -32,7 +32,7 @@ export default function ReceiptGenerator({
   }, []);
 
   useEffect(() => {
-    // Generate default custom text for informal receipt
+    // Generate default custom text for informal receipt on mount
     if (template === "informal") {
       generateDefaultText();
     }
@@ -40,17 +40,24 @@ export default function ReceiptGenerator({
   }, [template]);
 
   function generateDefaultText() {
+    const clientName =
+      venta.cotizaciones?.cliente_nombre || venta.cliente_nombre;
+    const destino = venta.cotizaciones?.destino || venta.destino;
     const amountText = convertNumberToWords(pago.monto);
     const text = `Se recibió un pago de $${pago.monto.toLocaleString("es-MX", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })} (${amountText} pesos 00/100 M.N.) como ${pago.numero_pago === 1 ? "abono inicial" : "abono"} para la reservación de ${venta.cotizaciones.destino || "viaje"}, a nombre de ${venta.cotizaciones.cliente_nombre}, con fecha de viaje del ${formatDate(venta.fecha_viaje)}.`;
+    })} (${amountText} pesos 00/100 M.N.) como ${pago.numero_pago === 1 ? "abono inicial" : "abono"} para la reservación de ${destino || "viaje"}, a nombre de ${clientName}, con fecha de viaje del ${formatDate(venta.fecha_viaje)}.`;
 
     setCustomText(text);
   }
 
   function convertNumberToWords(num) {
-    // Simple conversion for common amounts
+    // For large numbers, just return a simple format
+    if (num >= 100000) {
+      return num.toLocaleString("es-MX");
+    }
+
     const units = [
       "",
       "un",
@@ -65,7 +72,7 @@ export default function ReceiptGenerator({
     ];
     const tens = [
       "",
-      "",
+      "diez",
       "veinte",
       "treinta",
       "cuarenta",
@@ -87,6 +94,18 @@ export default function ReceiptGenerator({
       "ochocientos",
       "novecientos",
     ];
+    const teens = [
+      "diez",
+      "once",
+      "doce",
+      "trece",
+      "catorce",
+      "quince",
+      "dieciséis",
+      "diecisiete",
+      "dieciocho",
+      "diecinueve",
+    ];
 
     const thousands = Math.floor(num / 1000);
     const remainder = num % 1000;
@@ -96,32 +115,57 @@ export default function ReceiptGenerator({
 
     let result = "";
 
+    // Handle thousands (0-99)
     if (thousands > 0) {
-      result += thousands === 1 ? "mil" : `${units[thousands]} mil`;
+      if (thousands === 1) {
+        result += "mil";
+      } else if (thousands < 10) {
+        result += `${units[thousands]} mil`;
+      } else if (thousands >= 10 && thousands < 20) {
+        result += `${teens[thousands - 10]} mil`;
+      } else {
+        const thousandsTens = Math.floor(thousands / 10);
+        const thousandsUnits = thousands % 10;
+        result += tens[thousandsTens];
+        if (thousandsUnits > 0) {
+          result += ` y ${units[thousandsUnits]}`;
+        }
+        result += " mil";
+      }
     }
 
+    // Handle hundreds
     if (hundredsDigit > 0) {
+      if (result) result += " ";
       result +=
-        " " +
-        (hundredsDigit === 1 && remainder === 100
+        hundredsDigit === 1 && remainder === 100
           ? "cien"
-          : hundreds[hundredsDigit]);
+          : hundreds[hundredsDigit];
     }
 
-    if (tensDigit > 0) {
-      result += " " + tens[tensDigit];
+    // Handle tens and units
+    if (tensDigit === 1) {
+      // Teens (10-19)
+      if (result) result += " ";
+      result += teens[unitsDigit];
+    } else {
+      if (tensDigit > 0) {
+        if (result) result += " ";
+        result += tens[tensDigit];
+      }
+      if (unitsDigit > 0) {
+        if (result && tensDigit > 0) result += " y ";
+        else if (result) result += " ";
+        result += units[unitsDigit];
+      }
     }
 
-    if (unitsDigit > 0 && tensDigit !== 2) {
-      result += " " + units[unitsDigit];
-    }
-
-    return result.trim();
+    return result.trim() || "cero";
   }
 
   function formatDate(dateStr) {
     if (!dateStr) return "";
-    const date = new Date(dateStr);
+    const date = new Date(dateStr + "T00:00:00");
     return date.toLocaleDateString("es-MX", {
       day: "2-digit",
       month: "long",
@@ -179,6 +223,35 @@ export default function ReceiptGenerator({
 
   async function handleGenerate() {
     try {
+      // Generate receipt number right now
+      let finalReceiptNumber = receiptNumber;
+      if (!finalReceiptNumber) {
+        // Get the latest receipt number
+        const { data, error } = await supabase
+          .from("receipts")
+          .select("receipt_number")
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (error) throw error;
+
+        let nextNumber = 1;
+        if (data && data.length > 0) {
+          const lastNumber = data[0].receipt_number;
+          const match = lastNumber.match(/REC-2025-(\d+)/);
+          if (match) {
+            nextNumber = parseInt(match[1]) + 1;
+          }
+        }
+
+        const paddedNumber = String(nextNumber).padStart(5, "0");
+        finalReceiptNumber = `REC-2025-${paddedNumber}`;
+        setReceiptNumber(finalReceiptNumber);
+
+        // Wait for state update to trigger re-render before capturing
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
       const imageBlob = await generateReceiptImage();
       const pdf = await generateReceiptPDF();
 
@@ -195,8 +268,19 @@ export default function ReceiptGenerator({
         .from("receipts")
         .getPublicUrl(fileData.path);
 
+      const clientName =
+        venta.cotizaciones?.cliente_nombre || venta.cliente_nombre;
+      const clientPhone =
+        venta.cotizaciones?.cliente_telefono || venta.cliente_telefono;
+      const clientEmail =
+        venta.cotizaciones?.cliente_email || venta.cliente_email;
+      const destino = venta.cotizaciones?.destino || venta.destino;
+      const numAdultos =
+        venta.cotizaciones?.num_adultos || venta.num_adultos || 0;
+      const numNinos = venta.cotizaciones?.num_ninos || venta.num_ninos || 0;
+
       const receiptData = {
-        receipt_number: receiptNumber,
+        receipt_number: finalReceiptNumber,
         venta_id: venta.id,
         pago_id: pago.id,
         template_type: template,
@@ -207,16 +291,15 @@ export default function ReceiptGenerator({
         total_price: venta.precio_total,
         previous_payments: venta.monto_pagado - pago.monto,
         balance: venta.monto_pendiente,
-        client_name: venta.cotizaciones.cliente_nombre,
-        client_phone: venta.cotizaciones.cliente_telefono,
-        client_email: venta.cotizaciones.cliente_email,
+        client_name: clientName,
+        client_phone: clientPhone,
+        client_email: clientEmail,
         folio_venta: venta.folio_venta,
         image_url: urlData.publicUrl,
         created_by: user.id,
         receipt_stage: "generated",
-        destination: venta.cotizaciones.destino,
-        travelers:
-          venta.cotizaciones.num_adultos + venta.cotizaciones.num_ninos,
+        destination: destino,
+        travelers: numAdultos + numNinos,
       };
 
       const { data: receipt, error: insertError } = await supabase
@@ -238,19 +321,30 @@ export default function ReceiptGenerator({
     }
   }
 
+  const clientName = venta.cotizaciones?.cliente_nombre || venta.cliente_nombre;
+  const destino = venta.cotizaciones?.destino || venta.destino;
+
+  // Calculate correct financial data for receipt
+  const currentPayment = pago.monto;
+  const totalPrice = venta.precio_total;
+  const previousPayments = (venta.monto_pagado || 0) - currentPayment; // Payments BEFORE this one
+  const balance =
+    venta.monto_pendiente || totalPrice - (venta.monto_pagado || 0); // Balance AFTER this payment
+
   const receiptData = {
     receipt_number: receiptNumber,
-    amount: pago.monto,
+    amount: currentPayment,
     payment_date: pago.fecha_pagado || pago.fecha_programada,
     payment_method: pago.metodo_pago,
-    total_price: venta.precio_total,
-    previous_payments: venta.monto_pagado - pago.monto,
-    balance: venta.monto_pendiente,
-    client_name: venta.cotizaciones.cliente_nombre,
+    total_price: totalPrice,
+    previous_payments: previousPayments,
+    balance: balance,
+    client_name: clientName,
     folio_venta: venta.folio_venta,
     custom_text: customText,
     fecha_viaje: venta.fecha_viaje,
-    destino: venta.cotizaciones.destino,
+    fecha_limite_pago: venta.fecha_limite_pago,
+    destino: destino,
   };
 
   // Format company info for professional receipt

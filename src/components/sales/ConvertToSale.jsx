@@ -2,11 +2,11 @@ import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { X } from "lucide-react";
+import ReceiptGenerator from "../receipts/ReceiptGenerator";
 
 export default function ConvertToSale({
   cotizacion,
   opciones,
-  operadores,
   onClose,
   onSuccess,
 }) {
@@ -16,10 +16,15 @@ export default function ConvertToSale({
     precio_total: "",
     fecha_viaje: "",
     pago_inicial: "0",
+    metodo_pago: "Transferencia",
     fecha_limite: "",
     notas: "",
   });
   const [loading, setLoading] = useState(false);
+  const [showReceiptPrompt, setShowReceiptPrompt] = useState(false);
+  const [showReceiptGenerator, setShowReceiptGenerator] = useState(false);
+  const [createdVenta, setCreatedVenta] = useState(null);
+  const [createdPago, setCreatedPago] = useState(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -48,13 +53,30 @@ export default function ConvertToSale({
           cotizacion_id: cotizacion.id,
           selected_option_id: selectedOption.id,
           precio_total: parseFloat(formData.precio_total),
+          monto_pagado: parseFloat(formData.pago_inicial) || 0,
+          monto_pendiente:
+            parseFloat(formData.precio_total) -
+            (parseFloat(formData.pago_inicial) || 0),
           divisa: cotizacion.divisa || "MXN",
           fecha_viaje: formData.fecha_viaje,
           fecha_limite_pago: formData.fecha_limite,
           notas: formData.notas,
+          grupo_id: cotizacion.grupo_id,
           created_by: user.id,
         })
-        .select()
+        .select(
+          `
+          *,
+          cotizaciones (
+            cliente_nombre,
+            cliente_telefono,
+            cliente_email,
+            destino,
+            num_adultos,
+            num_ninos
+          )
+        `
+        )
         .single();
 
       if (ventaError) throw ventaError;
@@ -62,19 +84,27 @@ export default function ConvertToSale({
       // 2. Create initial payment if > 0
       const pagoInicial = parseFloat(formData.pago_inicial);
       if (pagoInicial > 0) {
-        const { error: pagoError } = await supabase.from("pagos").insert({
-          venta_id: venta.id,
-          numero_pago: 1,
-          monto: pagoInicial,
-          fecha_programada: new Date().toISOString().split("T")[0],
-          fecha_pagado: new Date().toISOString().split("T")[0],
-          estado: "pagado",
-          metodo_pago: "Pendiente",
-          registrado_por: user.id,
-          notas: "Pago inicial",
-        });
+        const { data: newPago, error: pagoError } = await supabase
+          .from("pagos")
+          .insert({
+            venta_id: venta.id,
+            numero_pago: 1,
+            monto: pagoInicial,
+            fecha_programada: new Date().toISOString().split("T")[0],
+            fecha_pagado: new Date().toISOString().split("T")[0],
+            estado: "pagado",
+            metodo_pago: formData.metodo_pago,
+            registrado_por: user.id,
+            notas: "Pago inicial",
+          })
+          .select()
+          .single();
 
         if (pagoError) throw pagoError;
+
+        // Store venta (already has cotizaciones data) and pago for receipt generation
+        setCreatedVenta(venta);
+        setCreatedPago(newPago);
       }
 
       // 3. Update cotización stage
@@ -100,7 +130,12 @@ export default function ConvertToSale({
         notes: "Convertido a venta",
       });
 
-      onSuccess();
+      // Check if payment was made and prompt for receipt
+      if (parseFloat(formData.pago_inicial) > 0) {
+        setShowReceiptPrompt(true);
+      } else {
+        onSuccess();
+      }
     } catch (error) {
       console.error("Error:", error);
       alert("Error al crear venta: " + error.message);
@@ -109,9 +144,51 @@ export default function ConvertToSale({
     }
   }
 
-  function getOperadorNombre(operadorId) {
-    const op = operadores.find((o) => o.id === operadorId);
-    return op?.nombre || "Desconocido";
+  // Show receipt generator if prompted
+  if (showReceiptPrompt && createdVenta && createdPago) {
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">
+            ¿Generar Recibo?
+          </h3>
+          <p className="text-gray-600 mb-6">
+            Se registró un pago inicial de $
+            {parseFloat(formData.pago_inicial).toLocaleString("es-MX")}. ¿Deseas
+            generar un recibo para este pago ahora?
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => onSuccess()}
+              className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            >
+              Ahora No
+            </button>
+            <button
+              onClick={() => {
+                setShowReceiptPrompt(false);
+                setShowReceiptGenerator(true);
+              }}
+              className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+            >
+              Generar Recibo
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show receipt generator
+  if (showReceiptGenerator && createdVenta && createdPago) {
+    return (
+      <ReceiptGenerator
+        venta={createdVenta}
+        pago={createdPago}
+        onClose={() => onSuccess()}
+        onSuccess={() => onSuccess()}
+      />
+    );
   }
 
   return (
@@ -232,23 +309,52 @@ export default function ConvertToSale({
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Fecha Límite de Pago *
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.fecha_limite}
-                    onChange={(e) =>
-                      setFormData({ ...formData, fecha_limite: e.target.value })
-                    }
-                    required
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Fecha tope para liquidar
-                  </p>
-                </div>
+                {parseFloat(formData.pago_inicial) > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Método de Pago *
+                    </label>
+                    <select
+                      value={formData.metodo_pago}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          metodo_pago: e.target.value,
+                        })
+                      }
+                      required
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="Transferencia">Transferencia</option>
+                      <option value="Efectivo">Efectivo</option>
+                      <option value="Tarjeta">Tarjeta</option>
+                      <option value="Cheque">Cheque</option>
+                      <option value="Depósito">Depósito</option>
+                      <option value="Pendiente">Pendiente</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Forma de pago del anticipo
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha Límite de Pago *
+                </label>
+                <input
+                  type="date"
+                  value={formData.fecha_limite}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fecha_limite: e.target.value })
+                  }
+                  required
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Fecha tope para liquidar
+                </p>
               </div>
             </div>
 

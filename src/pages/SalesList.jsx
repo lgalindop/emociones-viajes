@@ -45,6 +45,11 @@ export default function SalesList() {
           ),
           opciones_cotizacion (
             nombre_paquete
+          ),
+          grupos (
+            id,
+            nombre,
+            tipo
           )
         `
         )
@@ -203,9 +208,19 @@ export default function SalesList() {
               {filteredVentas.map((venta) => (
                 <tr key={venta.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-mono font-medium text-gray-900">
-                      {venta.folio_venta}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-mono font-medium text-gray-900">
+                        {venta.folio_venta}
+                      </span>
+                      {venta.grupos && (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full"
+                          title={`Grupo: ${venta.grupos.nombre}`}
+                        >
+                          👥 {venta.grupos.nombre}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-gray-900">

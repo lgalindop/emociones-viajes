@@ -88,6 +88,11 @@ export default function Cotizaciones({ onNewCotizacion }) {
           ventas (
             id,
             monto_pendiente
+          ),
+          grupos (
+            id,
+            nombre,
+            tipo
           )
         `
         )
@@ -505,6 +510,15 @@ export default function Cotizaciones({ onNewCotizacion }) {
                   <span className="font-semibold text-gray-500">
                     {cotizacion.folio}
                   </span>
+                  {cotizacion.grupos && (
+                    <span
+                      className="px-1.5 py-0.5 rounded-full text-[10px] bg-purple-100 text-purple-800"
+                      title={`Grupo: ${cotizacion.grupos.nombre}`}
+                    >
+                      👥 {cotizacion.grupos.nombre.slice(0, 12)}
+                      {cotizacion.grupos.nombre.length > 12 ? "..." : ""}
+                    </span>
+                  )}
                   <span
                     className={`px-1.5 py-0.5 rounded-full whitespace-nowrap ${getStageBadge(
                       cotizacion.pipeline_stage

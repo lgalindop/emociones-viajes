@@ -8,7 +8,7 @@ export default function ExportToPDF({ cotizacion, opciones }) {
 
   function formatDateShort(dateString) {
     if (!dateString) return "";
-    const date = new Date(dateString);
+    const date = new Date(dateString + "T00:00:00");
     return date.toLocaleDateString("es-MX", {
       day: "2-digit",
       month: "2-digit",
@@ -18,7 +18,7 @@ export default function ExportToPDF({ cotizacion, opciones }) {
 
   function formatDateLong(dateString) {
     if (!dateString) return "";
-    const date = new Date(dateString);
+    const date = new Date(dateString + "T00:00:00");
     const day = date.getDate();
     const monthNames = [
       "ENERO",
@@ -152,6 +152,15 @@ export default function ExportToPDF({ cotizacion, opciones }) {
         centerX + 22,
         centerYPos
       );
+      centerYPos += 6;
+
+      // Add grupo label if exists
+      if (cotizacion.grupos?.nombre) {
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Grupo:", centerX, centerYPos);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(` ${cotizacion.grupos.nombre}`, centerX + 14, centerYPos);
+      }
 
       // Dates - RIGHT COLUMN
       let rightYPos = yPos - 12;

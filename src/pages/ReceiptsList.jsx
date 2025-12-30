@@ -161,6 +161,18 @@ export default function ReceiptsList() {
     }
   }
 
+  // Helper to format date with timezone fix
+  function formatDate(dateStr) {
+    if (!dateStr) return "";
+    const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+    const date = new Date(dateOnly + "T00:00:00");
+    return date.toLocaleDateString("es-MX", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
   const filteredReceipts = receipts.filter((r) => {
     const matchesSearch =
       r.receipt_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -330,10 +342,7 @@ export default function ReceiptsList() {
                       {receipt.ventas?.folio_venta || "-"}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {new Date(receipt.payment_date).toLocaleDateString(
-                        "es-MX",
-                        { day: "2-digit", month: "2-digit", year: "numeric" }
-                      )}
+                      {formatDate(receipt.payment_date)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="font-semibold text-green-600">

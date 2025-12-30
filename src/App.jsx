@@ -20,6 +20,8 @@ import CMSDashboard from "./pages/CMSDashboard";
 import ApprovalQueue from "./pages/ApprovalQueue";
 import ReceiptsList from "./pages/ReceiptsList";
 import ReceiptWizard from "./pages/ReceiptWizard";
+import Grupos from "./pages/Grupos";
+import GrupoDetalle from "./pages/GrupoDetalle";
 import {
   Home,
   Users,
@@ -33,6 +35,7 @@ import {
   X,
   Layout,
   Receipt,
+  Building2,
 } from "lucide-react";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -112,78 +115,85 @@ function MainApp() {
                   className="h-10 w-auto"
                 />
               </button>
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <button
                   onClick={() => handleNavClick("/app")}
-                  className={`px-4 py-2 rounded flex items-center gap-2 ${location.pathname === "/app" ? "bg-white/20" : "hover:bg-white/10"}`}
+                  className={`p-3 rounded hover:bg-white/10 transition-colors ${location.pathname === "/app" ? "bg-white/20" : ""}`}
+                  data-tooltip="Inicio"
                 >
                   <Home size={20} />
-                  Inicio
                 </button>
                 <button
                   onClick={() => handleNavClick("/app/cotizaciones")}
-                  className={`px-4 py-2 rounded flex items-center gap-2 ${isActive("/app/cotizaciones") ? "bg-white/20" : "hover:bg-white/10"}`}
+                  className={`p-3 rounded hover:bg-white/10 transition-colors ${isActive("/app/cotizaciones") ? "bg-white/20" : ""}`}
+                  data-tooltip="Cotizaciones"
                 >
                   <FileText size={20} />
-                  Cotizaciones
                 </button>
                 <button
                   onClick={() => handleNavClick("/app/operadores")}
-                  className={`px-4 py-2 rounded flex items-center gap-2 ${isActive("/app/operadores") ? "bg-white/20" : "hover:bg-white/10"}`}
+                  className={`p-3 rounded hover:bg-white/10 transition-colors ${isActive("/app/operadores") ? "bg-white/20" : ""}`}
+                  data-tooltip="Operadores"
                 >
-                  <Users size={20} />
-                  Operadores
+                  <Building2 size={20} />
                 </button>
                 <button
                   onClick={() => handleNavClick("/app/pipeline")}
-                  className={`px-4 py-2 rounded flex items-center gap-2 ${isActive("/app/pipeline") ? "bg-white/20" : "hover:bg-white/10"}`}
+                  className={`p-3 rounded hover:bg-white/10 transition-colors ${isActive("/app/pipeline") ? "bg-white/20" : ""}`}
+                  data-tooltip="Pipeline"
                 >
                   <TrendingUp size={20} />
-                  Pipeline
                 </button>
                 <button
                   onClick={() => handleNavClick("/app/sales")}
-                  className={`px-4 py-2 rounded flex items-center gap-2 ${isActive("/app/sales") ? "bg-white/20" : "hover:bg-white/10"}`}
+                  className={`p-3 rounded hover:bg-white/10 transition-colors ${isActive("/app/sales") ? "bg-white/20" : ""}`}
+                  data-tooltip="Ventas"
                 >
                   <DollarSign size={20} />
-                  Ventas
+                </button>
+                <button
+                  onClick={() => handleNavClick("/app/grupos")}
+                  className={`p-3 rounded hover:bg-white/10 transition-colors ${isActive("/app/grupos") ? "bg-white/20" : ""}`}
+                  data-tooltip="Grupos"
+                >
+                  <Users size={20} />
                 </button>
                 <button
                   onClick={() => handleNavClick("/app/dashboard")}
-                  className={`px-4 py-2 rounded flex items-center gap-2 ${isActive("/app/dashboard") ? "bg-white/20" : "hover:bg-white/10"}`}
+                  className={`p-3 rounded hover:bg-white/10 transition-colors ${isActive("/app/dashboard") ? "bg-white/20" : ""}`}
+                  data-tooltip="Dashboard"
                 >
                   <BarChart3 size={20} />
-                  Dashboard
                 </button>
                 <button
                   onClick={() => handleNavClick("/app/receipts")}
-                  className={`px-4 py-2 rounded flex items-center gap-2 ${isActive("/app/receipts") ? "bg-white/20" : "hover:bg-white/10"}`}
+                  className={`p-3 rounded hover:bg-white/10 transition-colors ${isActive("/app/receipts") ? "bg-white/20" : ""}`}
+                  data-tooltip="Recibos"
                 >
                   <Receipt size={20} />
-                  Recibos
                 </button>
                 {showCMS && (
                   <button
                     onClick={() => handleNavClick("/app/cms")}
-                    className={`px-4 py-2 rounded flex items-center gap-2 ${isActive("/app/cms") ? "bg-white/20" : "hover:bg-white/10"}`}
+                    className={`p-3 rounded hover:bg-white/10 transition-colors ${isActive("/app/cms") ? "bg-white/20" : ""}`}
+                    data-tooltip="CMS"
                   >
                     <Layout size={20} />
-                    CMS
                   </button>
                 )}
                 {isAdmin() && (
                   <button
                     onClick={() => handleNavClick("/app/users")}
-                    className={`px-4 py-2 rounded flex items-center gap-2 ${isActive("/app/users") ? "bg-white/20" : "hover:bg-white/10"}`}
+                    className={`p-3 rounded hover:bg-white/10 transition-colors ${isActive("/app/users") ? "bg-white/20" : ""}`}
+                    data-tooltip="Usuarios"
                   >
                     <Shield size={20} />
-                    Usuarios
                   </button>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="text-right min-w-[120px]">
+            <div className="flex items-center gap-3">
+              <div className="text-right">
                 <p className="text-sm font-medium whitespace-nowrap">
                   {profile?.full_name || user?.email}
                 </p>
@@ -197,10 +207,10 @@ function MainApp() {
               </div>
               <button
                 onClick={signOut}
-                className="px-4 py-2 rounded hover:bg-white/10 flex items-center gap-2 whitespace-nowrap"
+                className="p-3 rounded hover:bg-white/10 transition-colors"
+                data-tooltip="Cerrar Sesión"
               >
-                <LogOut size={24} />
-                Salir
+                <LogOut size={20} />
               </button>
             </div>
           </div>
@@ -258,7 +268,7 @@ function MainApp() {
                   onClick={() => handleNavClick("/app/operadores")}
                   className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 ${isActive("/app/operadores") ? "bg-white/20" : "hover:bg-white/10"}`}
                 >
-                  <Users size={20} />
+                  <Building2 size={20} />
                   <span>Operadores</span>
                 </button>
                 <button
@@ -274,6 +284,13 @@ function MainApp() {
                 >
                   <DollarSign size={20} />
                   <span>Ventas</span>
+                </button>
+                <button
+                  onClick={() => handleNavClick("/app/grupos")}
+                  className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 ${isActive("/app/grupos") ? "bg-white/20" : "hover:bg-white/10"}`}
+                >
+                  <Users size={20} />
+                  <span>Grupos</span>
                 </button>
                 <button
                   onClick={() => handleNavClick("/app/dashboard")}
@@ -358,7 +375,7 @@ function MainApp() {
                     onClick={() => navigate("/app/operadores")}
                     className="p-6 border-2 border-primary rounded-lg hover:bg-primary/5 text-left transition-colors"
                   >
-                    <Users size={32} className="text-primary mb-2" />
+                    <Building2 size={32} className="text-primary mb-2" />
                     <h3 className="font-semibold text-lg">Operadores</h3>
                     <p className="text-sm text-gray-600">
                       Gestionar operadores turísticos
@@ -382,6 +399,16 @@ function MainApp() {
                     <h3 className="font-semibold text-lg">Ventas</h3>
                     <p className="text-sm text-gray-600">
                       Gestionar ventas y pagos
+                    </p>
+                  </button>
+                  <button
+                    onClick={() => navigate("/app/grupos")}
+                    className="p-6 border-2 border-purple-600 rounded-lg hover:bg-purple-50 text-left transition-colors"
+                  >
+                    <Users size={32} className="text-purple-600 mb-2" />
+                    <h3 className="font-semibold text-lg">Grupos</h3>
+                    <p className="text-sm text-gray-600">
+                      Gestionar grupos de viajeros
                     </p>
                   </button>
                   <button
@@ -417,9 +444,9 @@ function MainApp() {
                   {isAdmin() && (
                     <button
                       onClick={() => navigate("/app/users")}
-                      className="p-6 border-2 border-purple-600 rounded-lg hover:bg-purple-50 text-left transition-colors"
+                      className="p-6 border-2 border-red-600 rounded-lg hover:bg-red-50 text-left transition-colors"
                     >
-                      <Shield size={32} className="text-purple-600 mb-2" />
+                      <Shield size={32} className="text-red-600 mb-2" />
                       <h3 className="font-semibold text-lg">Usuarios</h3>
                       <p className="text-sm text-gray-600">
                         Gestionar usuarios del sistema
@@ -457,6 +484,8 @@ function MainApp() {
             }
           />
           <Route path="/sales" element={<SalesList />} />
+          <Route path="/grupos" element={<Grupos />} />
+          <Route path="/grupos/:id" element={<GrupoDetalle />} />
           <Route path="/dashboard" element={<SalesDashboard />} />
           <Route path="/receipts" element={<ReceiptsList />} />
           <Route path="/receipts/wizard" element={<ReceiptWizard />} />

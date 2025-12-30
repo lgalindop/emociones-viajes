@@ -6,6 +6,7 @@ import LeadOriginIcon from "../components/LeadOriginIcon";
 export default function NuevaCotizacion({ onBack, onSuccess }) {
   const [step, setStep] = useState(1);
   const [operadores, setOperadores] = useState([]);
+  const [grupos, setGrupos] = useState([]);
   const [formData, setFormData] = useState({
     cliente_nombre: "",
     cliente_telefono: "",
@@ -17,6 +18,9 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     num_adultos: 2,
     num_ninos: 0,
     num_infantes: 0,
+    num_habitaciones: 1,
+    tipo_habitacion: "",
+    personas_por_habitacion: "",
     presupuesto_aprox: "",
     requerimientos: "",
     notas: "",
@@ -24,6 +28,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     fecha_registro: new Date().toISOString().split("T")[0],
     fecha_reserva: "",
     vigente_hasta: "",
+    grupo_id: null,
     disclaimer_green:
       "TODOS LOS HOTELES EN QUINTANA ROO, COBRAN UN IMPUESTO DE SANEAMIENTO AMBIENTAL, QUE DEBE DE PAGARSE EN DESTINO",
     disclaimer_blue: "POR PROXIMIDAD SE PAGA AL RESERVAR.",
@@ -89,6 +94,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
 
   useEffect(() => {
     fetchOperadores();
+    fetchGrupos();
   }, []);
 
   // Click outside handler for customer dropdown
@@ -101,95 +107,127 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
         setShowCustomerDropdown(false);
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Customer search
+  useEffect(() => {
+    if (customerSearch.length > 2) {
+      searchCustomers();
+    } else {
+      setCustomerMatches([]);
+      setShowCustomerDropdown(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerSearch]);
+
   async function fetchOperadores() {
-    const { data } = await supabase
-      .from("operadores")
-      .select("*")
-      .order("nombre");
-    setOperadores(data || []);
+    try {
+      const { data, error } = await supabase
+        .from("operadores")
+        .select("*")
+        .eq("activo", true)
+        .order("nombre");
+
+      if (error) throw error;
+      setOperadores(data || []);
+    } catch (error) {
+      console.error("Error fetching operadores:", error);
+    }
+  }
+
+  async function fetchGrupos() {
+    try {
+      const { data, error } = await supabase
+        .from("grupos")
+        .select("*")
+        .order("nombre");
+      if (error) throw error;
+      setGrupos(data || []);
+    } catch (error) {
+      console.error("Error fetching grupos:", error);
+    }
+  }
+
+  async function searchCustomers() {
+    try {
+      const { data, error } = await supabase
+        .from("cotizaciones")
+        .select("cliente_nombre, cliente_telefono, cliente_email")
+        .or(
+          `cliente_nombre.ilike.%${customerSearch}%,cliente_telefono.ilike.%${customerSearch}%`
+        )
+        .limit(5);
+
+      if (error) throw error;
+
+      // Remove duplicates based on phone or email
+      const unique = [];
+      const seen = new Set();
+
+      for (const customer of data || []) {
+        const key = `${customer.cliente_telefono}-${customer.cliente_email}`;
+        if (!seen.has(key) && customer.cliente_nombre) {
+          seen.add(key);
+          unique.push(customer);
+        }
+      }
+
+      setCustomerMatches(unique);
+      setShowCustomerDropdown(unique.length > 0);
+    } catch (error) {
+      console.error("Error searching customers:", error);
+    }
+  }
+
+  function selectCustomer(customer) {
+    setFormData({
+      ...formData,
+      cliente_nombre: customer.cliente_nombre,
+      cliente_telefono: customer.cliente_telefono || "",
+      cliente_email: customer.cliente_email || "",
+    });
+    setCustomerSearch(customer.cliente_nombre);
+    setShowCustomerDropdown(false);
+  }
+
+  function addRequerimiento(req) {
+    const current = formData.requerimientos;
+    if (current) {
+      setFormData({ ...formData, requerimientos: current + ", " + req });
+    } else {
+      setFormData({ ...formData, requerimientos: req });
+    }
   }
 
   function handlePriceChange(field, value) {
-    const numValue = parseFloat(value) || 0;
-    const updates = { [field]: value };
+    const updated = { ...currentOpcion, [field]: value };
 
-    if (
-      field === "precio_adulto" ||
-      field === "precio_menor" ||
-      field === "precio_infante"
-    ) {
+    // Auto-calculate precio_total when price fields change
+    if (["precio_adulto", "precio_menor", "precio_infante"].includes(field)) {
       const adultos =
-        field === "precio_adulto"
-          ? numValue
-          : parseFloat(currentOpcion.precio_adulto) || 0;
+        parseFloat(updated.precio_adulto || 0) * formData.num_adultos;
       const menores =
-        field === "precio_menor"
-          ? numValue
-          : parseFloat(currentOpcion.precio_menor) || 0;
+        parseFloat(updated.precio_menor || 0) * formData.num_ninos;
       const infantes =
-        field === "precio_infante"
-          ? numValue
-          : parseFloat(currentOpcion.precio_infante) || 0;
-
-      const totalAdultos = adultos * (formData.num_adultos || 0);
-      const totalMenores = menores * (formData.num_ninos || 0);
-      const totalInfantes = infantes * (formData.num_infantes || 0);
-
-      updates.precio_total = (
-        totalAdultos +
-        totalMenores +
-        totalInfantes
-      ).toFixed(2);
+        parseFloat(updated.precio_infante || 0) * (formData.num_infantes || 0);
+      updated.precio_total = (adultos + menores + infantes).toFixed(2);
     }
 
-    setCurrentOpcion({ ...currentOpcion, ...updates });
-  }
-
-  function addIncluye() {
-    if (incluye.trim()) {
-      setCurrentOpcion({
-        ...currentOpcion,
-        incluye: [...currentOpcion.incluye, incluye.trim()],
-      });
-      setIncluye("");
-    }
-  }
-
-  function removeIncluye(index) {
-    setCurrentOpcion({
-      ...currentOpcion,
-      incluye: currentOpcion.incluye.filter((_, i) => i !== index),
-    });
-  }
-
-  function addNoIncluye() {
-    if (noIncluye.trim()) {
-      setCurrentOpcion({
-        ...currentOpcion,
-        no_incluye: [...currentOpcion.no_incluye, noIncluye.trim()],
-      });
-      setNoIncluye("");
-    }
-  }
-
-  function removeNoIncluye(index) {
-    setCurrentOpcion({
-      ...currentOpcion,
-      no_incluye: currentOpcion.no_incluye.filter((_, i) => i !== index),
-    });
+    setCurrentOpcion(updated);
   }
 
   function handleAddOpcion() {
-    if (!currentOpcion.operador_id || !currentOpcion.precio_total) {
-      alert("Completa los campos obligatorios");
+    if (
+      (!currentOpcion.operador_id || currentOpcion.operador_id === "otro") &&
+      !currentOpcion.precio_total
+    ) {
+      alert("Completa el precio total de la opción");
       return;
     }
-    setOpciones([...opciones, { ...currentOpcion, id: Date.now() }]);
+
+    setOpciones([...opciones, { ...currentOpcion }]);
     setCurrentOpcion({
       operador_id: "",
       nombre_paquete: "",
@@ -219,74 +257,92 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     setNoIncluye("");
   }
 
-  function removeOpcion(id) {
-    setOpciones(opciones.filter((op) => op.id !== id));
+  function handleRemoveOpcion(index) {
+    setOpciones(opciones.filter((_, i) => i !== index));
+  }
+
+  function addIncluye() {
+    if (incluye.trim()) {
+      setCurrentOpcion({
+        ...currentOpcion,
+        incluye: [...currentOpcion.incluye, incluye.trim()],
+      });
+      setIncluye("");
+    }
+  }
+
+  function addNoIncluye() {
+    if (noIncluye.trim()) {
+      setCurrentOpcion({
+        ...currentOpcion,
+        no_incluye: [...currentOpcion.no_incluye, noIncluye.trim()],
+      });
+      setNoIncluye("");
+    }
+  }
+
+  function removeIncluye(index) {
+    setCurrentOpcion({
+      ...currentOpcion,
+      incluye: currentOpcion.incluye.filter((_, i) => i !== index),
+    });
+  }
+
+  function removeNoIncluye(index) {
+    setCurrentOpcion({
+      ...currentOpcion,
+      no_incluye: currentOpcion.no_incluye.filter((_, i) => i !== index),
+    });
   }
 
   async function handleSubmit() {
-    if (!formData.cliente_nombre || !formData.destino) {
-      alert("Completa los campos obligatorios");
-      return;
-    }
-
     try {
-      const folio = `COT-${Date.now()}`;
+      if (!formData.cliente_nombre || !formData.destino) {
+        alert("Completa los campos obligatorios");
+        return;
+      }
 
+      // Insert cotización
       const { data: cotizacion, error: cotError } = await supabase
         .from("cotizaciones")
         .insert({
-          folio,
-          cliente_nombre: formData.cliente_nombre,
-          cliente_telefono: formData.cliente_telefono,
-          cliente_email: formData.cliente_email,
-          origen_lead: formData.origen_lead,
-          destino: formData.destino,
-          fecha_salida: formData.fecha_salida,
-          fecha_regreso: formData.fecha_regreso,
-          num_adultos: formData.num_adultos,
-          num_ninos: formData.num_ninos,
-          num_infantes: formData.num_infantes,
-          presupuesto_aprox: formData.presupuesto_aprox,
-          requerimientos: formData.requerimientos,
-          notas: formData.notas,
-          divisa: formData.divisa,
-          fecha_registro: formData.fecha_registro,
-          fecha_reserva: formData.fecha_reserva,
-          vigente_hasta: formData.vigente_hasta,
-          disclaimer_green: formData.disclaimer_green,
-          disclaimer_blue: formData.disclaimer_blue,
+          ...formData,
+          pipeline_stage: "lead",
         })
         .select()
         .single();
 
       if (cotError) throw cotError;
 
+      // Insert opciones
       if (opciones.length > 0) {
         const opcionesData = opciones.map((op) => ({
           cotizacion_id: cotizacion.id,
-          operador_id: op.operador_id,
-          nombre_paquete: op.nombre_paquete,
-          servicio_descripcion: op.servicio_descripcion,
-          hotel_nombre: op.hotel_nombre,
-          ocupacion: op.ocupacion,
+          operador_id: op.operador_id === "otro" ? null : op.operador_id,
+          nombre_paquete: op.nombre_paquete || null,
+          servicio_descripcion: op.servicio_descripcion || null,
+          hotel_nombre: op.hotel_nombre || null,
+          ocupacion: op.ocupacion || null,
           vuelo_ida_fecha: op.vuelo_ida_fecha || null,
-          vuelo_ida_horario: op.vuelo_ida_horario,
-          vuelo_ida_ruta: op.vuelo_ida_ruta,
-          vuelo_ida_directo: op.vuelo_ida_directo,
+          vuelo_ida_horario: op.vuelo_ida_horario || null,
+          vuelo_ida_ruta: op.vuelo_ida_ruta || null,
+          vuelo_ida_directo: op.vuelo_ida_directo || false,
           vuelo_regreso_fecha: op.vuelo_regreso_fecha || null,
-          vuelo_regreso_horario: op.vuelo_regreso_horario,
-          vuelo_regreso_ruta: op.vuelo_regreso_ruta,
-          vuelo_regreso_directo: op.vuelo_regreso_directo,
-          precio_adulto: op.precio_adulto === "" ? null : op.precio_adulto,
-          precio_menor: op.precio_menor === "" ? null : op.precio_menor,
-          precio_infante: op.precio_infante === "" ? null : op.precio_infante,
-          precio_total: op.precio_total === "" ? null : op.precio_total,
+          vuelo_regreso_horario: op.vuelo_regreso_horario || null,
+          vuelo_regreso_ruta: op.vuelo_regreso_ruta || null,
+          vuelo_regreso_directo: op.vuelo_regreso_directo || false,
+          precio_adulto: op.precio_adulto ? parseFloat(op.precio_adulto) : null,
+          precio_menor: op.precio_menor ? parseFloat(op.precio_menor) : null,
+          precio_infante: op.precio_infante
+            ? parseFloat(op.precio_infante)
+            : null,
+          precio_total: parseFloat(op.precio_total),
           incluye: op.incluye,
           no_incluye: op.no_incluye,
-          disponibilidad: op.disponibilidad,
-          notas: op.notas,
-          link_paquete: op.link_paquete,
-          tour_link: op.tour_link,
+          disponibilidad: op.disponibilidad || null,
+          notas: op.notas || null,
+          link_paquete: op.link_paquete || null,
+          tour_link: op.tour_link || null,
         }));
 
         const { error: opError } = await supabase
@@ -296,156 +352,113 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
         if (opError) throw opError;
       }
 
-      onSuccess?.();
+      alert("✅ Cotización creada exitosamente");
+      onSuccess();
     } catch (error) {
       console.error("Error:", error);
-      console.error("Error details:", error.message, error.details, error.hint);
-      alert(
-        "Error al crear la cotización: " +
-          (error.message || JSON.stringify(error))
-      );
+      alert("Error al crear cotización: " + error.message);
     }
-  }
-
-  // Customer search functions
-  async function searchCustomers(query) {
-    if (!query || query.length < 2) {
-      setCustomerMatches([]);
-      setShowCustomerDropdown(false);
-      return;
-    }
-
-    const { data } = await supabase
-      .from("cotizaciones")
-      .select("cliente_nombre, cliente_telefono, cliente_email")
-      .ilike("cliente_nombre", `%${query}%`)
-      .order("created_at", { ascending: false })
-      .limit(5);
-
-    if (data && data.length > 0) {
-      const unique = data.reduce((acc, curr) => {
-        const key = curr.cliente_nombre.toLowerCase();
-        if (!acc.find((item) => item.cliente_nombre.toLowerCase() === key)) {
-          acc.push(curr);
-        }
-        return acc;
-      }, []);
-      setCustomerMatches(unique);
-      setShowCustomerDropdown(true);
-    } else {
-      setCustomerMatches([]);
-      setShowCustomerDropdown(false);
-    }
-  }
-
-  function selectCustomer(customer) {
-    setFormData({
-      ...formData,
-      cliente_nombre: customer.cliente_nombre,
-      cliente_telefono: customer.cliente_telefono || "",
-      cliente_email: customer.cliente_email || "",
-    });
-    setCustomerSearch(customer.cliente_nombre);
-    setShowCustomerDropdown(false);
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-6">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="flex items-center gap-2 text-primary hover:text-primary/80 mb-4"
           >
             <ArrowLeft size={20} />
-            <span className="font-medium">Volver</span>
+            Volver
           </button>
-          <div className="text-sm text-gray-600 font-medium">
-            Paso {step} de 3
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Nueva Cotización</h1>
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Steps */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span
-              className={`text-sm font-semibold ${
-                step >= 1 ? "text-primary" : "text-gray-400"
-              }`}
-            >
-              Información del Cliente
-            </span>
-            <span
-              className={`text-sm font-semibold ${
-                step >= 2 ? "text-primary" : "text-gray-400"
-              }`}
-            >
-              Detalles del Viaje
-            </span>
-            <span
-              className={`text-sm font-semibold ${
-                step >= 3 ? "text-primary" : "text-gray-400"
-              }`}
-            >
-              Opciones de Paquetes
-            </span>
+          <div className="flex items-center justify-center gap-4">
+            {[1, 2, 3].map((s) => (
+              <div key={s} className="flex items-center">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
+                    s === step
+                      ? "bg-primary text-white"
+                      : s < step
+                        ? "bg-green-500 text-white"
+                        : "bg-gray-300 text-gray-600"
+                  }`}
+                >
+                  {s < step ? <Check size={20} /> : s}
+                </div>
+                {s < 3 && (
+                  <div
+                    className={`w-20 h-1 mx-2 ${
+                      s < step ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
           </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-300"
-              style={{ width: `${(step / 3) * 100}%` }}
-            />
+          <div className="flex justify-center mt-2">
+            <p className="text-sm text-gray-600">
+              {step === 1 && "Información del Cliente"}
+              {step === 2 && "Detalles del Viaje"}
+              {step === 3 && "Opciones de Paquetes"}
+            </p>
           </div>
         </div>
 
         {/* Step 1: Client Info */}
         {step === 1 && (
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">
-              Información del Cliente
-            </h2>
             <div className="space-y-6">
               <div className="relative" ref={customerDropdownRef}>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Nombre Completo del Cliente *
+                  Nombre del Cliente *
                 </label>
                 <input
                   type="text"
+                  required
                   value={customerSearch || formData.cliente_nombre}
                   onChange={(e) => {
                     const value = e.target.value;
                     setCustomerSearch(value);
                     setFormData({ ...formData, cliente_nombre: value });
-                    searchCustomers(value);
+                  }}
+                  onFocus={() => {
+                    if (customerMatches.length > 0) {
+                      setShowCustomerDropdown(true);
+                    }
                   }}
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                  placeholder="Buscar cliente existente o ingresar nuevo"
+                  placeholder="Empieza a escribir para buscar..."
                 />
 
+                {/* Customer Dropdown */}
                 {showCustomerDropdown && customerMatches.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {customerMatches.map((customer, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
+                  <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {customerMatches.map((customer, index) => (
+                      <div
+                        key={index}
                         onClick={() => selectCustomer(customer)}
-                        className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                        className="px-4 py-3 hover:bg-primary/10 cursor-pointer border-b last:border-b-0"
                       >
-                        <div className="font-semibold text-gray-800">
+                        <p className="font-medium text-gray-900">
                           {customer.cliente_nombre}
-                        </div>
+                        </p>
                         {customer.cliente_telefono && (
-                          <div className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-600">
                             {customer.cliente_telefono}
-                          </div>
+                          </p>
                         )}
                         {customer.cliente_email && (
-                          <div className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-500">
                             {customer.cliente_email}
-                          </div>
+                          </p>
                         )}
-                      </button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -485,6 +498,33 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Grupo (Opcional)
+                </label>
+                <select
+                  value={formData.grupo_id || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      grupo_id: e.target.value || null,
+                    })
+                  }
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                >
+                  <option value="">Sin grupo</option>
+                  {grupos.map((grupo) => (
+                    <option key={grupo.id} value={grupo.id}>
+                      {grupo.nombre}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Asigna esta cotización a un grupo de viajeros (bodas, torneos,
+                  etc.)
+                </p>
               </div>
 
               <div>
@@ -592,12 +632,13 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                 </label>
                 <input
                   type="text"
+                  required
                   value={formData.destino}
                   onChange={(e) =>
                     setFormData({ ...formData, destino: e.target.value })
                   }
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                  placeholder="Ej: Cancún, Playa del Carmen"
+                  placeholder="Ej: Cancún, Riviera Maya"
                 />
               </div>
 
@@ -610,10 +651,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                     type="date"
                     value={formData.fecha_salida}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        fecha_salida: e.target.value,
-                      })
+                      setFormData({ ...formData, fecha_salida: e.target.value })
                     }
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   />
@@ -637,28 +675,28 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
+              <div className="grid grid-cols-4 gap-4">
+                <div className="col-span-1">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Número de Adultos
+                    Adultos
                   </label>
                   <input
                     type="number"
-                    min="0"
+                    min="1"
                     value={formData.num_adultos}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        num_adultos: parseInt(e.target.value) || 0,
+                        num_adultos: parseInt(e.target.value),
                       })
                     }
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   />
                 </div>
 
-                <div>
+                <div className="col-span-1">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Número de Niños
+                    Menores
                   </label>
                   <input
                     type="number"
@@ -667,16 +705,16 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        num_ninos: parseInt(e.target.value) || 0,
+                        num_ninos: parseInt(e.target.value),
                       })
                     }
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   />
                 </div>
 
-                <div>
+                <div className="col-span-1">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Número de Infantes
+                    Infantes
                   </label>
                   <input
                     type="number"
@@ -685,12 +723,89 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        num_infantes: parseInt(e.target.value) || 0,
+                        num_infantes: parseInt(e.target.value),
                       })
                     }
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   />
                 </div>
+
+                <div className="col-span-1">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Divisa
+                  </label>
+                  <select
+                    value={formData.divisa}
+                    onChange={(e) =>
+                      setFormData({ ...formData, divisa: e.target.value })
+                    }
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                  >
+                    <option value="MXN">MXN</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Número de Habitaciones
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.num_habitaciones}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        num_habitaciones: parseInt(e.target.value) || 1,
+                      })
+                    }
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                  />
+                </div>
+
+                {formData.num_habitaciones > 1 && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Tipo de Habitación
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.tipo_habitacion}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            tipo_habitacion: e.target.value,
+                          })
+                        }
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                        placeholder="Ej: Doble, King, Suite"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Personas por Habitación
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.personas_por_habitacion}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            personas_por_habitacion: e.target.value,
+                          })
+                        }
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                        placeholder="Ej: 2 adultos, 2+1"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               <div>
@@ -718,10 +833,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                 <textarea
                   value={formData.requerimientos}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      requerimientos: e.target.value,
-                    })
+                    setFormData({ ...formData, requerimientos: e.target.value })
                   }
                   rows="3"
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
@@ -732,14 +844,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                     <button
                       key={req}
                       type="button"
-                      onClick={() => {
-                        const current = formData.requerimientos;
-                        const newReq = current ? `${current}, ${req}` : req;
-                        setFormData({
-                          ...formData,
-                          requerimientos: newReq,
-                        });
-                      }}
+                      onClick={() => addRequerimiento(req)}
                       className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full transition-all"
                     >
                       + {req}
@@ -761,22 +866,6 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   placeholder="Notas internas..."
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Divisa
-                </label>
-                <select
-                  value={formData.divisa}
-                  onChange={(e) =>
-                    setFormData({ ...formData, divisa: e.target.value })
-                  }
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                >
-                  <option value="MXN">MXN</option>
-                  <option value="USD">USD</option>
-                </select>
               </div>
             </div>
 
@@ -855,48 +944,67 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
             {/* Added Options */}
             {opciones.length > 0 && (
               <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-bold mb-4 text-gray-800">
+                <h3 className="font-semibold text-lg mb-4">
                   Opciones Agregadas ({opciones.length})
                 </h3>
-                <div className="space-y-3">
-                  {opciones.map((opcion) => (
-                    <div
-                      key={opcion.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
-                    >
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-800">
-                          {opcion.nombre_paquete || "Sin nombre"}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {operadores.find((op) => op.id === opcion.operador_id)
-                            ?.nombre || "Operador"}{" "}
-                          - ${parseFloat(opcion.precio_total).toLocaleString()}
+                <div className="space-y-4">
+                  {opciones.map((opcion, index) => {
+                    const operador = operadores.find(
+                      (op) => op.id === opcion.operador_id
+                    );
+                    return (
+                      <div
+                        key={index}
+                        className="border-2 border-gray-200 rounded-xl p-4"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="font-semibold text-primary">
+                              {opcion.operador_id === "otro"
+                                ? "Otro"
+                                : operador?.nombre}
+                            </p>
+                            {opcion.nombre_paquete && (
+                              <p className="text-lg font-bold">
+                                {opcion.nombre_paquete}
+                              </p>
+                            )}
+                            {opcion.hotel_nombre && (
+                              <p className="text-sm text-gray-600">
+                                🏨 {opcion.hotel_nombre}
+                              </p>
+                            )}
+                            <p className="text-2xl font-bold text-primary mt-2">
+                              $
+                              {parseFloat(opcion.precio_total).toLocaleString()}
+                            </p>
+                            {opcion.disponibilidad && (
+                              <p className="text-sm text-gray-600 mt-1">
+                                {opcion.disponibilidad}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleRemoveOpcion(index)}
+                            className="text-red-600 hover:bg-red-50 p-2 rounded-lg"
+                          >
+                            <Trash2 size={20} />
+                          </button>
                         </div>
                       </div>
-                      <button
-                        onClick={() => removeOpcion(opcion.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {/* Add New Option Form */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-bold mb-4 text-gray-800">
-                {opciones.length === 0
-                  ? "Agregar Primera Opción"
-                  : "Agregar Otra Opción"}
-              </h3>
+              <h3 className="font-semibold text-lg mb-4">Agregar Opción</h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Operador *
+                    Operador
                   </label>
                   <select
                     value={currentOpcion.operador_id}
@@ -932,10 +1040,10 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                       })
                     }
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                    placeholder="Ej: Todo Incluido - Hotel Riu Cancún"
                   />
                 </div>
 
+                {/* NEW PROFESSIONAL FIELDS */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Descripción del Servicio
@@ -948,16 +1056,16 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                         servicio_descripcion: e.target.value,
                       })
                     }
-                    rows="3"
+                    rows="2"
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                    placeholder="Detalla el servicio completo..."
+                    placeholder="PAQUETE VACACIONAL A CANCUN, INCLUYE..."
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Nombre del Hotel
+                      Hotel
                     </label>
                     <input
                       type="text"
@@ -969,7 +1077,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                         })
                       }
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                      placeholder="Ej: Hotel Riu Cancún"
+                      placeholder="PARK ROYAL BEACH CANCUN"
                     />
                   </div>
                   <div>
@@ -986,14 +1094,15 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                         })
                       }
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                      placeholder="Ej: Doble, Sencilla"
+                      placeholder="DOUBLE DBL"
                     />
                   </div>
                 </div>
 
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                {/* Flight Info */}
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                   <div className="flex items-center justify-between mb-3">
-                    <label className="block text-sm font-semibold text-blue-900">
+                    <label className="block text-sm font-semibold text-green-900">
                       ✈️ Vuelo de Ida
                     </label>
                     <label className="flex items-center gap-2 text-sm">
@@ -1042,7 +1151,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                           })
                         }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                        placeholder="08:00 - 10:15"
+                        placeholder="08:30 - 12:40"
                       />
                     </div>
                     <div>
@@ -1200,8 +1309,13 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                         precio_total: e.target.value,
                       })
                     }
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-yellow-50"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Auto-calculado: {formData.num_adultos} adultos +{" "}
+                    {formData.num_ninos} menores + {formData.num_infantes || 0}{" "}
+                    infantes
+                  </p>
                 </div>
 
                 <div>

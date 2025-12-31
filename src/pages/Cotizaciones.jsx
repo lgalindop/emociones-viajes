@@ -549,9 +549,14 @@ export default function Cotizaciones({ onNewCotizacion }) {
                   {cotizacion.fecha_salida && (
                     <span className="text-gray-600 whitespace-nowrap">
                       Viaje:{" "}
-                      {new Date(cotizacion.fecha_salida).toLocaleDateString(
-                        "es-MX"
-                      )}
+                      {(() => {
+                        const parts = cotizacion.fecha_salida
+                          .split("T")[0]
+                          .split("-");
+                        const [year, month, day] = parts.map(Number);
+                        const date = new Date(year, month - 1, day);
+                        return date.toLocaleDateString("es-MX");
+                      })()}
                     </span>
                   )}
                   <span className="text-gray-500 whitespace-nowrap">

@@ -307,6 +307,18 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
         .from("cotizaciones")
         .insert({
           ...formData,
+          fecha_salida: formData.fecha_salida
+            ? formData.fecha_salida + "T12:00:00"
+            : null,
+          fecha_regreso: formData.fecha_regreso
+            ? formData.fecha_regreso + "T12:00:00"
+            : null,
+          fecha_registro: formData.fecha_registro
+            ? formData.fecha_registro + "T12:00:00"
+            : null,
+          fecha_reserva: formData.fecha_reserva
+            ? formData.fecha_reserva + "T12:00:00"
+            : null,
           pipeline_stage: "lead",
         })
         .select()
@@ -323,11 +335,15 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
           servicio_descripcion: op.servicio_descripcion || null,
           hotel_nombre: op.hotel_nombre || null,
           ocupacion: op.ocupacion || null,
-          vuelo_ida_fecha: op.vuelo_ida_fecha || null,
+          vuelo_ida_fecha: op.vuelo_ida_fecha
+            ? op.vuelo_ida_fecha + "T12:00:00"
+            : null,
           vuelo_ida_horario: op.vuelo_ida_horario || null,
           vuelo_ida_ruta: op.vuelo_ida_ruta || null,
           vuelo_ida_directo: op.vuelo_ida_directo || false,
-          vuelo_regreso_fecha: op.vuelo_regreso_fecha || null,
+          vuelo_regreso_fecha: op.vuelo_regreso_fecha
+            ? op.vuelo_regreso_fecha + "T12:00:00"
+            : null,
           vuelo_regreso_horario: op.vuelo_regreso_horario || null,
           vuelo_regreso_ruta: op.vuelo_regreso_ruta || null,
           vuelo_regreso_directo: op.vuelo_regreso_directo || false,

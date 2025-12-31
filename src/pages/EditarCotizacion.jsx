@@ -87,7 +87,21 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
     try {
       const { error } = await supabase
         .from("cotizaciones")
-        .update(formData)
+        .update({
+          ...formData,
+          fecha_salida: formData.fecha_salida
+            ? formData.fecha_salida + "T12:00:00"
+            : null,
+          fecha_regreso: formData.fecha_regreso
+            ? formData.fecha_regreso + "T12:00:00"
+            : null,
+          fecha_registro: formData.fecha_registro
+            ? formData.fecha_registro + "T12:00:00"
+            : null,
+          fecha_reserva: formData.fecha_reserva
+            ? formData.fecha_reserva + "T12:00:00"
+            : null,
+        })
         .eq("id", cotizacion.id);
 
       if (error) {
@@ -123,10 +137,14 @@ export default function EditarCotizacion({ cotizacion, onBack, onSuccess }) {
           servicio_descripcion: opcion.servicio_descripcion,
           hotel_nombre: opcion.hotel_nombre,
           ocupacion: opcion.ocupacion,
-          vuelo_ida_fecha: opcion.vuelo_ida_fecha,
+          vuelo_ida_fecha: opcion.vuelo_ida_fecha
+            ? opcion.vuelo_ida_fecha + "T12:00:00"
+            : null,
           vuelo_ida_horario: opcion.vuelo_ida_horario,
           vuelo_ida_ruta: opcion.vuelo_ida_ruta,
-          vuelo_regreso_fecha: opcion.vuelo_regreso_fecha,
+          vuelo_regreso_fecha: opcion.vuelo_regreso_fecha
+            ? opcion.vuelo_regreso_fecha + "T12:00:00"
+            : null,
           vuelo_regreso_horario: opcion.vuelo_regreso_horario,
           vuelo_regreso_ruta: opcion.vuelo_regreso_ruta,
           precio_por_persona: parseFloat(opcion.precio_por_persona) || 0,

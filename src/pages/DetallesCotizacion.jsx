@@ -229,6 +229,21 @@ export default function DetallesCotizacion({
 
   function formatDate(dateString) {
     if (!dateString) return "";
+
+    // Handle date-only strings (YYYY-MM-DD) to avoid timezone issues
+    // Split the date and create it in local timezone
+    const parts = dateString.split("T")[0].split("-");
+    if (parts.length === 3) {
+      const [year, month, day] = parts.map(Number);
+      const date = new Date(year, month - 1, day); // month is 0-indexed
+      return date.toLocaleDateString("es-MX", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    // Fallback for datetime strings
     const date = new Date(dateString);
     return date.toLocaleDateString("es-MX", {
       year: "numeric",

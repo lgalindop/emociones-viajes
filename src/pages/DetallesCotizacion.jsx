@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
+import HotelAutocomplete from "../components/HotelAutocomplete";
 import {
   ArrowLeft,
   Edit2,
@@ -30,6 +31,7 @@ export default function DetallesCotizacion({
     nombre_paquete: "",
     servicio_descripcion: "",
     hotel_nombre: "",
+    hotel_id: null,
     ocupacion: "",
     vuelo_ida_fecha: "",
     vuelo_ida_horario: "",
@@ -149,6 +151,7 @@ export default function DetallesCotizacion({
           nombre_paquete: op.nombre_paquete,
           servicio_descripcion: op.servicio_descripcion,
           hotel_nombre: op.hotel_nombre,
+          hotel_id: op.hotel_id || null,
           ocupacion: op.ocupacion,
           vuelo_ida_fecha: op.vuelo_ida_fecha
             ? op.vuelo_ida_fecha + "T12:00:00"
@@ -243,6 +246,7 @@ export default function DetallesCotizacion({
       nombre_paquete: "",
       servicio_descripcion: "",
       hotel_nombre: "",
+      hotel_id: null,
       ocupacion: "",
       vuelo_ida_fecha: "",
       vuelo_ida_horario: "",
@@ -794,17 +798,16 @@ export default function DetallesCotizacion({
 
                   {/* Hotel + Ocupación */}
                   <div className="grid grid-cols-2 gap-4">
-                    <input
-                      type="text"
+                    <HotelAutocomplete
                       value={newOpcion.hotel_nombre}
-                      onChange={(e) =>
+                      hotelId={newOpcion.hotel_id}
+                      onChange={(nombre, id) =>
                         setNewOpcion({
                           ...newOpcion,
-                          hotel_nombre: e.target.value,
+                          hotel_nombre: nombre,
+                          hotel_id: id,
                         })
                       }
-                      className="border-2 border-gray-200 rounded-xl px-4 py-3"
-                      placeholder="Hotel"
                     />
                     <input
                       type="text"
@@ -1248,18 +1251,18 @@ export default function DetallesCotizacion({
                         />
 
                         <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="text"
+                          <HotelAutocomplete
                             value={op.hotel_nombre || ""}
-                            onChange={(e) =>
-                              handleUpdateOpcion(
-                                idx,
-                                "hotel_nombre",
-                                e.target.value
-                              )
-                            }
-                            className="border rounded-lg px-4 py-2"
-                            placeholder="Hotel"
+                            hotelId={op.hotel_id}
+                            onChange={(nombre, id) => {
+                              const updated = [...editingOpciones];
+                              updated[idx] = {
+                                ...updated[idx],
+                                hotel_nombre: nombre,
+                                hotel_id: id,
+                              };
+                              setEditingOpciones(updated);
+                            }}
                           />
                           <input
                             type="text"

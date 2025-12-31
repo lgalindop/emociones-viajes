@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { ArrowLeft, Plus, Trash2, Check, X } from "lucide-react";
 import LeadOriginIcon from "../components/LeadOriginIcon";
+import HotelAutocomplete from "../components/HotelAutocomplete";
 
 export default function NuevaCotizacion({ onBack, onSuccess }) {
   const [step, setStep] = useState(1);
@@ -36,6 +37,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     nombre_paquete: "",
     servicio_descripcion: "",
     hotel_nombre: "",
+    hotel_id: null,
     ocupacion: "",
     vuelo_ida_fecha: "",
     vuelo_ida_horario: "",
@@ -101,6 +103,17 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerSearch]);
+
+  // Auto-populate vuelo dates from formData when entering Step 3
+  useEffect(() => {
+    if (step === 3 && formData.fecha_salida && formData.fecha_regreso) {
+      setCurrentOpcion((prev) => ({
+        ...prev,
+        vuelo_ida_fecha: formData.fecha_salida,
+        vuelo_regreso_fecha: formData.fecha_regreso,
+      }));
+    }
+  }, [step, formData.fecha_salida, formData.fecha_regreso]);
 
   async function fetchOperadores() {
     try {
@@ -204,6 +217,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
       nombre_paquete: "",
       servicio_descripcion: "",
       hotel_nombre: "",
+      hotel_id: null,
       ocupacion: "",
       vuelo_ida_fecha: formData.fecha_salida || "",
       vuelo_ida_horario: "",
@@ -300,6 +314,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
           nombre_paquete: op.nombre_paquete || null,
           servicio_descripcion: op.servicio_descripcion || null,
           hotel_nombre: op.hotel_nombre || null,
+          hotel_id: op.hotel_id || null,
           ocupacion: op.ocupacion || null,
           vuelo_ida_fecha: op.vuelo_ida_fecha
             ? op.vuelo_ida_fecha + "T12:00:00"
@@ -984,17 +999,16 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Hotel
                     </label>
-                    <input
-                      type="text"
+                    <HotelAutocomplete
                       value={currentOpcion.hotel_nombre}
-                      onChange={(e) =>
+                      hotelId={currentOpcion.hotel_id}
+                      onChange={(nombre, id) =>
                         setCurrentOpcion({
                           ...currentOpcion,
-                          hotel_nombre: e.target.value,
+                          hotel_nombre: nombre,
+                          hotel_id: id,
                         })
                       }
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                      placeholder="PARK ROYAL BEACH CANCUN"
                     />
                   </div>
                   <div>

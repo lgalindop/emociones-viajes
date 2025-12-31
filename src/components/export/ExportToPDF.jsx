@@ -8,7 +8,10 @@ export default function ExportToPDF({ cotizacion, opciones }) {
 
   function formatDateShort(dateString) {
     if (!dateString) return "";
-    const date = new Date(dateString + "T00:00:00");
+    // Handle both date-only strings and timestamps
+    const date = dateString.includes("T")
+      ? new Date(dateString)
+      : new Date(dateString + "T12:00:00");
     return date.toLocaleDateString("es-MX", {
       day: "2-digit",
       month: "2-digit",
@@ -57,7 +60,7 @@ export default function ExportToPDF({ cotizacion, opciones }) {
       const margin = 15;
       let yPos = margin;
 
-      // HIGH-RES Logo
+      // HIGH-RES Logo - CENTERED
       try {
         const logoImg = new Image();
         logoImg.crossOrigin = "anonymous";
@@ -70,145 +73,144 @@ export default function ExportToPDF({ cotizacion, opciones }) {
         });
 
         const canvas = document.createElement("canvas");
-        canvas.width = 1200; // Much higher resolution
+        canvas.width = 1200;
         canvas.height = 1200;
         const ctx = canvas.getContext("2d");
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
         ctx.drawImage(logoImg, 0, 0, 1200, 1200);
-        const compressedDataUrl = canvas.toDataURL("image/png", 1.0); // Max quality
+        const compressedDataUrl = canvas.toDataURL("image/png", 1.0);
 
-        pdf.addImage(compressedDataUrl, "PNG", margin, yPos, 25, 25);
+        // Center the logo
+        const logoSize = 25;
+        pdf.addImage(
+          compressedDataUrl,
+          "PNG",
+          (pageWidth - logoSize) / 2,
+          yPos,
+          logoSize,
+          logoSize
+        );
+        yPos += logoSize + 3;
       } catch (e) {
         console.warn("Logo skipped:", e);
+        yPos += 3;
       }
 
-      // Company header - CENTERED
-      pdf.setFontSize(16);
-      pdf.setFont("helvetica", "bold");
-      pdf.text(
-        companySettings.company_name || "EMOCIONES VIAJES BY FRAVEO",
-        pageWidth / 2,
-        yPos + 8,
-        { align: "center" }
-      );
-
+      // Company details - CENTERED, SINGLE LINE (no company name)
       pdf.setFontSize(9);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Dirección:", pageWidth / 2 - 40, yPos + 14);
       pdf.setFont("helvetica", "normal");
-      pdf.text(companySettings.address || "", pageWidth / 2 - 20, yPos + 14);
+      const addressLine = `${companySettings.address || ""} • ${companySettings.email || ""}`;
+      pdf.text(addressLine, pageWidth / 2, yPos, { align: "center" });
+      yPos += 5;
 
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Correo:", pageWidth / 2 - 40, yPos + 18);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(companySettings.email || "", pageWidth / 2 - 20, yPos + 18);
+      const contactLine = `${companySettings.phone || ""} • RNT: ${companySettings.rnt || ""}`;
+      pdf.text(contactLine, pageWidth / 2, yPos, { align: "center" });
+      yPos += 10;
 
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Teléfono:", pageWidth / 2 - 40, yPos + 22);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(companySettings.phone || "", pageWidth / 2 - 20, yPos + 22);
+      // Separator line
+      pdf.setDrawColor(200, 200, 200);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 10;
 
-      pdf.setFont("helvetica", "bold");
-      pdf.text("RNT:", pageWidth / 2 - 40, yPos + 26);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(companySettings.rnt || "", pageWidth / 2 - 20, yPos + 26);
-
-      yPos += 40; // More space
-
-      // Client info - LEFT with BOLD labels
+      // Two-column layout: Cliente (left) + Cotización info (right)
       pdf.setFontSize(10);
+      const leftX = margin;
+      const rightX = pageWidth / 2 + 10;
+
+      // LEFT COLUMN - Cliente
+      let leftYPos = yPos;
       pdf.setFont("helvetica", "bold");
-      pdf.text("Cliente:", margin, yPos);
+      pdf.text("Cliente:", leftX, leftYPos);
       pdf.setFont("helvetica", "normal");
-      pdf.text(cotizacion.cliente_nombre || "", margin + 18, yPos);
-      yPos += 6;
+      pdf.text(cotizacion.cliente_nombre || "", leftX + 16, leftYPos);
+      leftYPos += 6;
+
+      pdf.setFont("helvetica", "normal");
+      pdf.text(cotizacion.cliente_email || "", leftX, leftYPos);
+      leftYPos += 6;
+
+      pdf.text(cotizacion.cliente_telefono || "", leftX, leftYPos);
+      leftYPos += 6;
+
+      // Add travelers info if exists
+      const numAdultos = cotizacion.num_adultos || 0;
+      const numNinos = cotizacion.num_ninos || 0;
+      const numInfantes = cotizacion.num_infantes || 0;
+
+      if (numAdultos > 0 || numNinos > 0 || numInfantes > 0) {
+        let travelersText = "";
+        if (numAdultos > 0) travelersText += `${numAdultos} adulto(s)`;
+        if (numNinos > 0) {
+          if (travelersText) travelersText += ", ";
+          travelersText += `${numNinos} niño(s)`;
+        }
+        if (numInfantes > 0) {
+          if (travelersText) travelersText += ", ";
+          travelersText += `${numInfantes} infante(s)`;
+        }
+        pdf.text(travelersText, leftX, leftYPos);
+      }
+
+      // RIGHT COLUMN - Cotización info
+      let rightYPos = yPos;
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Folio:", rightX, rightYPos);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(cotizacion.folio || "", rightX + 12, rightYPos);
+      rightYPos += 6;
 
       pdf.setFont("helvetica", "bold");
-      pdf.text("Correo:", margin, yPos);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(cotizacion.cliente_email || "", margin + 18, yPos);
-      yPos += 6;
-
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Teléfono:", margin, yPos);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(cotizacion.cliente_telefono || "", margin + 22, yPos);
-
-      // Folio - CENTER COLUMN
-      const centerX = pageWidth / 2 - 30;
-      let centerYPos = yPos - 12;
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Folio cotización:", centerX, centerYPos);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(` ${cotizacion.folio || ""}`, centerX + 28, centerYPos);
-      centerYPos += 6;
-
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Cotizado en:", centerX, centerYPos);
+      pdf.text("Divisa:", rightX, rightYPos);
       pdf.setFont("helvetica", "normal");
       pdf.text(
-        ` ${cotizacion.divisa === "MXN" ? "Peso Mexicano" : cotizacion.divisa}`,
-        centerX + 22,
-        centerYPos
+        cotizacion.divisa === "MXN" ? "Peso Mexicano" : cotizacion.divisa,
+        rightX + 14,
+        rightYPos
       );
-      centerYPos += 6;
+      rightYPos += 6;
 
-      // Add grupo label if exists
-      if (cotizacion.grupos?.nombre) {
-        pdf.setFont("helvetica", "bold");
-        pdf.text("Grupo:", centerX, centerYPos);
-        pdf.setFont("helvetica", "normal");
-        pdf.text(` ${cotizacion.grupos.nombre}`, centerX + 14, centerYPos);
-      }
-
-      // Dates - RIGHT COLUMN
-      let rightYPos = yPos - 12;
-      const rightX = pageWidth - margin - 60;
-
-      if (cotizacion.fecha_registro) {
-        pdf.setFont("helvetica", "bold");
-        pdf.text("Fecha Registro:", rightX, rightYPos);
-        pdf.setFont("helvetica", "normal");
-        pdf.text(
-          ` ${formatDateShort(cotizacion.fecha_registro)}`,
-          rightX + 28,
-          rightYPos
-        );
-        rightYPos += 6;
-      }
-      if (cotizacion.fecha_reserva) {
-        pdf.setFont("helvetica", "bold");
-        pdf.text("Fecha de Reserva:", rightX, rightYPos);
-        pdf.setFont("helvetica", "normal");
-        pdf.text(
-          ` ${formatDateShort(cotizacion.fecha_reserva)}`,
-          rightX + 32,
-          rightYPos
-        );
-        rightYPos += 6;
-      }
       if (cotizacion.vigente_hasta) {
         pdf.setFont("helvetica", "bold");
-        pdf.text("Cotización vigente hasta:", rightX, rightYPos);
+        pdf.text("Vigencia cotización:", rightX, rightYPos);
         pdf.setFont("helvetica", "normal");
         pdf.text(
-          ` ${formatDateShort(cotizacion.vigente_hasta)}`,
-          rightX + 45,
+          formatDateShort(cotizacion.vigente_hasta),
+          rightX + 38,
+          rightYPos
+        );
+        rightYPos += 6;
+      }
+
+      if (cotizacion.created_at) {
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Cotización creada:", rightX, rightYPos);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(
+          formatDateShort(cotizacion.created_at),
+          rightX + 35,
           rightYPos
         );
       }
 
-      yPos += 15; // More space before table
+      // Add grupo if exists
+      if (cotizacion.grupos?.nombre) {
+        leftYPos += 6;
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Grupo:", leftX, leftYPos);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(cotizacion.grupos.nombre, leftX + 14, leftYPos);
+      }
 
-      // Table header - WIDER IMPORTE COLUMN
+      yPos = Math.max(leftYPos, rightYPos) + 10;
+
+      // Table header - NO CANTIDAD OR PRECIO
       const colWidths = {
-        cantidad: 18,
-        fechaInicio: 22,
-        fechaFin: 22,
-        precio: 22,
-        servicio: 78,
-        importe: 28,
+        fechaInicio: 30,
+        fechaFin: 30,
+        servicio: 100,
+        importe: 30,
       };
 
       pdf.setFillColor(240, 240, 240);
@@ -221,20 +223,12 @@ export default function ExportToPDF({ cotizacion, opciones }) {
       pdf.setFontSize(9);
       let xPos = margin + 2;
 
-      pdf.text("Cantidad", xPos, yPos + 5);
-      xPos += colWidths.cantidad;
-      pdf.line(xPos, yPos, xPos, yPos + 8);
-
-      pdf.text("Fecha inicio", xPos + 2, yPos + 5);
+      pdf.text("Fecha inicio", xPos, yPos + 5);
       xPos += colWidths.fechaInicio;
       pdf.line(xPos, yPos, xPos, yPos + 8);
 
       pdf.text("Fecha fin", xPos + 2, yPos + 5);
       xPos += colWidths.fechaFin;
-      pdf.line(xPos, yPos, xPos, yPos + 8);
-
-      pdf.text("Precio", xPos + 2, yPos + 5);
-      xPos += colWidths.precio;
       pdf.line(xPos, yPos, xPos, yPos + 8);
 
       pdf.text("Servicio", xPos + 2, yPos + 5);
@@ -259,10 +253,10 @@ export default function ExportToPDF({ cotizacion, opciones }) {
 
         xPos = margin + 2;
 
-        // Build service text - FULL TEXT with proper wrapping
+        // Build service text - USE INDIVIDUAL OPCION TEXT
         const servicioDesc =
           opcion.servicio_descripcion || opcion.nombre_paquete || "";
-        const maxCharsPerLine = 52; // SHORTER to prevent overflow into Importe column
+        const maxCharsPerLine = 68;
 
         // Split servicio description into lines
         let servicioLines = [];
@@ -290,20 +284,16 @@ export default function ExportToPDF({ cotizacion, opciones }) {
           servicioLines.push(hotelLine);
         }
 
-        // Calculate row height based on number of lines
-        const rowHeight = servicioLines.length * 4 + 6; // 4mm per line + MORE padding
+        // Calculate row height
+        const rowHeight = servicioLines.length * 4 + 6;
 
         // Draw row
         pdf.setDrawColor(200, 200, 200);
         pdf.rect(margin, yPos, pageWidth - 2 * margin, rowHeight);
 
-        pdf.text("1", xPos, yPos + 5);
-        xPos += colWidths.cantidad;
-        pdf.line(xPos, yPos, xPos, yPos + rowHeight);
-
         pdf.text(
           formatDateShort(cotizacion.fecha_salida) || "",
-          xPos + 2,
+          xPos,
           yPos + 5
         );
         xPos += colWidths.fechaInicio;
@@ -317,13 +307,8 @@ export default function ExportToPDF({ cotizacion, opciones }) {
         xPos += colWidths.fechaFin;
         pdf.line(xPos, yPos, xPos, yPos + rowHeight);
 
-        pdf.text(`$${precioTotal.toLocaleString("es-MX")}`, xPos + 2, yPos + 5);
-        xPos += colWidths.precio;
-        pdf.line(xPos, yPos, xPos, yPos + rowHeight);
-
         // Service text - RENDER ALL LINES
-        // Render all servicio lines
-        let lineYPos = yPos + 5; // Start LOWER from top
+        let lineYPos = yPos + 5;
         for (let i = 0; i < servicioLines.length; i++) {
           const line = servicioLines[i];
 
@@ -338,57 +323,55 @@ export default function ExportToPDF({ cotizacion, opciones }) {
             pdf.text(line, xPos + 2, lineYPos);
           }
 
-          lineYPos += 4; // Move to next line
+          lineYPos += 4;
         }
         xPos += colWidths.servicio;
         pdf.line(xPos, yPos, xPos, yPos + rowHeight);
 
-        // Importe - SMALLER FONT to prevent overflow
-        pdf.setFontSize(7);
+        // Importe
+        pdf.setFontSize(8);
         pdf.text(`$${precioTotal.toLocaleString("es-MX")}`, xPos + 2, yPos + 5);
-        pdf.setFontSize(8); // Reset
         yPos += rowHeight;
 
-        // Flights - BOLD
+        // Flights - BOLD, SMALLER FONT
         if (opcion.vuelo_ida_fecha || opcion.vuelo_regreso_fecha) {
           if (yPos > pageHeight - 30) {
             pdf.addPage();
             yPos = margin;
           }
           pdf.setFont("helvetica", "bold");
-          pdf.setFontSize(8);
+          pdf.setFontSize(6); // Reduced from 8
 
           if (opcion.vuelo_ida_fecha) {
-            const prefix = opcion.vuelo_ida_directo
-              ? "VUELO DIRECTO, "
-              : "VUELO, ";
+            const prefix = opcion.vuelo_ida_directo ? "VUELO DIRECTO" : "VUELO";
             pdf.text(
-              `${prefix}SALIDA ${formatDateLong(opcion.vuelo_ida_fecha)} ${opcion.vuelo_ida_ruta || ""}: ${opcion.vuelo_ida_horario || ""}`,
+              `${prefix} SALIDA ${formatDateLong(opcion.vuelo_ida_fecha)} ${opcion.vuelo_ida_ruta || ""} ${opcion.vuelo_ida_horario || ""}`,
               margin,
               yPos + 3
             );
-            yPos += 5;
+            yPos += 4; // Reduced spacing
           }
           if (opcion.vuelo_regreso_fecha) {
             const prefix = opcion.vuelo_regreso_directo
-              ? "VUELO DIRECTO, "
-              : "VUELO, ";
+              ? "VUELO DIRECTO"
+              : "VUELO";
             pdf.text(
-              `${prefix}REGRESO ${formatDateLong(opcion.vuelo_regreso_fecha)} ${opcion.vuelo_regreso_ruta || ""}: ${opcion.vuelo_regreso_horario || ""}`,
+              `${prefix} REGRESO ${formatDateLong(opcion.vuelo_regreso_fecha)} ${opcion.vuelo_regreso_ruta || ""} ${opcion.vuelo_regreso_horario || ""}`,
               margin,
               yPos + 3
             );
-            yPos += 5;
+            yPos += 4; // Reduced spacing
           }
           pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(8); // Reset to normal
         }
 
-        // Incluye - SINGLE LINE with BOLD label
+        // Incluye - SMALLER FONT
         const incluyeArray = Array.isArray(opcion.incluye)
-          ? opcion.incluye
+          ? opcion.incluye.filter((item) => item && item.trim())
           : [];
         const noIncluyeArray = Array.isArray(opcion.no_incluye)
-          ? opcion.no_incluye
+          ? opcion.no_incluye.filter((item) => item && item.trim())
           : [];
 
         if (incluyeArray.length > 0 || noIncluyeArray.length > 0) {
@@ -397,145 +380,126 @@ export default function ExportToPDF({ cotizacion, opciones }) {
             yPos = margin;
           }
 
-          let fullLine = "";
+          pdf.setFontSize(6); // Reduced from 8
+          let xOffset = margin;
 
+          // "Incluye:" label ONLY if has data
           if (incluyeArray.length > 0) {
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Incluye:", xOffset, yPos + 3);
+            pdf.setFont("helvetica", "normal");
+            xOffset += 12; // Adjusted for smaller font
+
             const incluyeText = incluyeArray
               .slice(0, 10)
-              .filter((item) => item && item.trim)
               .map((item) => item.trim())
               .join(", ");
-            fullLine = incluyeText;
+            pdf.text(incluyeText.substring(0, 100), xOffset, yPos + 3); // More characters fit
+            xOffset += pdf.getTextWidth(incluyeText.substring(0, 100)) + 4;
           }
 
+          // "No incluye:" label ONLY if has data
           if (noIncluyeArray.length > 0) {
+            pdf.setFont("helvetica", "bold");
+            pdf.text("No incluye:", xOffset, yPos + 3);
+            pdf.setFont("helvetica", "normal");
+            xOffset += 16; // Adjusted for smaller font
+
             const noIncluyeText = noIncluyeArray
               .slice(0, 10)
-              .filter((item) => item && item.trim)
               .map((item) => item.trim())
               .join(", ");
-            if (fullLine) fullLine += "   "; // Space between sections
-            fullLine += noIncluyeText;
+            pdf.text(noIncluyeText.substring(0, 80), xOffset, yPos + 3);
           }
 
-          if (fullLine) {
-            let xOffset = margin;
-
-            // "Incluye:" label in bold
-            if (incluyeArray.length > 0) {
-              pdf.setFont("helvetica", "bold");
-              pdf.text("Incluye:", xOffset, yPos + 3);
-              pdf.setFont("helvetica", "normal");
-              xOffset += 15;
-
-              const incluyeText = incluyeArray
-                .slice(0, 10)
-                .filter((item) => item && item.trim)
-                .map((item) => item.trim())
-                .join(", ");
-              pdf.text(incluyeText.substring(0, 80), xOffset, yPos + 3);
-              xOffset += pdf.getTextWidth(incluyeText.substring(0, 80)) + 5;
-            }
-
-            // "No incluye:" label in bold
-            if (noIncluyeArray.length > 0) {
-              pdf.setFont("helvetica", "bold");
-              pdf.text("No incluye:", xOffset, yPos + 3);
-              pdf.setFont("helvetica", "normal");
-              xOffset += 20;
-
-              const noIncluyeText = noIncluyeArray
-                .slice(0, 10)
-                .filter((item) => item && item.trim)
-                .map((item) => item.trim())
-                .join(", ");
-              pdf.text(noIncluyeText.substring(0, 60), xOffset, yPos + 3);
-            }
-
-            yPos += 5;
-          }
+          pdf.setFontSize(8); // Reset to normal
+          yPos += 4; // Reduced spacing
         }
 
-        // Tour link - BLUE
+        // Tour link - BLUE, SMALLER
         if (opcion.tour_link) {
           if (yPos > pageHeight - 15) {
             pdf.addPage();
             yPos = margin;
           }
+          pdf.setFontSize(6); // Reduced from 8
           pdf.setTextColor(0, 0, 255);
-          pdf.text(opcion.tour_link.substring(0, 120), margin, yPos + 3);
+          pdf.text(opcion.tour_link.substring(0, 140), margin, yPos + 3);
           pdf.setTextColor(0, 0, 0);
-          yPos += 6;
+          pdf.setFontSize(8); // Reset
+          yPos += 5;
         }
 
-        yPos += 4;
+        yPos += 3; // Reduced from 4
       }
 
-      // General description - BOLD
-      if (opciones.length > 0 && opciones[0].servicio_descripcion) {
-        if (yPos > pageHeight - 40) {
-          pdf.addPage();
-          yPos = margin;
-        }
-        yPos += 5;
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(9);
-        pdf.text(
-          opciones[0].servicio_descripcion.substring(0, 150).toUpperCase(),
-          margin,
-          yPos
-        );
-        yPos += 12;
-      }
+      // REMOVED: General description section
 
-      // Disclaimers
-      if (yPos > pageHeight - 50) {
-        pdf.addPage();
-        yPos = margin;
-      }
+      // Disclaimers - AT BOTTOM OF PAGE, SMALLER FONT
+      const disclaimerFontSize = 7; // Smaller
+      const disclaimerLineHeight = 4;
+      let disclaimerYPos = pageHeight - margin;
 
-      // Green disclaimer (optional)
+      // Calculate total disclaimer height to position from bottom
+      let disclaimerLines = [];
+
+      // Green disclaimer (optional) - FIRST
       if (cotizacion.disclaimer_green && cotizacion.disclaimer_green.trim()) {
-        pdf.setFont("helvetica", "bolditalic");
-        pdf.setFontSize(10);
-        pdf.setTextColor(0, 128, 0);
         const greenLines = pdf.splitTextToSize(
           cotizacion.disclaimer_green.trim(),
           pageWidth - 2 * margin
         );
         greenLines.forEach((line) => {
-          pdf.text(line, margin, yPos);
-          yPos += 5;
+          disclaimerLines.push({
+            text: line,
+            color: [0, 128, 0],
+            bold: true,
+          });
         });
-        yPos += 3;
       }
 
-      // Blue disclaimer (optional)
+      // Blue disclaimer (optional) - SECOND
       if (cotizacion.disclaimer_blue && cotizacion.disclaimer_blue.trim()) {
-        pdf.setFont("helvetica", "bolditalic");
-        pdf.setFontSize(10);
-        pdf.setTextColor(0, 0, 255);
         const blueLines = pdf.splitTextToSize(
           cotizacion.disclaimer_blue.trim(),
           pageWidth - 2 * margin
         );
         blueLines.forEach((line) => {
-          pdf.text(line, margin, yPos);
-          yPos += 5;
+          disclaimerLines.push({
+            text: line,
+            color: [0, 0, 255],
+            bold: true,
+          });
         });
-        yPos += 3;
       }
 
-      // Red disclaimer (always present)
+      // Red disclaimer (always present) - THIRD
+      disclaimerLines.push({
+        text: "LOS PRECIOS ESTÁN SUJETOS A CAMBIO SIN PREVIO AVISO",
+        color: [255, 0, 0],
+        bold: true,
+      });
+
+      // Position from bottom
+      disclaimerYPos =
+        pageHeight - margin - disclaimerLines.length * disclaimerLineHeight;
+
+      // Check if we need a new page for disclaimers
+      if (disclaimerYPos < yPos + 10) {
+        pdf.addPage();
+        disclaimerYPos =
+          pageHeight - margin - disclaimerLines.length * disclaimerLineHeight;
+      }
+
+      // Print disclaimers in order (top to bottom)
       pdf.setFont("helvetica", "bolditalic");
-      pdf.setFontSize(10);
-      pdf.setTextColor(255, 0, 0);
-      pdf.text(
-        "LOS PRECIOS ESTÁN SUJETOS A CAMBIO SIN PREVIO AVISO",
-        margin,
-        yPos
-      );
-      yPos += 12;
+      pdf.setFontSize(disclaimerFontSize);
+      disclaimerLines.forEach((line) => {
+        pdf.setTextColor(...line.color);
+        pdf.text(line.text, margin, disclaimerYPos);
+        disclaimerYPos += disclaimerLineHeight;
+      });
+      pdf.setTextColor(0, 0, 0); // Reset color
 
       pdf.save(`Cotizacion-${cotizacion.folio}.pdf`);
       setGenerating(false);

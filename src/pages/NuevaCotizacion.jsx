@@ -22,11 +22,8 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     tipo_habitacion: "",
     personas_por_habitacion: "",
     presupuesto_aprox: "",
-    requerimientos: "",
     notas: "",
     divisa: "MXN",
-    fecha_registro: new Date().toISOString().split("T")[0],
-    fecha_reserva: "",
     vigente_hasta: "",
     grupo_id: null,
     disclaimer_green:
@@ -54,8 +51,6 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     precio_total: "",
     incluye: [],
     no_incluye: [],
-    disponibilidad: "",
-    notas: "",
     link_paquete: "",
     tour_link: "",
   });
@@ -77,48 +72,10 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     { value: "otro", label: "Otro" },
   ];
 
-  const requerimientosSuggestions = [
-    "Vista al mar",
-    "Camas separadas",
-    "Cama king",
-    "Piso alto",
-    "Cuna para bebé",
-    "Acceso para silla de ruedas",
-    "Habitación contigua",
-    "Check-in temprano",
-    "Check-out tardío",
-    "Todo incluido",
-    "Solo hospedaje",
-    "Wifi incluido",
-  ];
-
   useEffect(() => {
     fetchOperadores();
     fetchGrupos();
   }, []);
-
-  // Pre-fill vuelo dates when entering step 3 (opciones) for the first time
-  useEffect(() => {
-    if (
-      step === 3 &&
-      opciones.length === 0 &&
-      !currentOpcion.vuelo_ida_fecha &&
-      !currentOpcion.vuelo_regreso_fecha
-    ) {
-      setCurrentOpcion((prev) => ({
-        ...prev,
-        vuelo_ida_fecha: formData.fecha_salida || "",
-        vuelo_regreso_fecha: formData.fecha_regreso || "",
-      }));
-    }
-  }, [
-    step,
-    formData.fecha_salida,
-    formData.fecha_regreso,
-    opciones.length,
-    currentOpcion.vuelo_ida_fecha,
-    currentOpcion.vuelo_regreso_fecha,
-  ]);
 
   // Click outside handler for customer dropdown
   useEffect(() => {
@@ -215,15 +172,6 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     setShowCustomerDropdown(false);
   }
 
-  function addRequerimiento(req) {
-    const current = formData.requerimientos;
-    if (current) {
-      setFormData({ ...formData, requerimientos: current + ", " + req });
-    } else {
-      setFormData({ ...formData, requerimientos: req });
-    }
-  }
-
   function handlePriceChange(field, value) {
     const updated = { ...currentOpcion, [field]: value };
 
@@ -271,8 +219,6 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
       precio_total: "",
       incluye: [],
       no_incluye: [],
-      disponibilidad: "",
-      notas: "",
       link_paquete: "",
       tour_link: "",
     });
@@ -336,11 +282,8 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
           fecha_regreso: formData.fecha_regreso
             ? formData.fecha_regreso + "T12:00:00"
             : null,
-          fecha_registro: formData.fecha_registro
-            ? formData.fecha_registro + "T12:00:00"
-            : null,
-          fecha_reserva: formData.fecha_reserva
-            ? formData.fecha_reserva + "T12:00:00"
+          vigente_hasta: formData.vigente_hasta
+            ? formData.vigente_hasta + "T12:00:00"
             : null,
           pipeline_stage: "lead",
         })
@@ -378,8 +321,6 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
           precio_total: parseFloat(op.precio_total),
           incluye: op.incluye,
           no_incluye: op.no_incluye,
-          disponibilidad: op.disponibilidad || null,
-          notas: op.notas || null,
           link_paquete: op.link_paquete || null,
           tour_link: op.tour_link || null,
         }));
@@ -613,37 +554,16 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                 <label className="block text-sm font-semibold text-blue-900 mb-3">
                   Fechas de Cotización
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">
-                      Fecha Registro
+                      Fecha de Creación
                     </label>
                     <input
-                      type="date"
-                      value={formData.fecha_registro}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          fecha_registro: e.target.value,
-                        })
-                      }
-                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">
-                      Fecha Reserva
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.fecha_reserva}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          fecha_reserva: e.target.value,
-                        })
-                      }
-                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                      type="text"
+                      value={new Date().toLocaleDateString("es-MX")}
+                      disabled
+                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 bg-gray-100 text-gray-600"
                     />
                   </div>
                   <div>
@@ -862,48 +782,6 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                   }
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   placeholder="$"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Requerimientos Especiales
-                </label>
-                <textarea
-                  value={formData.requerimientos}
-                  onChange={(e) =>
-                    setFormData({ ...formData, requerimientos: e.target.value })
-                  }
-                  rows="3"
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                  placeholder="Cualquier requerimiento especial..."
-                />
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {requerimientosSuggestions.map((req) => (
-                    <button
-                      key={req}
-                      type="button"
-                      onClick={() => addRequerimiento(req)}
-                      className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full transition-all"
-                    >
-                      + {req}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Notas
-                </label>
-                <textarea
-                  value={formData.notas}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notas: e.target.value })
-                  }
-                  rows="3"
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                  placeholder="Notas internas..."
                 />
               </div>
             </div>
@@ -1361,6 +1239,31 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Incluye
                   </label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {[
+                      "Vuelos",
+                      "Hospedaje",
+                      "Hospedaje todo incluido",
+                      "Traslados Aeropuerto-Hotel-Aeropuerto",
+                      "Traslados",
+                    ].map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => {
+                          if (!currentOpcion.incluye.includes(item)) {
+                            setCurrentOpcion({
+                              ...currentOpcion,
+                              incluye: [...currentOpcion.incluye, item],
+                            });
+                          }
+                        }}
+                        className="text-xs px-3 py-1 bg-green-50 hover:bg-green-100 text-green-700 rounded-full transition-all"
+                      >
+                        + {item}
+                      </button>
+                    ))}
+                  </div>
                   <div className="flex gap-2 mb-2">
                     <input
                       type="text"
@@ -1474,41 +1377,6 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Disponibilidad
-                  </label>
-                  <input
-                    type="text"
-                    value={currentOpcion.disponibilidad}
-                    onChange={(e) =>
-                      setCurrentOpcion({
-                        ...currentOpcion,
-                        disponibilidad: e.target.value,
-                      })
-                    }
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                    placeholder="Ej: Disponible hasta fin de mes"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Notas
-                  </label>
-                  <textarea
-                    value={currentOpcion.notas}
-                    onChange={(e) =>
-                      setCurrentOpcion({
-                        ...currentOpcion,
-                        notas: e.target.value,
-                      })
-                    }
-                    rows="2"
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                  />
-                </div>
-
                 <button
                   type="button"
                   onClick={handleAddOpcion}
@@ -1517,6 +1385,22 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
                   Agregar Opción
                 </button>
               </div>
+            </div>
+
+            {/* General Notes for all options */}
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Notas Generales
+              </label>
+              <textarea
+                value={formData.notas}
+                onChange={(e) =>
+                  setFormData({ ...formData, notas: e.target.value })
+                }
+                rows="3"
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                placeholder="Notas internas para toda la cotización..."
+              />
             </div>
 
             {/* Navigation */}

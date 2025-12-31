@@ -11,7 +11,6 @@ import {
   Plane,
 } from "lucide-react";
 import LeadOriginIcon from "../components/LeadOriginIcon";
-import ExportToWhatsApp from "../components/export/ExportToWhatsApp";
 import ExportToPDF from "../components/export/ExportToPDF";
 
 export default function DetallesCotizacion({
@@ -35,14 +34,17 @@ export default function DetallesCotizacion({
     vuelo_ida_fecha: "",
     vuelo_ida_horario: "",
     vuelo_ida_ruta: "",
+    vuelo_ida_directo: false,
     vuelo_regreso_fecha: "",
     vuelo_regreso_horario: "",
     vuelo_regreso_ruta: "",
-    precio_por_persona: "",
+    vuelo_regreso_directo: false,
+    precio_adulto: "",
+    precio_menor: "",
+    precio_infante: "",
     precio_total: "",
     incluye: "",
     no_incluye: "",
-    disponibilidad: "",
     link_paquete: "",
     tour_link: "",
   });
@@ -85,11 +87,42 @@ export default function DetallesCotizacion({
     fetchData();
   }, [fetchData]);
 
+  // Recalculate all option totals when viajeros counts change
+  useEffect(() => {
+    if (!editing || !editData) return;
+
+    const recalculated = editingOpciones.map((op) => {
+      const adulto = parseFloat(op.precio_adulto) || 0;
+      const menor = parseFloat(op.precio_menor) || 0;
+      const infante = parseFloat(op.precio_infante) || 0;
+      const total =
+        adulto * (editData.num_adultos || 0) +
+        menor * (editData.num_ninos || 0) +
+        infante * (editData.num_infantes || 0);
+
+      return { ...op, precio_total: total.toString() };
+    });
+
+    setEditingOpciones(recalculated);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editData?.num_adultos, editData?.num_ninos, editData?.num_infantes]);
+
   async function handleSave() {
     try {
       const result = await supabase
         .from("cotizaciones")
-        .update(editData)
+        .update({
+          ...editData,
+          fecha_salida: editData.fecha_salida
+            ? editData.fecha_salida + "T12:00:00"
+            : null,
+          fecha_regreso: editData.fecha_regreso
+            ? editData.fecha_regreso + "T12:00:00"
+            : null,
+          vigente_hasta: editData.vigente_hasta
+            ? editData.vigente_hasta + "T12:00:00"
+            : null,
+        })
         .eq("id", cotizacionId);
       if (result.error) throw result.error;
 
@@ -117,13 +150,21 @@ export default function DetallesCotizacion({
           servicio_descripcion: op.servicio_descripcion,
           hotel_nombre: op.hotel_nombre,
           ocupacion: op.ocupacion,
-          vuelo_ida_fecha: op.vuelo_ida_fecha,
+          vuelo_ida_fecha: op.vuelo_ida_fecha
+            ? op.vuelo_ida_fecha + "T12:00:00"
+            : null,
           vuelo_ida_horario: op.vuelo_ida_horario,
           vuelo_ida_ruta: op.vuelo_ida_ruta,
-          vuelo_regreso_fecha: op.vuelo_regreso_fecha,
+          vuelo_ida_directo: op.vuelo_ida_directo || false,
+          vuelo_regreso_fecha: op.vuelo_regreso_fecha
+            ? op.vuelo_regreso_fecha + "T12:00:00"
+            : null,
           vuelo_regreso_horario: op.vuelo_regreso_horario,
           vuelo_regreso_ruta: op.vuelo_regreso_ruta,
-          precio_por_persona: parseFloat(op.precio_por_persona) || 0,
+          vuelo_regreso_directo: op.vuelo_regreso_directo || false,
+          precio_adulto: parseFloat(op.precio_adulto) || 0,
+          precio_menor: parseFloat(op.precio_menor) || 0,
+          precio_infante: parseFloat(op.precio_infante) || 0,
           precio_total: parseFloat(op.precio_total),
           incluye:
             typeof op.incluye === "string"
@@ -133,7 +174,6 @@ export default function DetallesCotizacion({
             typeof op.no_incluye === "string"
               ? op.no_incluye.split(",").map((i) => i.trim())
               : op.no_incluye,
-          disponibilidad: op.disponibilidad,
           link_paquete: op.link_paquete,
           tour_link: op.tour_link,
         };
@@ -207,14 +247,17 @@ export default function DetallesCotizacion({
       vuelo_ida_fecha: "",
       vuelo_ida_horario: "",
       vuelo_ida_ruta: "",
+      vuelo_ida_directo: false,
       vuelo_regreso_fecha: "",
       vuelo_regreso_horario: "",
       vuelo_regreso_ruta: "",
-      precio_por_persona: "",
+      vuelo_regreso_directo: false,
+      precio_adulto: "",
+      precio_menor: "",
+      precio_infante: "",
       precio_total: "",
       incluye: "",
       no_incluye: "",
-      disponibilidad: "",
       link_paquete: "",
       tour_link: "",
     });
@@ -229,27 +272,26 @@ export default function DetallesCotizacion({
 
   function formatDate(dateString) {
     if (!dateString) return "";
-
-    // Handle date-only strings (YYYY-MM-DD) to avoid timezone issues
-    // Split the date and create it in local timezone
-    const parts = dateString.split("T")[0].split("-");
-    if (parts.length === 3) {
+    // Check if it's a date-only string (YYYY-MM-DD) or a full timestamp
+    if (dateString.includes("T") || dateString.length > 10) {
+      // Full timestamp - use normal Date parsing
+      const date = new Date(dateString);
+      return date.toLocaleDateString("es-MX", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } else {
+      // Date-only string - parse in local timezone
+      const parts = dateString.split("-");
       const [year, month, day] = parts.map(Number);
-      const date = new Date(year, month - 1, day); // month is 0-indexed
+      const date = new Date(year, month - 1, day);
       return date.toLocaleDateString("es-MX", {
         year: "numeric",
         month: "short",
         day: "numeric",
       });
     }
-
-    // Fallback for datetime strings
-    const date = new Date(dateString);
-    return date.toLocaleDateString("es-MX", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
   }
 
   function getOperadorNombre(operadorId) {
@@ -288,11 +330,6 @@ export default function DetallesCotizacion({
 
             <div className="flex flex-wrap gap-2">
               <ExportToPDF
-                cotizacion={cotizacion}
-                opciones={opciones}
-                operadores={operadores}
-              />
-              <ExportToWhatsApp
                 cotizacion={cotizacion}
                 opciones={opciones}
                 operadores={operadores}
@@ -352,68 +389,34 @@ export default function DetallesCotizacion({
           </div>
 
           {/* Cotización Dates - Professional Display */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <div>
-              <p className="text-xs font-semibold text-blue-700 mb-1">
-                Fecha Registro
-              </p>
-              <p className="text-sm text-gray-900">
-                {cotizacion.fecha_registro
-                  ? formatDate(cotizacion.fecha_registro)
-                  : "No especificada"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-blue-700 mb-1">
-                Fecha Reserva
-              </p>
-              <p className="text-sm text-gray-900">
-                {cotizacion.fecha_reserva
-                  ? formatDate(cotizacion.fecha_reserva)
-                  : "No especificada"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-blue-700 mb-1">
-                Vigente Hasta
-              </p>
-              <p className="text-sm text-gray-900">
-                {cotizacion.vigente_hasta
-                  ? formatDate(cotizacion.vigente_hasta)
-                  : "No especificada"}
-              </p>
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div>
+                <p className="text-xs font-semibold text-blue-700 mb-1">
+                  Fecha de Creación
+                </p>
+                <p className="text-sm text-gray-900">
+                  {cotizacion.created_at
+                    ? formatDate(cotizacion.created_at)
+                    : "No especificada"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-blue-700 mb-1">
+                  Vigente Hasta
+                </p>
+                <p className="text-sm text-gray-900">
+                  {cotizacion.vigente_hasta
+                    ? formatDate(cotizacion.vigente_hasta)
+                    : "No especificada"}
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Edit Mode for Dates */}
           {editing && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Fecha Registro
-                </label>
-                <input
-                  type="date"
-                  value={editData.fecha_registro || ""}
-                  onChange={(e) =>
-                    setEditData({ ...editData, fecha_registro: e.target.value })
-                  }
-                  className="w-full border rounded-lg px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Fecha Reserva
-                </label>
-                <input
-                  type="date"
-                  value={editData.fecha_reserva || ""}
-                  onChange={(e) =>
-                    setEditData({ ...editData, fecha_reserva: e.target.value })
-                  }
-                  className="w-full border rounded-lg px-3 py-2"
-                />
-              </div>
+            <div className="mb-6 inline-block">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   Vigente Hasta
@@ -433,38 +436,33 @@ export default function DetallesCotizacion({
           {/* Status */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-600">Estatus:</span>
-            {editing ? (
-              <select
-                value={editData.estatus}
-                onChange={(e) =>
-                  setEditData({ ...editData, estatus: e.target.value })
-                }
-                className="border rounded-lg px-3 py-1"
-              >
-                <option value="nueva">Nueva</option>
-                <option value="enviada">Enviada</option>
-                <option value="seguimiento">Seguimiento</option>
-                <option value="cerrada">Cerrada</option>
-                <option value="perdida">Perdida</option>
-              </select>
-            ) : (
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  cotizacion.estatus === "nueva"
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                cotizacion.pipeline_stage === "lead"
+                  ? "bg-gray-100 text-gray-800"
+                  : cotizacion.pipeline_stage === "qualification"
                     ? "bg-blue-100 text-blue-800"
-                    : cotizacion.estatus === "enviada"
+                    : cotizacion.pipeline_stage === "quote_sent"
                       ? "bg-purple-100 text-purple-800"
-                      : cotizacion.estatus === "seguimiento"
+                      : cotizacion.pipeline_stage === "negotiation"
                         ? "bg-yellow-100 text-yellow-800"
-                        : cotizacion.estatus === "cerrada"
+                        : cotizacion.pipeline_stage === "booking_confirmed"
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
-                }`}
-              >
-                {cotizacion.estatus?.charAt(0).toUpperCase() +
-                  cotizacion.estatus?.slice(1)}
-              </span>
-            )}
+              }`}
+            >
+              {cotizacion.pipeline_stage === "lead"
+                ? "Lead"
+                : cotizacion.pipeline_stage === "qualification"
+                  ? "En Cotización"
+                  : cotizacion.pipeline_stage === "quote_sent"
+                    ? "Cotización Enviada"
+                    : cotizacion.pipeline_stage === "negotiation"
+                      ? "Negociación"
+                      : cotizacion.pipeline_stage === "booking_confirmed"
+                        ? "Ganada"
+                        : "Perdida"}
+            </span>
           </div>
         </div>
 
@@ -599,36 +597,63 @@ export default function DetallesCotizacion({
               <div>
                 <p className="text-xs text-gray-500 mb-1">Viajeros</p>
                 {editing ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="number"
-                      value={editData.num_adultos}
-                      onChange={(e) =>
-                        setEditData({
-                          ...editData,
-                          num_adultos: parseInt(e.target.value),
-                        })
-                      }
-                      className="border rounded-lg px-3 py-2"
-                      placeholder="Adultos"
-                    />
-                    <input
-                      type="number"
-                      value={editData.num_ninos}
-                      onChange={(e) =>
-                        setEditData({
-                          ...editData,
-                          num_ninos: parseInt(e.target.value),
-                        })
-                      }
-                      className="border rounded-lg px-3 py-2"
-                      placeholder="Niños"
-                    />
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-xs text-gray-600 block mb-1">
+                        Adultos
+                      </label>
+                      <input
+                        type="number"
+                        value={editData.num_adultos || 0}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            num_adultos: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full border rounded-lg px-3 py-2"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600 block mb-1">
+                        Niños
+                      </label>
+                      <input
+                        type="number"
+                        value={editData.num_ninos || 0}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            num_ninos: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full border rounded-lg px-3 py-2"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600 block mb-1">
+                        Infantes
+                      </label>
+                      <input
+                        type="number"
+                        value={editData.num_infantes || 0}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            num_infantes: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full border rounded-lg px-3 py-2"
+                        min="0"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm text-gray-700">
                     {cotizacion.num_adultos} adulto(s), {cotizacion.num_ninos}{" "}
-                    niño(s)
+                    niño(s), {cotizacion.num_infantes || 0} infante(s)
                   </p>
                 )}
               </div>
@@ -695,7 +720,17 @@ export default function DetallesCotizacion({
               </h2>
               {editing && (
                 <button
-                  onClick={() => setShowAddOpcion(!showAddOpcion)}
+                  onClick={() => {
+                    // Pre-fill vuelo dates from cotizacion
+                    setNewOpcion({
+                      ...newOpcion,
+                      vuelo_ida_fecha:
+                        cotizacion.fecha_salida?.split("T")[0] || "",
+                      vuelo_regreso_fecha:
+                        cotizacion.fecha_regreso?.split("T")[0] || "",
+                    });
+                    setShowAddOpcion(!showAddOpcion);
+                  }}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   <Plus size={18} />
@@ -706,9 +741,10 @@ export default function DetallesCotizacion({
 
             {/* Add New Option Form */}
             {editing && showAddOpcion && (
-              <div className="mb-6 p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
-                <h3 className="font-semibold mb-4">Nueva Opción</h3>
-                <div className="space-y-3">
+              <div className="mb-6 p-6 border-2 border-blue-300 rounded-lg bg-blue-50">
+                <h3 className="font-semibold mb-4 text-lg">Nueva Opción</h3>
+                <div className="space-y-4">
+                  {/* Operador */}
                   <select
                     value={newOpcion.operador_id}
                     onChange={(e) =>
@@ -717,7 +753,7 @@ export default function DetallesCotizacion({
                         operador_id: e.target.value,
                       })
                     }
-                    className="w-full border rounded-lg px-4 py-2"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   >
                     <option value="">Selecciona operador</option>
                     {operadores.map((op) => (
@@ -725,7 +761,10 @@ export default function DetallesCotizacion({
                         {op.nombre}
                       </option>
                     ))}
+                    <option value="otro">Otro</option>
                   </select>
+
+                  {/* Nombre Paquete */}
                   <input
                     type="text"
                     value={newOpcion.nombre_paquete}
@@ -735,9 +774,11 @@ export default function DetallesCotizacion({
                         nombre_paquete: e.target.value,
                       })
                     }
-                    className="w-full border rounded-lg px-4 py-2"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3"
                     placeholder="Nombre del paquete"
                   />
+
+                  {/* Descripción */}
                   <textarea
                     value={newOpcion.servicio_descripcion}
                     onChange={(e) =>
@@ -746,11 +787,13 @@ export default function DetallesCotizacion({
                         servicio_descripcion: e.target.value,
                       })
                     }
-                    className="w-full border rounded-lg px-4 py-2"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3"
                     placeholder="Descripción del servicio"
                     rows="2"
                   />
-                  <div className="grid grid-cols-2 gap-2">
+
+                  {/* Hotel + Ocupación */}
+                  <div className="grid grid-cols-2 gap-4">
                     <input
                       type="text"
                       value={newOpcion.hotel_nombre}
@@ -760,7 +803,7 @@ export default function DetallesCotizacion({
                           hotel_nombre: e.target.value,
                         })
                       }
-                      className="border rounded-lg px-4 py-2"
+                      className="border-2 border-gray-200 rounded-xl px-4 py-3"
                       placeholder="Hotel"
                     />
                     <input
@@ -772,46 +815,309 @@ export default function DetallesCotizacion({
                           ocupacion: e.target.value,
                         })
                       }
-                      className="border rounded-lg px-4 py-2"
+                      className="border-2 border-gray-200 rounded-xl px-4 py-3"
                       placeholder="Ocupación (ej: DOUBLE DBL)"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+
+                  {/* Vuelo Ida */}
+                  <div className="bg-white p-4 rounded-xl border border-gray-200">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      ✈️ Vuelo de Ida
+                    </label>
+                    <div className="grid grid-cols-3 gap-4 mb-2">
+                      <input
+                        type="date"
+                        value={newOpcion.vuelo_ida_fecha}
+                        onChange={(e) =>
+                          setNewOpcion({
+                            ...newOpcion,
+                            vuelo_ida_fecha: e.target.value,
+                          })
+                        }
+                        className="border-2 border-gray-200 rounded-xl px-4 py-3"
+                      />
+                      <input
+                        type="text"
+                        value={newOpcion.vuelo_ida_horario}
+                        onChange={(e) =>
+                          setNewOpcion({
+                            ...newOpcion,
+                            vuelo_ida_horario: e.target.value,
+                          })
+                        }
+                        className="border-2 border-gray-200 rounded-xl px-4 py-3"
+                        placeholder="Horario (ej: 08:30 - 12:40)"
+                      />
+                      <input
+                        type="text"
+                        value={newOpcion.vuelo_ida_ruta}
+                        onChange={(e) =>
+                          setNewOpcion({
+                            ...newOpcion,
+                            vuelo_ida_ruta: e.target.value,
+                          })
+                        }
+                        className="border-2 border-gray-200 rounded-xl px-4 py-3"
+                        placeholder="Ruta (ej: CUU-CUN)"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={newOpcion.vuelo_ida_directo || false}
+                        onChange={(e) =>
+                          setNewOpcion({
+                            ...newOpcion,
+                            vuelo_ida_directo: e.target.checked,
+                          })
+                        }
+                        className="rounded"
+                      />
+                      Vuelo directo
+                    </label>
+                  </div>
+
+                  {/* Vuelo Regreso */}
+                  <div className="bg-white p-4 rounded-xl border border-gray-200">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      ✈️ Vuelo de Regreso
+                    </label>
+                    <div className="grid grid-cols-3 gap-4 mb-2">
+                      <input
+                        type="date"
+                        value={newOpcion.vuelo_regreso_fecha}
+                        onChange={(e) =>
+                          setNewOpcion({
+                            ...newOpcion,
+                            vuelo_regreso_fecha: e.target.value,
+                          })
+                        }
+                        className="border-2 border-gray-200 rounded-xl px-4 py-3"
+                      />
+                      <input
+                        type="text"
+                        value={newOpcion.vuelo_regreso_horario}
+                        onChange={(e) =>
+                          setNewOpcion({
+                            ...newOpcion,
+                            vuelo_regreso_horario: e.target.value,
+                          })
+                        }
+                        className="border-2 border-gray-200 rounded-xl px-4 py-3"
+                        placeholder="Horario (ej: 13:25 - 15:40)"
+                      />
+                      <input
+                        type="text"
+                        value={newOpcion.vuelo_regreso_ruta}
+                        onChange={(e) =>
+                          setNewOpcion({
+                            ...newOpcion,
+                            vuelo_regreso_ruta: e.target.value,
+                          })
+                        }
+                        className="border-2 border-gray-200 rounded-xl px-4 py-3"
+                        placeholder="Ruta (ej: CUN-CUU)"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={newOpcion.vuelo_regreso_directo || false}
+                        onChange={(e) =>
+                          setNewOpcion({
+                            ...newOpcion,
+                            vuelo_regreso_directo: e.target.checked,
+                          })
+                        }
+                        className="rounded"
+                      />
+                      Vuelo directo
+                    </label>
+                  </div>
+
+                  {/* Precios */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-600 mb-1 block">
+                        Precio Adulto
+                      </label>
+                      <input
+                        type="number"
+                        value={newOpcion.precio_adulto || ""}
+                        onChange={(e) => {
+                          const newVal = e.target.value;
+                          const adulto = parseFloat(newVal) || 0;
+                          const menor = parseFloat(newOpcion.precio_menor) || 0;
+                          const infante =
+                            parseFloat(newOpcion.precio_infante) || 0;
+                          const total =
+                            adulto * (editData.num_adultos || 0) +
+                            menor * (editData.num_ninos || 0) +
+                            infante * (editData.num_infantes || 0);
+                          setNewOpcion({
+                            ...newOpcion,
+                            precio_adulto: newVal,
+                            precio_total: total.toString(),
+                          });
+                        }}
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3"
+                        placeholder="0.00"
+                        step="0.01"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600 mb-1 block">
+                        Precio Menor
+                      </label>
+                      <input
+                        type="number"
+                        value={newOpcion.precio_menor || ""}
+                        onChange={(e) => {
+                          const newVal = e.target.value;
+                          const adulto =
+                            parseFloat(newOpcion.precio_adulto) || 0;
+                          const menor = parseFloat(newVal) || 0;
+                          const infante =
+                            parseFloat(newOpcion.precio_infante) || 0;
+                          const total =
+                            adulto * (editData.num_adultos || 0) +
+                            menor * (editData.num_ninos || 0) +
+                            infante * (editData.num_infantes || 0);
+                          setNewOpcion({
+                            ...newOpcion,
+                            precio_menor: newVal,
+                            precio_total: total.toString(),
+                          });
+                        }}
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3"
+                        placeholder="0.00"
+                        step="0.01"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600 mb-1 block">
+                        Precio Infante
+                      </label>
+                      <input
+                        type="number"
+                        value={newOpcion.precio_infante || ""}
+                        onChange={(e) => {
+                          const newVal = e.target.value;
+                          const adulto =
+                            parseFloat(newOpcion.precio_adulto) || 0;
+                          const menor = parseFloat(newOpcion.precio_menor) || 0;
+                          const infante = parseFloat(newVal) || 0;
+                          const total =
+                            adulto * (editData.num_adultos || 0) +
+                            menor * (editData.num_ninos || 0) +
+                            infante * (editData.num_infantes || 0);
+                          setNewOpcion({
+                            ...newOpcion,
+                            precio_infante: newVal,
+                            precio_total: total.toString(),
+                          });
+                        }}
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3"
+                        placeholder="0.00"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Precio Total */}
+                  <div>
+                    <label className="text-xs text-gray-600 mb-1 block">
+                      Precio Total (Auto-calculado: {editData?.num_adultos || 0}{" "}
+                      adultos + {editData?.num_ninos || 0} menores +{" "}
+                      {editData?.num_infantes || 0} infantes)
+                    </label>
                     <input
                       type="number"
-                      value={newOpcion.precio_por_persona}
-                      onChange={(e) =>
-                        setNewOpcion({
-                          ...newOpcion,
-                          precio_por_persona: e.target.value,
-                        })
-                      }
-                      className="border rounded-lg px-4 py-2"
-                      placeholder="Precio por persona"
-                    />
-                    <input
-                      type="number"
-                      value={newOpcion.precio_total}
-                      onChange={(e) =>
-                        setNewOpcion({
-                          ...newOpcion,
-                          precio_total: e.target.value,
-                        })
-                      }
-                      className="border rounded-lg px-4 py-2"
-                      placeholder="Precio total"
+                      value={newOpcion.precio_total || ""}
+                      readOnly
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 bg-gray-100"
+                      placeholder="0.00"
                     />
                   </div>
-                  <div className="flex gap-2">
+
+                  {/* Incluye */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Incluye
+                    </label>
+                    <input
+                      type="text"
+                      value={newOpcion.incluye}
+                      onChange={(e) =>
+                        setNewOpcion({
+                          ...newOpcion,
+                          incluye: e.target.value,
+                        })
+                      }
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3"
+                      placeholder="Separado por comas"
+                    />
+                  </div>
+
+                  {/* No Incluye */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      No Incluye
+                    </label>
+                    <input
+                      type="text"
+                      value={newOpcion.no_incluye}
+                      onChange={(e) =>
+                        setNewOpcion({
+                          ...newOpcion,
+                          no_incluye: e.target.value,
+                        })
+                      }
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3"
+                      placeholder="Separado por comas"
+                    />
+                  </div>
+
+                  {/* Links */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <input
+                      type="url"
+                      value={newOpcion.link_paquete}
+                      onChange={(e) =>
+                        setNewOpcion({
+                          ...newOpcion,
+                          link_paquete: e.target.value,
+                        })
+                      }
+                      className="border-2 border-gray-200 rounded-xl px-4 py-3"
+                      placeholder="Link del paquete"
+                    />
+                    <input
+                      type="url"
+                      value={newOpcion.tour_link}
+                      onChange={(e) =>
+                        setNewOpcion({
+                          ...newOpcion,
+                          tour_link: e.target.value,
+                        })
+                      }
+                      className="border-2 border-gray-200 rounded-xl px-4 py-3"
+                      placeholder="Link de tours"
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-2 pt-2">
                     <button
                       onClick={handleAddOpcion}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 font-semibold transition-all"
                     >
-                      Agregar
+                      Agregar Opción
                     </button>
                     <button
                       onClick={() => setShowAddOpcion(false)}
-                      className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                      className="px-6 py-3 bg-gray-200 rounded-xl hover:bg-gray-300 font-semibold transition-all"
                     >
                       Cancelar
                     </button>
@@ -831,9 +1137,11 @@ export default function DetallesCotizacion({
                     ? op.incluye.split(",")
                     : [];
                 const noIncluyeArray = Array.isArray(op.no_incluye)
-                  ? op.no_incluye
+                  ? op.no_incluye.filter((item) => item && item.trim())
                   : typeof op.no_incluye === "string"
-                    ? op.no_incluye.split(",")
+                    ? op.no_incluye
+                        .split(",")
+                        .filter((item) => item && item.trim())
                     : [];
 
                 return (
@@ -893,7 +1201,7 @@ export default function DetallesCotizacion({
                         </div>
 
                         <select
-                          value={op.operador_id}
+                          value={op.operador_id || ""}
                           onChange={(e) =>
                             handleUpdateOpcion(
                               idx,
@@ -973,7 +1281,7 @@ export default function DetallesCotizacion({
                             <Plane size={16} className="inline mr-1" />
                             Vuelo de Ida
                           </label>
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-3 gap-2 mb-2">
                             <input
                               type="date"
                               value={op.vuelo_ida_fecha || ""}
@@ -1013,6 +1321,21 @@ export default function DetallesCotizacion({
                               placeholder="CUU-CUN"
                             />
                           </div>
+                          <label className="flex items-center gap-2 text-sm text-gray-600">
+                            <input
+                              type="checkbox"
+                              checked={op.vuelo_ida_directo || false}
+                              onChange={(e) =>
+                                handleUpdateOpcion(
+                                  idx,
+                                  "vuelo_ida_directo",
+                                  e.target.checked
+                                )
+                              }
+                              className="rounded"
+                            />
+                            Vuelo directo
+                          </label>
                         </div>
 
                         <div className="p-3 bg-gray-50 rounded">
@@ -1020,7 +1343,7 @@ export default function DetallesCotizacion({
                             <Plane size={16} className="inline mr-1" />
                             Vuelo de Regreso
                           </label>
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-3 gap-2 mb-2">
                             <input
                               type="date"
                               value={op.vuelo_regreso_fecha || ""}
@@ -1060,34 +1383,132 @@ export default function DetallesCotizacion({
                               placeholder="CUN-CUU"
                             />
                           </div>
+                          <label className="flex items-center gap-2 text-sm text-gray-600">
+                            <input
+                              type="checkbox"
+                              checked={op.vuelo_regreso_directo || false}
+                              onChange={(e) =>
+                                handleUpdateOpcion(
+                                  idx,
+                                  "vuelo_regreso_directo",
+                                  e.target.checked
+                                )
+                              }
+                              className="rounded"
+                            />
+                            Vuelo directo
+                          </label>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <label className="text-xs text-gray-600 mb-1 block">
+                              Precio Adulto
+                            </label>
+                            <input
+                              type="number"
+                              value={op.precio_adulto || ""}
+                              onChange={(e) => {
+                                const newVal = e.target.value;
+                                const adulto = parseFloat(newVal) || 0;
+                                const menor = parseFloat(op.precio_menor) || 0;
+                                const infante =
+                                  parseFloat(op.precio_infante) || 0;
+                                const total =
+                                  adulto * (editData.num_adultos || 0) +
+                                  menor * (editData.num_ninos || 0) +
+                                  infante * (editData.num_infantes || 0);
+
+                                const updated = [...editingOpciones];
+                                updated[idx] = {
+                                  ...updated[idx],
+                                  precio_adulto: newVal,
+                                  precio_total: total.toString(),
+                                };
+                                setEditingOpciones(updated);
+                              }}
+                              className="w-full border rounded-lg px-4 py-2"
+                              placeholder="0.00"
+                              step="0.01"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-600 mb-1 block">
+                              Precio Menor
+                            </label>
+                            <input
+                              type="number"
+                              value={op.precio_menor || ""}
+                              onChange={(e) => {
+                                const newVal = e.target.value;
+                                const adulto =
+                                  parseFloat(op.precio_adulto) || 0;
+                                const menor = parseFloat(newVal) || 0;
+                                const infante =
+                                  parseFloat(op.precio_infante) || 0;
+                                const total =
+                                  adulto * (editData.num_adultos || 0) +
+                                  menor * (editData.num_ninos || 0) +
+                                  infante * (editData.num_infantes || 0);
+
+                                const updated = [...editingOpciones];
+                                updated[idx] = {
+                                  ...updated[idx],
+                                  precio_menor: newVal,
+                                  precio_total: total.toString(),
+                                };
+                                setEditingOpciones(updated);
+                              }}
+                              className="w-full border rounded-lg px-4 py-2"
+                              placeholder="0.00"
+                              step="0.01"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-600 mb-1 block">
+                              Precio Infante
+                            </label>
+                            <input
+                              type="number"
+                              value={op.precio_infante || ""}
+                              onChange={(e) => {
+                                const newVal = e.target.value;
+                                const adulto =
+                                  parseFloat(op.precio_adulto) || 0;
+                                const menor = parseFloat(op.precio_menor) || 0;
+                                const infante = parseFloat(newVal) || 0;
+                                const total =
+                                  adulto * (editData.num_adultos || 0) +
+                                  menor * (editData.num_ninos || 0) +
+                                  infante * (editData.num_infantes || 0);
+
+                                const updated = [...editingOpciones];
+                                updated[idx] = {
+                                  ...updated[idx],
+                                  precio_infante: newVal,
+                                  precio_total: total.toString(),
+                                };
+                                setEditingOpciones(updated);
+                              }}
+                              className="w-full border rounded-lg px-4 py-2"
+                              placeholder="0.00"
+                              step="0.01"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs text-gray-600 mb-1 block">
+                            Precio Total (Auto-calculado: {editData.num_adultos}{" "}
+                            adultos + {editData.num_ninos} menores +{" "}
+                            {editData.num_infantes || 0} infantes)
+                          </label>
                           <input
                             type="number"
-                            value={op.precio_por_persona}
-                            onChange={(e) =>
-                              handleUpdateOpcion(
-                                idx,
-                                "precio_por_persona",
-                                e.target.value
-                              )
-                            }
-                            className="w-full border rounded-lg px-4 py-2"
-                            placeholder="Precio por persona"
-                          />
-                          <input
-                            type="number"
-                            value={op.precio_total}
-                            onChange={(e) =>
-                              handleUpdateOpcion(
-                                idx,
-                                "precio_total",
-                                e.target.value
-                              )
-                            }
-                            className="w-full border rounded-lg px-4 py-2"
-                            placeholder="Precio total"
+                            value={op.precio_total || ""}
+                            readOnly
+                            className="w-full border rounded-lg px-4 py-2 bg-gray-100"
+                            placeholder="0.00"
                           />
                         </div>
 
@@ -1263,12 +1684,6 @@ export default function DetallesCotizacion({
                               ))}
                             </ul>
                           </div>
-                        )}
-
-                        {op.disponibilidad && (
-                          <p className="text-sm text-gray-500 mt-3 italic">
-                            {op.disponibilidad}
-                          </p>
                         )}
 
                         <div className="mt-3 flex gap-2">

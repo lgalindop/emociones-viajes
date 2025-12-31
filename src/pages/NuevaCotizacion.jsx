@@ -97,6 +97,29 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     fetchGrupos();
   }, []);
 
+  // Pre-fill vuelo dates when entering step 3 (opciones) for the first time
+  useEffect(() => {
+    if (
+      step === 3 &&
+      opciones.length === 0 &&
+      !currentOpcion.vuelo_ida_fecha &&
+      !currentOpcion.vuelo_regreso_fecha
+    ) {
+      setCurrentOpcion((prev) => ({
+        ...prev,
+        vuelo_ida_fecha: formData.fecha_salida || "",
+        vuelo_regreso_fecha: formData.fecha_regreso || "",
+      }));
+    }
+  }, [
+    step,
+    formData.fecha_salida,
+    formData.fecha_regreso,
+    opciones.length,
+    currentOpcion.vuelo_ida_fecha,
+    currentOpcion.vuelo_regreso_fecha,
+  ]);
+
   // Click outside handler for customer dropdown
   useEffect(() => {
     function handleClickOutside(event) {
@@ -234,11 +257,11 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
       servicio_descripcion: "",
       hotel_nombre: "",
       ocupacion: "",
-      vuelo_ida_fecha: "",
+      vuelo_ida_fecha: formData.fecha_salida || "",
       vuelo_ida_horario: "",
       vuelo_ida_ruta: "",
       vuelo_ida_directo: false,
-      vuelo_regreso_fecha: "",
+      vuelo_regreso_fecha: formData.fecha_regreso || "",
       vuelo_regreso_horario: "",
       vuelo_regreso_ruta: "",
       vuelo_regreso_directo: false,

@@ -16,7 +16,7 @@ export default function Login({ forcePasswordReset = false }) {
   const [toast, setToast] = useState(null);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
 
   // Derive requiresReset and userId from props and user context
   const [localRequiresReset, setLocalRequiresReset] = useState(false);
@@ -103,6 +103,9 @@ export default function Login({ forcePasswordReset = false }) {
 
       // Show success message
       setToast({ message: "Contraseña actualizada exitosamente", type: "success" });
+
+      // Refresh the profile in AuthProvider so it sees requires_password_reset: false
+      await refreshProfile();
 
       // Small delay before redirect for better UX
       await new Promise((resolve) => setTimeout(resolve, 1000));

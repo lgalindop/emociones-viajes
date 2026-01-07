@@ -114,6 +114,16 @@ export default function AuthProvider({ children }) {
     setProfile(null);
   }
 
+  // Force refresh profile data (useful after password reset)
+  async function refreshProfile() {
+    if (user?.id) {
+      // Reset the refs to allow a fresh fetch
+      fetchingProfileRef.current = false;
+      lastFetchedUserIdRef.current = null;
+      await fetchProfile(user.id);
+    }
+  }
+
   // Role checking functions
   const isSuperAdmin = () => profile?.role === "super_admin";
   const isAdmin = () => profile?.role === "admin";
@@ -136,6 +146,7 @@ export default function AuthProvider({ children }) {
     loading,
     authError,
     signOut,
+    refreshProfile,
     isSuperAdmin,
     isAdmin,
     isManager,

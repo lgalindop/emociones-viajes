@@ -175,46 +175,54 @@ export default function SalesList() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Folio
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">
                   Cliente
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">
                   Destino
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">
                   Viajeros
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">
                   Total
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">
                   Pagado
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">
                   Saldo
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
                   Estado
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">
                   Acciones
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredVentas.map((venta) => (
-                <tr key={venta.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col gap-1">
+                <tr
+                  key={venta.id}
+                  onClick={() => setViewingVentaId(venta.id)}
+                  className="hover:bg-gray-50 cursor-pointer"
+                >
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex flex-col">
                       <span className="text-sm font-mono font-medium text-gray-900">
                         {venta.folio_venta}
                       </span>
+                      {/* Mobile: show total below folio */}
+                      <span className="text-xs text-gray-500 sm:hidden">
+                        ${parseFloat(venta.precio_total).toLocaleString("es-MX")}
+                      </span>
                       {venta.grupos && (
                         <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full w-fit mt-0.5"
                           title={`Grupo: ${venta.grupos.nombre}`}
                         >
                           👥 {venta.grupos.nombre}
@@ -222,17 +230,17 @@ export default function SalesList() {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3 hidden sm:table-cell">
                     <span className="text-sm text-gray-900">
                       {venta.cotizaciones?.cliente_nombre || "Sin nombre"}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3 hidden md:table-cell">
                     <span className="text-sm text-gray-600">
                       {venta.cotizaciones?.destino}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell">
                     <span className="text-sm text-gray-600">
                       {venta.cotizaciones
                         ? venta.cotizaciones.num_adultos +
@@ -240,12 +248,12 @@ export default function SalesList() {
                         : "-"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <td className="px-4 py-3 whitespace-nowrap text-right hidden sm:table-cell">
                     <span className="text-sm font-medium text-gray-900">
                       ${parseFloat(venta.precio_total).toLocaleString("es-MX")}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <td className="px-4 py-3 whitespace-nowrap text-right hidden lg:table-cell">
                     <span className="text-sm font-medium text-green-600">
                       $
                       {parseFloat(venta.monto_pagado || 0).toLocaleString(
@@ -253,7 +261,7 @@ export default function SalesList() {
                       )}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <td className="px-4 py-3 whitespace-nowrap text-right hidden lg:table-cell">
                     <span className="text-sm font-medium text-red-600">
                       $
                       {parseFloat(venta.monto_pendiente || 0).toLocaleString(
@@ -261,7 +269,7 @@ export default function SalesList() {
                       )}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <td className="px-4 py-3 whitespace-nowrap text-center">
                     <span
                       className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         venta.monto_pendiente <= 0
@@ -278,9 +286,12 @@ export default function SalesList() {
                           : "Pendiente"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <td className="px-4 py-3 whitespace-nowrap text-center hidden sm:table-cell">
                     <button
-                      onClick={() => setViewingVentaId(venta.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setViewingVentaId(venta.id);
+                      }}
                       className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
                     >
                       <Eye size={14} />

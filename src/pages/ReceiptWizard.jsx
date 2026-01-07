@@ -121,7 +121,7 @@ export default function ReceiptWizard() {
     if (editMode && receiptId) {
       loadReceiptForEdit();
     } else if (mode === "from-sale") {
-      fetchVentas();
+      fetchSales();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editMode, receiptId, mode]);
@@ -223,7 +223,7 @@ export default function ReceiptWizard() {
     }
   }
 
-  async function fetchVentas() {
+  async function fetchSales() {
     try {
       const { data, error } = await supabase
         .from("ventas")
@@ -582,7 +582,7 @@ export default function ReceiptWizard() {
             <div
               onClick={() => {
                 setMode("from-sale");
-                fetchVentas();
+                fetchSales();
               }}
               className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition-shadow border-2 border-transparent hover:border-primary"
             >

@@ -4,7 +4,7 @@ import { ArrowLeft, Plus, Trash2, Check, X } from "lucide-react";
 import LeadOriginIcon from "../components/LeadOriginIcon";
 import HotelAutocomplete from "../components/HotelAutocomplete";
 
-export default function NuevaCotizacion({ onBack, onSuccess }) {
+export default function NewQuote({ onBack, onSuccess }) {
   const [step, setStep] = useState(1);
   const [operadores, setOperadores] = useState([]);
   const [grupos, setGrupos] = useState([]);
@@ -75,8 +75,8 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
   ];
 
   useEffect(() => {
-    fetchOperadores();
-    fetchGrupos();
+    fetchOperators();
+    fetchGroups();
   }, []);
 
   // Click outside handler for customer dropdown
@@ -115,7 +115,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     }
   }, [step, formData.fecha_salida, formData.fecha_regreso]);
 
-  async function fetchOperadores() {
+  async function fetchOperators() {
     try {
       const { data, error } = await supabase
         .from("operadores")
@@ -130,7 +130,7 @@ export default function NuevaCotizacion({ onBack, onSuccess }) {
     }
   }
 
-  async function fetchGrupos() {
+  async function fetchGroups() {
     try {
       const { data, error } = await supabase
         .from("grupos")

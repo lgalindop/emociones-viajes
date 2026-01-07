@@ -14,8 +14,8 @@ import {
 import LeadOriginIcon from "../components/LeadOriginIcon";
 import ExportToPDF from "../components/export/ExportToPDF";
 
-export default function DetallesCotizacion({
-  cotizacionId,
+export default function QuoteDetails({
+  quoteId,
   onBack,
   onDeleted,
 }) {
@@ -57,7 +57,7 @@ export default function DetallesCotizacion({
       const result1 = await supabase
         .from("cotizaciones")
         .select("*")
-        .eq("id", cotizacionId)
+        .eq("id", quoteId)
         .single();
       if (result1.error) throw result1.error;
       setCotizacion(result1.data);
@@ -66,7 +66,7 @@ export default function DetallesCotizacion({
       const result2 = await supabase
         .from("opciones_cotizacion")
         .select("*")
-        .eq("cotizacion_id", cotizacionId);
+        .eq("cotizacion_id", quoteId);
       if (result2.error) throw result2.error;
       setOpciones(result2.data || []);
       setEditingOpciones(result2.data || []);
@@ -83,7 +83,7 @@ export default function DetallesCotizacion({
     } finally {
       setLoading(false);
     }
-  }, [cotizacionId]);
+  }, [quoteId]);
 
   useEffect(() => {
     fetchData();
@@ -125,7 +125,7 @@ export default function DetallesCotizacion({
             ? editData.vigente_hasta + "T12:00:00"
             : null,
         })
-        .eq("id", cotizacionId);
+        .eq("id", quoteId);
       if (result.error) throw result.error;
 
       const opcionesIdsActuales = editingOpciones
@@ -146,7 +146,7 @@ export default function DetallesCotizacion({
 
       for (const op of editingOpciones) {
         const opcionData = {
-          cotizacion_id: cotizacionId,
+          cotizacion_id: quoteId,
           operador_id: op.operador_id,
           nombre_paquete: op.nombre_paquete,
           servicio_descripcion: op.servicio_descripcion,
@@ -213,7 +213,7 @@ export default function DetallesCotizacion({
       const result = await supabase
         .from("cotizaciones")
         .delete()
-        .eq("id", cotizacionId);
+        .eq("id", quoteId);
       if (result.error) throw result.error;
       alert("Cotización eliminada");
       onDeleted();
@@ -298,7 +298,7 @@ export default function DetallesCotizacion({
     }
   }
 
-  function getOperadorNombre(operadorId) {
+  function getOperatorName(operadorId) {
     const op = operadores.find((o) => o.id === operadorId);
     return op?.nombre || "Desconocido";
   }
@@ -1645,7 +1645,7 @@ export default function DetallesCotizacion({
                         )}
 
                         <p className="text-sm text-gray-600 mb-2">
-                          Operador: {getOperadorNombre(op.operador_id)}
+                          Operador: {getOperatorName(op.operador_id)}
                         </p>
 
                         <p className="text-sm text-gray-600 mb-2">

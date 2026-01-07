@@ -10,10 +10,10 @@ import {
   Search,
   Filter,
 } from "lucide-react";
-import GrupoModal from "../components/grupos/GrupoModal";
+import GroupModal from "../components/groups/GroupModal";
 import { useNavigate } from "react-router-dom";
 
-export default function Grupos() {
+export default function Groups() {
   const [grupos, setGrupos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -23,10 +23,10 @@ export default function Grupos() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchGrupos();
+    fetchGroups();
   }, []);
 
-  async function fetchGrupos() {
+  async function fetchGroups() {
     try {
       const { data, error } = await supabase
         .from("grupos")
@@ -79,7 +79,7 @@ export default function Grupos() {
       const { error } = await supabase.from("grupos").delete().eq("id", id);
 
       if (error) throw error;
-      fetchGrupos();
+      fetchGroups();
     } catch (error) {
       console.error("Error:", error);
       alert("Error al eliminar grupo");
@@ -382,8 +382,8 @@ export default function Grupos() {
       )}
 
       {showModal && (
-        <GrupoModal
-          grupo={editingGrupo}
+        <GroupModal
+          group={editingGrupo}
           onClose={() => {
             setShowModal(false);
             setEditingGrupo(null);
@@ -391,7 +391,7 @@ export default function Grupos() {
           onSuccess={() => {
             setShowModal(false);
             setEditingGrupo(null);
-            fetchGrupos();
+            fetchGroups();
           }}
         />
       )}

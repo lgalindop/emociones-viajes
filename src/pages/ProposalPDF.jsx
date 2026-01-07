@@ -3,15 +3,15 @@ import { jsPDF } from "jspdf";
 import { parseMoneyToNumber } from "../lib/money";
 import { getCompanySettings } from "../lib/useCompanySettings";
 
-export default function PropuestaPDF({ cotizacion, onBack }) {
+export default function ProposalPDF({ quote, onBack }) {
   const [companySettings, setCompanySettings] = useState(null);
-  const opciones = cotizacion.opciones_cotizacion || [];
+  const opciones = quote.opciones_cotizacion || [];
 
   useEffect(() => {
     getCompanySettings().then(setCompanySettings);
   }, []);
 
-  async function generarPDF() {
+  async function generatePDF() {
     // Wait for company settings if not loaded
     let settings = companySettings;
     if (!settings) {
@@ -37,15 +37,15 @@ export default function PropuestaPDF({ cotizacion, onBack }) {
     doc.setFont("helvetica", "bold");
     doc.text("Cliente:", margin, y);
     doc.setFont("helvetica", "normal");
-    doc.text(cotizacion.cliente_nombre || "-", margin + 70, y);
+    doc.text(quote.cliente_nombre || "-", margin + 70, y);
     y += 18;
 
-    if (cotizacion.cliente_telefono) {
-      doc.text(`Tel: ${cotizacion.cliente_telefono}`, margin, y);
+    if (quote.cliente_telefono) {
+      doc.text(`Tel: ${quote.cliente_telefono}`, margin, y);
       y += 14;
     }
-    if (cotizacion.cliente_email) {
-      doc.text(`Email: ${cotizacion.cliente_email}`, margin, y);
+    if (quote.cliente_email) {
+      doc.text(`Email: ${quote.cliente_email}`, margin, y);
       y += 14;
     }
     y += 6;
@@ -54,7 +54,7 @@ export default function PropuestaPDF({ cotizacion, onBack }) {
     doc.text("Viaje:", margin, y);
     doc.setFont("helvetica", "normal");
     doc.text(
-      `${cotizacion.destino || "-"} (${cotizacion.fecha_salida} → ${cotizacion.fecha_regreso})`,
+      `${quote.destino || "-"} (${quote.fecha_salida} → ${quote.fecha_regreso})`,
       margin + 50,
       y,
       { maxWidth: 450 }
@@ -76,7 +76,7 @@ export default function PropuestaPDF({ cotizacion, onBack }) {
       doc.text(`${idx + 1}. ${op.nombre_paquete}`, margin, y);
       doc.setFont("helvetica", "normal");
       doc.text(
-        `${cotizacion.divisa || "MXN"} ${Number(precio).toLocaleString("es-MX")}`,
+        `${quote.divisa || "MXN"} ${Number(precio).toLocaleString("es-MX")}`,
         520,
         y,
         { align: "right" }
@@ -115,21 +115,21 @@ export default function PropuestaPDF({ cotizacion, onBack }) {
     y += 18;
     doc.setFont("helvetica", "bold");
     doc.text(
-      `Total: ${cotizacion.divisa || "MXN"} ${Number(total).toLocaleString("es-MX")}`,
+      `Total: ${quote.divisa || "MXN"} ${Number(total).toLocaleString("es-MX")}`,
       margin,
       y
     );
     y += 30;
 
-    if (cotizacion.notas) {
+    if (quote.notas) {
       doc.setFont("helvetica", "bold");
       doc.text("Notas:", margin, y);
       y += 14;
       doc.setFont("helvetica", "normal");
-      doc.text(cotizacion.notas, margin, y, { maxWidth: 500 });
+      doc.text(quote.notas, margin, y, { maxWidth: 500 });
     }
 
-    doc.save(`${cotizacion.folio || "cotizacion"}.pdf`);
+    doc.save(`${quote.folio || "quote"}.pdf`);
   }
 
   return (
@@ -147,7 +147,7 @@ export default function PropuestaPDF({ cotizacion, onBack }) {
         </p>
         <div className="mt-4 flex gap-2">
           <button
-            onClick={generarPDF}
+            onClick={generatePDF}
             className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
           >
             Generar PDF

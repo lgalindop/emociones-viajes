@@ -7,9 +7,9 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom";
-import Operadores from "./pages/Operadores";
-import Cotizaciones from "./pages/Cotizaciones";
-import NuevaCotizacion from "./pages/NuevaCotizacion";
+import Operators from "./pages/Operators";
+import Quotes from "./pages/Quotes";
+import NewQuote from "./pages/NewQuote";
 import Login from "./pages/Login";
 import UserManagement from "./pages/UserManagement";
 import PipelineKanban from "./components/pipeline/PipelineKanban";
@@ -20,8 +20,8 @@ import CMSDashboard from "./pages/CMSDashboard";
 import ApprovalQueue from "./pages/ApprovalQueue";
 import ReceiptsList from "./pages/ReceiptsList";
 import ReceiptWizard from "./pages/ReceiptWizard";
-import Grupos from "./pages/Grupos";
-import GrupoDetalle from "./pages/GrupoDetalle";
+import Groups from "./pages/Groups";
+import GroupDetails from "./pages/GroupDetails";
 import HomeDashboard from "./pages/HomeDashboard";
 import DesktopNav from "./components/navigation/DesktopNav";
 import MobileHeader from "./components/navigation/MobileHeader";
@@ -106,19 +106,19 @@ function MainApp() {
               />
             }
           />
-          <Route path="/operadores" element={<Operadores />} />
+          <Route path="/operadores" element={<Operators />} />
           <Route
             path="/cotizaciones"
             element={
-              <Cotizaciones
-                onNewCotizacion={() => navigate("/app/cotizaciones/nueva")}
+              <Quotes
+                onNewQuote={() => navigate("/app/cotizaciones/nueva")}
               />
             }
           />
           <Route
             path="/cotizaciones/nueva"
             element={
-              <NuevaCotizacion
+              <NewQuote
                 onBack={() => navigate("/app/cotizaciones")}
                 onSuccess={() => navigate("/app/cotizaciones")}
               />
@@ -133,8 +133,8 @@ function MainApp() {
             }
           />
           <Route path="/sales" element={<SalesList />} />
-          <Route path="/grupos" element={<Grupos />} />
-          <Route path="/grupos/:id" element={<GrupoDetalle />} />
+          <Route path="/grupos" element={<Groups />} />
+          <Route path="/grupos/:id" element={<GroupDetails />} />
           <Route path="/dashboard" element={<SalesDashboard />} />
           <Route path="/receipts" element={<ReceiptsList />} />
           <Route path="/receipts/wizard" element={<ReceiptWizard />} />

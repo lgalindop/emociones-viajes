@@ -9,11 +9,11 @@ import {
   DollarSign,
   Eye,
 } from "lucide-react";
-import GrupoModal from "../components/grupos/GrupoModal";
-import DetallesVenta from "./DetallesVenta";
-import DetallesCotizacion from "./DetallesCotizacion";
+import GroupModal from "../components/groups/GroupModal";
+import SaleDetails from "./SaleDetails";
+import QuoteDetails from "./QuoteDetails";
 
-export default function GrupoDetalle() {
+export default function GroupDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [grupo, setGrupo] = useState(null);
@@ -118,8 +118,8 @@ export default function GrupoDetalle() {
 
   if (viewingVentaId) {
     return (
-      <DetallesVenta
-        ventaId={viewingVentaId}
+      <SaleDetails
+        saleId={viewingVentaId}
         onBack={() => {
           setViewingVentaId(null);
           fetchData();
@@ -130,8 +130,8 @@ export default function GrupoDetalle() {
 
   if (viewingCotizacionId) {
     return (
-      <DetallesCotizacion
-        cotizacionId={viewingCotizacionId}
+      <QuoteDetails
+        quoteId={viewingCotizacionId}
         onBack={() => {
           setViewingCotizacionId(null);
           fetchData();
@@ -523,8 +523,8 @@ export default function GrupoDetalle() {
       </div>
 
       {showEditModal && (
-        <GrupoModal
-          grupo={grupo}
+        <GroupModal
+          group={grupo}
           onClose={() => setShowEditModal(false)}
           onSuccess={() => {
             setShowEditModal(false);

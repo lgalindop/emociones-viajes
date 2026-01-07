@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { X } from "lucide-react";
 import Toast from "../ui/Toast";
 
-export default function GrupoModal({ grupo, onClose, onSuccess }) {
+export default function GroupModal({ group, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     nombre: "",
     tipo: "otro",
@@ -18,41 +18,41 @@ export default function GrupoModal({ grupo, onClose, onSuccess }) {
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
-    if (grupo) {
+    if (group) {
       setFormData({
-        nombre: grupo.nombre || "",
-        tipo: grupo.tipo || "otro",
-        fecha_evento: grupo.fecha_evento || "",
-        coordinador_nombre: grupo.coordinador_nombre || "",
-        coordinador_telefono: grupo.coordinador_telefono || "",
-        coordinador_email: grupo.coordinador_email || "",
-        notas: grupo.notas || "",
+        nombre: group.nombre || "",
+        tipo: group.tipo || "otro",
+        fecha_evento: group.fecha_evento || "",
+        coordinador_nombre: group.coordinador_nombre || "",
+        coordinador_telefono: group.coordinador_telefono || "",
+        coordinador_email: group.coordinador_email || "",
+        notas: group.notas || "",
       });
     }
-  }, [grupo]);
+  }, [group]);
 
   async function handleSubmit(e) {
     e.preventDefault();
 
     if (!formData.nombre.trim()) {
-      setToast({ message: "El nombre del grupo es requerido", type: "error" });
+      setToast({ message: "El nombre del group es requerido", type: "error" });
       return;
     }
 
     setLoading(true);
 
     try {
-      if (grupo) {
+      if (group) {
         // Update
         const { error } = await supabase
-          .from("grupos")
+          .from("groups")
           .update(formData)
-          .eq("id", grupo.id);
+          .eq("id", group.id);
 
         if (error) throw error;
       } else {
         // Insert
-        const { error } = await supabase.from("grupos").insert([formData]);
+        const { error } = await supabase.from("groups").insert([formData]);
 
         if (error) throw error;
       }
@@ -60,7 +60,7 @@ export default function GrupoModal({ grupo, onClose, onSuccess }) {
       onSuccess();
     } catch (error) {
       console.error("Error:", error);
-      setToast({ message: "Error al guardar grupo: " + error.message, type: "error" });
+      setToast({ message: "Error al guardar group: " + error.message, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ export default function GrupoModal({ grupo, onClose, onSuccess }) {
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-primary">
-            {grupo ? "Editar Grupo" : "Nuevo Grupo"}
+            {group ? "Editar Grupo" : "Nuevo Grupo"}
           </h2>
           <button
             onClick={onClose}
@@ -204,7 +204,7 @@ export default function GrupoModal({ grupo, onClose, onSuccess }) {
               }
               rows={3}
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
-              placeholder="Notas adicionales sobre el grupo..."
+              placeholder="Notas adicionales sobre el group..."
             />
           </div>
 
@@ -221,7 +221,7 @@ export default function GrupoModal({ grupo, onClose, onSuccess }) {
               disabled={loading}
               className="flex-1 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 font-medium"
             >
-              {loading ? "Guardando..." : grupo ? "Actualizar" : "Crear Grupo"}
+              {loading ? "Guardando..." : group ? "Actualizar" : "Crear Grupo"}
             </button>
           </div>
         </form>
@@ -238,8 +238,8 @@ export default function GrupoModal({ grupo, onClose, onSuccess }) {
   );
 }
 
-GrupoModal.propTypes = {
-  grupo: PropTypes.shape({
+GroupModal.propTypes = {
+  group: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     nombre: PropTypes.string,
     tipo: PropTypes.string,

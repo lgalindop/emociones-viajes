@@ -9,12 +9,12 @@ import {
   ChevronDown,
   Trash2,
 } from "lucide-react";
-import DetallesCotizacion from "./DetallesCotizacion";
+import QuoteDetails from "./QuoteDetails";
 import { useDebounce } from "../hooks/useDebounce";
 import { useAuth } from "../hooks/useAuth";
 import LeadOriginIcon from "../components/LeadOriginIcon";
 
-export default function Cotizaciones({ onNewCotizacion }) {
+export default function Quotes({ onNewQuote }) {
   const [cotizaciones, setCotizaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCotizacionId, setSelectedCotizacionId] = useState(null);
@@ -261,8 +261,8 @@ export default function Cotizaciones({ onNewCotizacion }) {
 
   if (selectedCotizacionId) {
     return (
-      <DetallesCotizacion
-        cotizacionId={selectedCotizacionId}
+      <QuoteDetails
+        quoteId={selectedCotizacionId}
         onBack={() => setSelectedCotizacionId(null)}
         onDeleted={() => {
           setSelectedCotizacionId(null);

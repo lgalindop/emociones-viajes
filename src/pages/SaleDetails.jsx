@@ -9,14 +9,14 @@ import {
   Trash2,
 } from "lucide-react";
 
-export default function DetallesVenta({ ventaId, onBack }) {
+export default function SaleDetails({ saleId, onBack }) {
   const [venta, setVenta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    async function fetchVenta() {
+    async function fetchSale() {
       try {
         const { data, error } = await supabase
           .from("ventas")
@@ -51,7 +51,7 @@ export default function DetallesVenta({ ventaId, onBack }) {
             )
           `
           )
-          .eq("id", ventaId)
+          .eq("id", saleId)
           .single();
 
         if (error) throw error;
@@ -64,17 +64,17 @@ export default function DetallesVenta({ ventaId, onBack }) {
       }
     }
 
-    fetchVenta();
-  }, [ventaId]);
+    fetchSale();
+  }, [saleId]);
 
-  async function handleDeleteVenta() {
+  async function handleDeleteSale() {
     setDeleting(true);
     try {
       // 1. Delete all receipts associated with this venta
       const { error: receiptsError } = await supabase
         .from("receipts")
         .delete()
-        .eq("venta_id", ventaId);
+        .eq("venta_id", saleId);
 
       if (receiptsError) throw receiptsError;
 
@@ -82,7 +82,7 @@ export default function DetallesVenta({ ventaId, onBack }) {
       const { error: pagosError } = await supabase
         .from("pagos")
         .delete()
-        .eq("venta_id", ventaId);
+        .eq("venta_id", saleId);
 
       if (pagosError) throw pagosError;
 
@@ -116,7 +116,7 @@ export default function DetallesVenta({ ventaId, onBack }) {
       const { error: ventaError } = await supabase
         .from("ventas")
         .delete()
-        .eq("id", ventaId);
+        .eq("id", saleId);
 
       if (ventaError) throw ventaError;
 
@@ -213,7 +213,7 @@ export default function DetallesVenta({ ventaId, onBack }) {
                   Cancelar
                 </button>
                 <button
-                  onClick={handleDeleteVenta}
+                  onClick={handleDeleteSale}
                   disabled={deleting}
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
                 >

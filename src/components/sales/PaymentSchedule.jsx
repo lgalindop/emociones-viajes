@@ -25,11 +25,11 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
   const { user } = useAuth();
 
   useEffect(() => {
-    fetchPagos();
+    fetchPayments();
     fetchReceipts();
   }, [venta.id]);
 
-  async function fetchPagos() {
+  async function fetchPayments() {
     try {
       const { data, error } = await supabase
         .from('pagos')
@@ -85,7 +85,7 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
         created_by: user.id,
       });
 
-      await fetchPagos();
+      await fetchPayments();
       onUpdate();
       alert('✅ Pago registrado');
       

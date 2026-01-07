@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { Eye, Search, Calendar, DollarSign, X } from "lucide-react";
-import DetallesVenta from "./DetallesVenta";
+import SaleDetails from "./SaleDetails";
 
 export default function SalesList() {
   const [ventas, setVentas] = useState([]);
@@ -12,23 +12,23 @@ export default function SalesList() {
   const [viewingVentaId, setViewingVentaId] = useState(null);
 
   useEffect(() => {
-    fetchVentas();
+    fetchSales();
   }, []);
 
   // If viewing a venta, show details
   if (viewingVentaId) {
     return (
-      <DetallesVenta
-        ventaId={viewingVentaId}
+      <SaleDetails
+        saleId={viewingVentaId}
         onBack={() => {
           setViewingVentaId(null);
-          fetchVentas();
+          fetchSales();
         }}
       />
     );
   }
 
-  async function fetchVentas() {
+  async function fetchSales() {
     try {
       const { data, error } = await supabase
         .from("ventas")

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { Plus, ChevronLeft, ChevronRight, Eye } from "lucide-react";
-import DetallesCotizacion from "../../pages/DetallesCotizacion";
+import QuoteDetails from "../../pages/QuoteDetails";
 import ConvertToSale from "../sales/ConvertToSale";
 
 const STAGES = {
@@ -184,8 +184,8 @@ export default function PipelineKanban({ onNewQuote }) {
   // If viewing a cotización, show details instead of pipeline
   if (viewingCotizacionId) {
     return (
-      <DetallesCotizacion
-        cotizacionId={viewingCotizacionId}
+      <QuoteDetails
+        quoteId={viewingCotizacionId}
         onBack={() => {
           setViewingCotizacionId(null);
           fetchCotizaciones();

@@ -4,7 +4,7 @@ import { Plus, Edit2, Trash2 } from "lucide-react";
 import Toast from "../components/ui/Toast";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 
-export default function Operadores() {
+export default function Operators() {
   const [operadores, setOperadores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -24,10 +24,10 @@ export default function Operadores() {
   }, []);
 
   useEffect(() => {
-    fetchOperadores();
+    fetchOperators();
   }, []);
 
-  async function fetchOperadores() {
+  async function fetchOperators() {
     try {
       const { data, error } = await supabase
         .from("operadores")
@@ -76,7 +76,7 @@ export default function Operadores() {
       });
       setShowForm(false);
       setEditingId(null);
-      fetchOperadores();
+      fetchOperators();
     } catch (error) {
       console.error("Error saving operador:", error);
       showToast("Error al guardar operador", "error");
@@ -99,7 +99,7 @@ export default function Operadores() {
 
       if (error) throw error;
       showToast("Operador eliminado");
-      fetchOperadores();
+      fetchOperators();
     } catch (error) {
       console.error("Error deleting operador:", error);
       showToast("Error al eliminar operador", "error");

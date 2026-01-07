@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { Plus } from "lucide-react";
-import GrupoModal from "./GrupoModal";
+import GroupModal from "./GroupModal";
 
-export default function GrupoSelector({ value, onChange, inline = false }) {
+export default function GroupSelector({ value, onChange, inline = false }) {
   const [grupos, setGrupos] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchGrupos();
+    fetchGroups();
   }, []);
 
-  async function fetchGrupos() {
+  async function fetchGroups() {
     try {
       const { data, error } = await supabase
         .from("grupos")
@@ -61,11 +61,11 @@ export default function GrupoSelector({ value, onChange, inline = false }) {
         </button>
 
         {showModal && (
-          <GrupoModal
+          <GroupModal
             onClose={() => setShowModal(false)}
             onSuccess={() => {
               setShowModal(false);
-              fetchGrupos();
+              fetchGroups();
             }}
           />
         )}
@@ -108,11 +108,11 @@ export default function GrupoSelector({ value, onChange, inline = false }) {
       </p>
 
       {showModal && (
-        <GrupoModal
+        <GroupModal
           onClose={() => setShowModal(false)}
           onSuccess={() => {
             setShowModal(false);
-            fetchGrupos();
+            fetchGroups();
           }}
         />
       )}

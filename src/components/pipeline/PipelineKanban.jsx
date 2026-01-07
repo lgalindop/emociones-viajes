@@ -158,6 +158,7 @@ export default function PipelineKanban({ onNewQuote }) {
           pipeline_stage: newStage,
           last_stage_change_by: user.id,
           last_stage_change_at: new Date().toISOString(),
+          updated_by: user.id,
         })
         .eq("id", selectedCot.id);
 

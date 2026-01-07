@@ -49,8 +49,8 @@ export default function ApprovalQueue() {
 
     setPending(data || []);
 
-    // Fetch creator profiles
-    const userIds = [...new Set(data?.map((d) => d.created_by))];
+    // Fetch creator profiles (filter out null values from deleted users)
+    const userIds = [...new Set(data?.map((d) => d.created_by).filter(Boolean))];
     if (userIds.length > 0) {
       const { data: profileData } = await supabase
         .from("profiles")
@@ -226,7 +226,7 @@ export default function ApprovalQueue() {
                         {sectionLabels[item.section] || item.section}
                       </h3>
                       <p className="text-sm text-gray-600 mt-1">
-                        Por {creator?.full_name || creator?.email || "Usuario"}{" "}
+                        Por {item.created_by ? (creator?.full_name || creator?.email || "Usuario") : "Usuario eliminado"}{" "}
                         •{" "}
                         {new Date(item.updated_at).toLocaleDateString("es-MX", {
                           year: "numeric",

@@ -116,6 +116,7 @@ export default function ConvertToSale({
           conversion_date: new Date().toISOString(),
           last_stage_change_by: user.id,
           last_stage_change_at: new Date().toISOString(),
+          updated_by: user.id,
         })
         .eq("id", cotizacion.id);
 

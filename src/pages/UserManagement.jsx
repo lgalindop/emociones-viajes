@@ -10,15 +10,19 @@ import {
   Key,
   Mail,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
 
 export default function UserManagement() {
-  const { isSuperAdmin, isAdmin } = useAuth();
+  const { isSuperAdmin, isAdmin, profile } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [resetPasswordUser, setResetPasswordUser] = useState(null);
+  const [userToDelete, setUserToDelete] = useState(null);
   const [toast, setToast] = useState(null);
 
   const showToast = useCallback((message, type = "success") => {
@@ -166,6 +170,59 @@ export default function UserManagement() {
     if (isSuperAdmin()) return true;
     if (isAdmin() && !["admin", "super_admin"].includes(user.role)) return true;
     return false;
+  }
+
+  function canDeleteUser(user) {
+    // Cannot delete yourself
+    if (user.id === profile?.id) return false;
+    // Cannot delete super_admin
+    if (user.role === "super_admin") return false;
+    // Super admins can delete anyone else
+    if (isSuperAdmin()) return true;
+    // Admins cannot delete other admins
+    if (isAdmin() && user.role === "admin") return false;
+    // Admins can delete non-admin users
+    if (isAdmin()) return true;
+    return false;
+  }
+
+  async function deleteUser() {
+    if (!userToDelete || deleting) return;
+
+    setDeleting(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
+
+      const response = await fetch(
+        `${supabase.supabaseUrl}/functions/v1/delete-user`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId: userToDelete.id }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Error deleting user");
+      }
+
+      showToast(result.message || "Usuario eliminado exitosamente");
+      setUserToDelete(null);
+      fetchUsers();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      showToast("Error al eliminar usuario: " + error.message, "error");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   if (!isSuperAdmin() && !isAdmin()) {
@@ -322,6 +379,15 @@ export default function UserManagement() {
                           </button>
                         </>
                       )}
+                      {canDeleteUser(user) && (
+                        <button
+                          onClick={() => setUserToDelete(user)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Eliminar usuario"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -354,6 +420,17 @@ export default function UserManagement() {
             showToast={showToast}
           />
         )}
+
+        <ConfirmDialog
+          isOpen={!!userToDelete}
+          onClose={() => setUserToDelete(null)}
+          onConfirm={deleteUser}
+          title="Eliminar Usuario"
+          message={userToDelete ? `¿Estás seguro de que deseas eliminar a ${userToDelete.full_name || userToDelete.email}? Esta acción es permanente y no se puede deshacer.` : ""}
+          confirmText={deleting ? "Eliminando..." : "Eliminar"}
+          cancelText="Cancelar"
+          variant="danger"
+        />
 
         {toast && (
           <Toast

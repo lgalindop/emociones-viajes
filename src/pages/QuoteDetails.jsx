@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../hooks/useAuth";
 import HotelAutocomplete from "../components/HotelAutocomplete";
 import {
   ArrowLeft,
@@ -19,6 +20,7 @@ export default function QuoteDetails({
   onBack,
   onDeleted,
 }) {
+  const { user } = useAuth();
   const [cotizacion, setCotizacion] = useState(null);
   const [opciones, setOpciones] = useState([]);
   const [operadores, setOperadores] = useState([]);
@@ -124,6 +126,7 @@ export default function QuoteDetails({
           vigente_hasta: editData.vigente_hasta
             ? editData.vigente_hasta + "T12:00:00"
             : null,
+          updated_by: user?.id,
         })
         .eq("id", quoteId);
       if (result.error) throw result.error;

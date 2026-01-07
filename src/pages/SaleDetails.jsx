@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../hooks/useAuth";
 import {
   ArrowLeft,
   Calendar,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 
 export default function SaleDetails({ saleId, onBack }) {
+  const { user } = useAuth();
   const [venta, setVenta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -95,6 +97,7 @@ export default function SaleDetails({ saleId, onBack }) {
             probability: 50,
             conversion_date: null,
             last_stage_change_at: new Date().toISOString(),
+            updated_by: user?.id,
           })
           .eq("id", venta.cotizaciones.id);
 

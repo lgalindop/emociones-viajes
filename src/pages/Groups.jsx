@@ -33,7 +33,7 @@ export default function Groups() {
         .select(
           `
           *,
-          cotizaciones (
+          cotizaciones!cotizaciones_grupo_id_fkey (
             id,
             ventas!ventas_cotizacion_id_fkey (id)
           ),
@@ -125,10 +125,11 @@ export default function Groups() {
     // Search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter((grupo) =>
-        grupo.nombre?.toLowerCase().includes(searchLower) ||
-        grupo.coordinador_nombre?.toLowerCase().includes(searchLower) ||
-        grupo.tipo?.toLowerCase().includes(searchLower)
+      filtered = filtered.filter(
+        (grupo) =>
+          grupo.nombre?.toLowerCase().includes(searchLower) ||
+          grupo.coordinador_nombre?.toLowerCase().includes(searchLower) ||
+          grupo.tipo?.toLowerCase().includes(searchLower)
       );
     }
 

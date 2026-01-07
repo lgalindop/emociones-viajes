@@ -293,7 +293,7 @@ export default function Quotes({ onNewQuote }) {
           </div>
 
           <button
-            onClick={onNewCotizacion}
+            onClick={onNewQuote}
             className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors text-sm"
           >
             <Plus size={16} />

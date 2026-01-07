@@ -1,8 +1,30 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { Check, X, Eye, ArrowLeft } from "lucide-react";
+
+// Sanitize user content to prevent XSS attacks
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Sanitize URL to prevent javascript: protocol attacks
+function sanitizeUrl(url) {
+  if (!url) return "";
+  const trimmed = String(url).trim();
+  // Only allow http, https, and data URLs for images
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:image/")) {
+    return trimmed;
+  }
+  return "";
+}
 
 export default function ApprovalQueue() {
   const [pending, setPending] = useState([]);
@@ -112,11 +134,11 @@ export default function ApprovalQueue() {
       case "hero":
         return `
           <div style="position: relative; height: 300px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; text-align: center; padding: 20px;">
-            ${content.image_url ? `<img src="${content.image_url}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">` : ""}
+            ${sanitizeUrl(content.image_url) ? `<img src="${sanitizeUrl(content.image_url)}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">` : ""}
             <div style="position: relative; z-index: 10;">
-              <h2 style="font-size: 2rem; font-weight: bold; margin-bottom: 1rem;">${content.headline || "Sin título"}</h2>
-              <p style="font-size: 1.2rem; margin-bottom: 1.5rem;">${content.subheadline || ""}</p>
-              <button style="background: #667eea; color: white; padding: 12px 24px; border-radius: 8px; border: none; font-weight: 600;">${content.cta_text || "Botón"}</button>
+              <h2 style="font-size: 2rem; font-weight: bold; margin-bottom: 1rem;">${escapeHtml(content.headline) || "Sin título"}</h2>
+              <p style="font-size: 1.2rem; margin-bottom: 1.5rem;">${escapeHtml(content.subheadline)}</p>
+              <button style="background: #667eea; color: white; padding: 12px 24px; border-radius: 8px; border: none; font-weight: 600;">${escapeHtml(content.cta_text) || "Botón"}</button>
             </div>
           </div>
         `;
@@ -125,11 +147,11 @@ export default function ApprovalQueue() {
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
             ${content.deals?.map(deal => `
               <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-                ${deal.image_url ? `<img src="${deal.image_url}" style="width: 100%; height: 150px; object-fit: cover;">` : ""}
+                ${sanitizeUrl(deal.image_url) ? `<img src="${sanitizeUrl(deal.image_url)}" style="width: 100%; height: 150px; object-fit: cover;">` : ""}
                 <div style="padding: 15px;">
-                  <h3 style="font-weight: bold; margin-bottom: 8px;">${deal.title}</h3>
-                  <p style="color: #6b7280; font-size: 0.9rem;">${deal.description}</p>
-                  ${deal.discount_percent ? `<span style="background: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; display: inline-block; margin-top: 8px;">${deal.discount_percent}% OFF</span>` : ""}
+                  <h3 style="font-weight: bold; margin-bottom: 8px;">${escapeHtml(deal.title)}</h3>
+                  <p style="color: #6b7280; font-size: 0.9rem;">${escapeHtml(deal.description)}</p>
+                  ${deal.discount_percent ? `<span style="background: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; display: inline-block; margin-top: 8px;">${escapeHtml(deal.discount_percent)}% OFF</span>` : ""}
                 </div>
               </div>
             `).join("") || "<p>No hay ofertas</p>"}
@@ -140,11 +162,11 @@ export default function ApprovalQueue() {
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
             ${content.destinations?.map(dest => `
               <div style="position: relative; border-radius: 8px; overflow: hidden; height: 200px;">
-                ${dest.image_url ? `<img src="${dest.image_url}" style="width: 100%; height: 100%; object-fit: cover;">` : ""}
+                ${sanitizeUrl(dest.image_url) ? `<img src="${sanitizeUrl(dest.image_url)}" style="width: 100%; height: 100%; object-fit: cover;">` : ""}
                 <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; color: white;">
-                  <h3 style="font-weight: bold; font-size: 1.2rem;">${dest.name}</h3>
-                  <p style="font-size: 0.9rem;">${dest.description}</p>
-                  ${dest.starting_price ? `<p style="font-size: 0.85rem; margin-top: 4px;">Desde $${dest.starting_price.toLocaleString()} MXN</p>` : ""}
+                  <h3 style="font-weight: bold; font-size: 1.2rem;">${escapeHtml(dest.name)}</h3>
+                  <p style="font-size: 0.9rem;">${escapeHtml(dest.description)}</p>
+                  ${dest.starting_price ? `<p style="font-size: 0.85rem; margin-top: 4px;">Desde $${escapeHtml(dest.starting_price.toLocaleString())} MXN</p>` : ""}
                 </div>
               </div>
             `).join("") || "<p>No hay destinos</p>"}
@@ -155,14 +177,14 @@ export default function ApprovalQueue() {
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
             ${content.flyers?.map(flyer => `
               <div style="border-radius: 8px; overflow: hidden;">
-                ${flyer.image_url ? `<img src="${flyer.image_url}" style="width: 100%; height: auto;">` : ""}
-                <p style="padding: 8px; text-align: center; font-size: 0.9rem;">${flyer.title}</p>
+                ${sanitizeUrl(flyer.image_url) ? `<img src="${sanitizeUrl(flyer.image_url)}" style="width: 100%; height: auto;">` : ""}
+                <p style="padding: 8px; text-align: center; font-size: 0.9rem;">${escapeHtml(flyer.title)}</p>
               </div>
             `).join("") || "<p>No hay flyers</p>"}
           </div>
         `;
       default:
-        return `<pre>${JSON.stringify(content, null, 2)}</pre>`;
+        return `<pre>${escapeHtml(JSON.stringify(content, null, 2))}</pre>`;
     }
   }
 
@@ -248,10 +270,12 @@ export default function ApprovalQueue() {
                         // Create temporary preview by showing content
                         const previewWindow = window.open("", "_blank");
                         if (previewWindow) {
+                          const safeTitle = escapeHtml(sectionLabels[item.section] || item.section);
+                          const safeNotes = item.change_notes ? escapeHtml(item.change_notes) : "";
                           previewWindow.document.write(`
                             <html>
                               <head>
-                                <title>Preview - ${sectionLabels[item.section]}</title>
+                                <title>Preview - ${safeTitle}</title>
                                 <style>
                                   body { font-family: system-ui; padding: 20px; background: #f3f4f6; }
                                   .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -262,9 +286,9 @@ export default function ApprovalQueue() {
                               </head>
                               <body>
                                 <div class="container">
-                                  <h1>Vista Previa: ${sectionLabels[item.section]}</h1>
+                                  <h1>Vista Previa: ${safeTitle}</h1>
                                   <p><strong>Estado:</strong> Pendiente de aprobación</p>
-                                  ${item.change_notes ? `<p><strong>Notas:</strong> ${item.change_notes}</p>` : ""}
+                                  ${safeNotes ? `<p><strong>Notas:</strong> ${safeNotes}</p>` : ""}
                                   <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
                                   ${renderPreview(item.section, item.content)}
                                 </div>

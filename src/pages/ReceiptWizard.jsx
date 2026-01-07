@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, FileText } from "lucide-react";
 
@@ -170,13 +170,13 @@ export default function ReceiptWizard() {
         .select(
           `
           *,
-          ventas (
+          ventas!receipts_venta_id_fkey (
             id,
             folio_venta,
             precio_total,
             monto_pagado,
             fecha_limite_pago,
-            cotizaciones (
+            cotizaciones!ventas_cotizacion_id_fkey (
               cliente_nombre,
               cliente_telefono,
               cliente_email,
@@ -230,7 +230,7 @@ export default function ReceiptWizard() {
         .select(
           `
           *,
-          cotizaciones (
+          cotizaciones!ventas_cotizacion_id_fkey (
             folio,
             cliente_nombre,
             cliente_telefono,

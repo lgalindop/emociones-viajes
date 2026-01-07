@@ -35,7 +35,7 @@ export default function SalesList() {
         .select(
           `
           *,
-          cotizaciones (
+          cotizaciones!ventas_cotizacion_id_fkey (
             folio,
             cliente_nombre,
             cliente_telefono,
@@ -43,10 +43,10 @@ export default function SalesList() {
             num_adultos,
             num_ninos
           ),
-          opciones_cotizacion (
+          opciones_cotizacion!ventas_selected_option_id_fkey (
             nombre_paquete
           ),
-          grupos (
+          grupos!ventas_grupo_id_fkey (
             id,
             nombre,
             tipo

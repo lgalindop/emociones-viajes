@@ -1,5 +1,9 @@
-import { Plus, Trash2, MoveUp, MoveDown } from "lucide-react";
+import PropTypes from "prop-types";
 import ImageUploader from "./ImageUploader";
+import FormField from "./FormField";
+import ListHeader from "./ListHeader";
+import ListItemControls from "./ListItemControls";
+import EmptyState from "./EmptyState";
 
 export default function DestinationsEditor({ content, onChange }) {
   const destinations = content.destinations || [];
@@ -40,72 +44,39 @@ export default function DestinationsEditor({ content, onChange }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="font-medium">Destinos ({destinations.length})</h3>
-        <button
-          onClick={addDestination}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-        >
-          <Plus size={18} />
-          Agregar Destino
-        </button>
-      </div>
+      <ListHeader
+        title="Destinos"
+        count={destinations.length}
+        onAdd={addDestination}
+        addLabel="Agregar Destino"
+      />
 
       {destinations.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          No hay destinos. Haz clic en "Agregar Destino" para comenzar.
-        </div>
+        <EmptyState message='No hay destinos. Haz clic en "Agregar Destino" para comenzar.' />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {destinations.map((dest, index) => (
           <div key={dest.id} className="border rounded-lg p-4 bg-gray-50">
-            <div className="flex justify-between items-start mb-4">
-              <div className="text-sm font-medium text-gray-700">
-                Destino #{index + 1}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => moveDestination(index, "up")}
-                  disabled={index === 0}
-                  className="p-1 text-gray-600 hover:text-gray-900 disabled:opacity-30"
-                >
-                  <MoveUp size={18} />
-                </button>
-                <button
-                  onClick={() => moveDestination(index, "down")}
-                  disabled={index === destinations.length - 1}
-                  className="p-1 text-gray-600 hover:text-gray-900 disabled:opacity-30"
-                >
-                  <MoveDown size={18} />
-                </button>
-                <button
-                  onClick={() => removeDestination(index)}
-                  className="p-1 text-red-600 hover:text-red-800"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            </div>
+            <ListItemControls
+              index={index}
+              total={destinations.length}
+              onMoveUp={() => moveDestination(index, "up")}
+              onMoveDown={() => moveDestination(index, "down")}
+              onDelete={() => removeDestination(index)}
+              itemLabel="Destino"
+            />
 
             <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Nombre
-                </label>
-                <input
-                  type="text"
-                  value={dest.name}
-                  onChange={(e) => updateDestination(index, "name", e.target.value)}
-                  placeholder="Cancún"
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
+              <FormField
+                label="Nombre"
+                value={dest.name}
+                onChange={(value) => updateDestination(index, "name", value)}
+                placeholder="Cancun"
+              />
 
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  Imagen
-                </label>
+                <label className="block text-sm font-medium mb-1">Imagen</label>
                 <ImageUploader
                   currentUrl={dest.image_url}
                   onImageUploaded={(url) =>
@@ -115,35 +86,20 @@ export default function DestinationsEditor({ content, onChange }) {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Descripción
-                </label>
-                <input
-                  type="text"
-                  value={dest.description}
-                  onChange={(e) =>
-                    updateDestination(index, "description", e.target.value)
-                  }
-                  placeholder="Playas paradisíacas"
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
+              <FormField
+                label="Descripcion"
+                value={dest.description}
+                onChange={(value) => updateDestination(index, "description", value)}
+                placeholder="Playas paradisiacas"
+              />
 
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Precio Desde (MXN)
-                </label>
-                <input
-                  type="number"
-                  value={dest.starting_price}
-                  onChange={(e) =>
-                    updateDestination(index, "starting_price", parseInt(e.target.value))
-                  }
-                  min="0"
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
+              <FormField
+                label="Precio Desde (MXN)"
+                type="number"
+                value={dest.starting_price}
+                onChange={(value) => updateDestination(index, "starting_price", value)}
+                min="0"
+              />
             </div>
           </div>
         ))}
@@ -151,3 +107,18 @@ export default function DestinationsEditor({ content, onChange }) {
     </div>
   );
 }
+
+DestinationsEditor.propTypes = {
+  content: PropTypes.shape({
+    destinations: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string,
+        name: PropTypes.string,
+        image_url: PropTypes.string,
+        description: PropTypes.string,
+        starting_price: PropTypes.number,
+      })
+    ),
+  }).isRequired,
+  onChange: PropTypes.func.isRequired,
+};

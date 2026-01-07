@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 import { Plus, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import DetallesCotizacion from "../../pages/DetallesCotizacion";
 import ConvertToSale from "../sales/ConvertToSale";
@@ -57,7 +57,7 @@ export default function PipelineKanban({ onNewQuote }) {
         .select(
           `
           *,
-          ventas (
+          ventas!ventas_cotizacion_id_fkey (
             id,
             monto_pendiente
           )

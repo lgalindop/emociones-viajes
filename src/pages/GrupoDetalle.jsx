@@ -48,7 +48,7 @@ export default function GrupoDetalle() {
         .select(
           `
           *,
-          ventas(id)
+          ventas!ventas_cotizacion_id_fkey(id)
         `
         )
         .eq("grupo_id", id)
@@ -66,7 +66,7 @@ export default function GrupoDetalle() {
         .select(
           `
           *,
-          cotizaciones (
+          cotizaciones!ventas_cotizacion_id_fkey (
             cliente_nombre,
             destino,
             num_adultos,
@@ -86,7 +86,7 @@ export default function GrupoDetalle() {
         .select(
           `
           *,
-          cotizaciones!inner (
+          cotizaciones!ventas_cotizacion_id_fkey!inner (
             cliente_nombre,
             destino,
             num_adultos,

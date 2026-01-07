@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { Edit, Eye, Send, Save, ArrowLeft } from "lucide-react";
 import HeroEditor from "../components/cms/HeroEditor";
 import DealsEditor from "../components/cms/DealsEditor";

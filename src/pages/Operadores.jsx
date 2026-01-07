@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { Plus, Edit2, Trash2 } from "lucide-react";
+import Toast from "../components/ui/Toast";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
 
 export default function Operadores() {
   const [operadores, setOperadores] = useState([]);
@@ -14,6 +16,12 @@ export default function Operadores() {
     comision: "",
     notas: "",
   });
+  const [toast, setToast] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  const showToast = useCallback((message, type = "success") => {
+    setToast({ message, type });
+  }, []);
 
   useEffect(() => {
     fetchOperadores();
@@ -31,7 +39,7 @@ export default function Operadores() {
       setOperadores(data || []);
     } catch (error) {
       console.error("Error fetching operadores:", error);
-      alert("Error al cargar operadores");
+      showToast("Error al cargar operadores", "error");
     } finally {
       setLoading(false);
     }
@@ -49,13 +57,13 @@ export default function Operadores() {
           .eq("id", editingId);
 
         if (error) throw error;
-        alert("Operador actualizado");
+        showToast("Operador actualizado");
       } else {
         // Crear nuevo
         const { error } = await supabase.from("operadores").insert([formData]);
 
         if (error) throw error;
-        alert("Operador agregado");
+        showToast("Operador agregado");
       }
 
       // Reset form
@@ -71,26 +79,32 @@ export default function Operadores() {
       fetchOperadores();
     } catch (error) {
       console.error("Error saving operador:", error);
-      alert("Error al guardar operador");
+      showToast("Error al guardar operador", "error");
     }
   }
 
   async function handleDelete(id) {
-    if (!confirm("¿Seguro que quieres eliminar este operador?")) return;
+    setDeleteConfirm(id);
+  }
+
+  async function confirmDelete() {
+    if (!deleteConfirm) return;
 
     try {
       // Soft delete (marcamos como inactivo)
       const { error } = await supabase
         .from("operadores")
         .update({ activo: false })
-        .eq("id", id);
+        .eq("id", deleteConfirm);
 
       if (error) throw error;
-      alert("Operador eliminado");
+      showToast("Operador eliminado");
       fetchOperadores();
     } catch (error) {
       console.error("Error deleting operador:", error);
-      alert("Error al eliminar operador");
+      showToast("Error al eliminar operador", "error");
+    } finally {
+      setDeleteConfirm(null);
     }
   }
 
@@ -299,6 +313,24 @@ export default function Operadores() {
             </div>
           )}
         </div>
+
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+
+        <ConfirmDialog
+          isOpen={!!deleteConfirm}
+          onClose={() => setDeleteConfirm(null)}
+          onConfirm={confirmDelete}
+          title="Eliminar Operador"
+          message="¿Seguro que quieres eliminar este operador? Esta acción no se puede deshacer."
+          variant="danger"
+          confirmText="Eliminar"
+        />
       </div>
     </div>
   );

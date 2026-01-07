@@ -23,7 +23,7 @@ export default function DetallesVenta({ ventaId, onBack }) {
           .select(
             `
             *,
-            cotizaciones (
+            cotizaciones!ventas_cotizacion_id_fkey (
               id,
               folio,
               cliente_nombre,
@@ -36,11 +36,11 @@ export default function DetallesVenta({ ventaId, onBack }) {
               num_ninos,
               pipeline_stage
             ),
-            opciones_cotizacion (
+            opciones_cotizacion!ventas_selected_option_id_fkey (
               nombre_paquete,
               precio_total
             ),
-            pagos (
+            pagos!pagos_venta_id_fkey (
               id,
               numero_pago,
               monto,

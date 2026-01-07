@@ -2,40 +2,57 @@ import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 
 let cachedSettings = null;
+let cachedError = null;
 let listeners = [];
+let isFetching = false;
 
 export function useCompanySettings() {
   const [state, setState] = useState(() => ({
     settings: cachedSettings,
-    loading: !cachedSettings,
+    loading: !cachedSettings && !cachedError,
+    error: cachedError,
   }));
 
   useEffect(() => {
-    // If already cached, we're done
-    if (cachedSettings) {
+    // If already cached (success or error), update state and return
+    if (cachedSettings || cachedError) {
+      setState({ settings: cachedSettings, loading: false, error: cachedError });
       return;
     }
 
     // Add this component to listeners
-    const listener = (data) => {
-      setState({ settings: data, loading: false });
+    const listener = (data, error) => {
+      setState({ settings: data, loading: false, error: error });
     };
     listeners.push(listener);
 
     // Only fetch once globally
-    if (listeners.length === 1) {
+    if (!isFetching && listeners.length === 1) {
+      isFetching = true;
       supabase
         .from("company_settings")
         .select("*")
         .single()
         .then(({ data, error }) => {
+          isFetching = false;
           if (error) {
             console.error("Error fetching company settings:", error);
-            return;
+            cachedError = error.message;
+            // Notify all listeners of the error
+            listeners.forEach((fn) => fn(null, error.message));
+          } else {
+            cachedSettings = data;
+            cachedError = null;
+            // Notify all listeners of success
+            listeners.forEach((fn) => fn(data, null));
           }
-          cachedSettings = data;
-          // Notify all listeners
-          listeners.forEach((fn) => fn(data));
+          listeners = [];
+        })
+        .catch((error) => {
+          isFetching = false;
+          console.error("Error fetching company settings:", error);
+          cachedError = error.message;
+          listeners.forEach((fn) => fn(null, error.message));
           listeners = [];
         });
     }

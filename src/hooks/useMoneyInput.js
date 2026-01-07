@@ -30,10 +30,8 @@ export default function useMoneyInput(initial = "", currency = "MXN") {
     }
   }
 
-  function onFocus() {
-    // remove formatted when focusing (keeps raw editable)
-    // we keep raw value as is for the input
-  }
+  // onFocus is intentionally a no-op - keeps raw value editable without clearing
+  function onFocus() {}
 
   function setCurrency(curr) {
     // reformat formatted if raw empty

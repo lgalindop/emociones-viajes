@@ -31,10 +31,10 @@ export default function ReceiptsList() {
         .select(
           `
           *,
-          ventas (
+          ventas!receipts_venta_id_fkey (
             folio_venta,
             precio_total,
-            cotizaciones (
+            cotizaciones!ventas_cotizacion_id_fkey (
               cliente_nombre,
               destino
             )

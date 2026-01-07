@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { supabase } from "../../lib/supabase";
 import { X } from "lucide-react";
+import Toast from "../ui/Toast";
 
 export default function GrupoModal({ grupo, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -13,6 +15,7 @@ export default function GrupoModal({ grupo, onClose, onSuccess }) {
     notas: "",
   });
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     if (grupo) {
@@ -32,7 +35,7 @@ export default function GrupoModal({ grupo, onClose, onSuccess }) {
     e.preventDefault();
 
     if (!formData.nombre.trim()) {
-      alert("El nombre del grupo es requerido");
+      setToast({ message: "El nombre del grupo es requerido", type: "error" });
       return;
     }
 
@@ -57,7 +60,7 @@ export default function GrupoModal({ grupo, onClose, onSuccess }) {
       onSuccess();
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al guardar grupo: " + error.message);
+      setToast({ message: "Error al guardar grupo: " + error.message, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -222,7 +225,30 @@ export default function GrupoModal({ grupo, onClose, onSuccess }) {
             </button>
           </div>
         </form>
+
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
       </div>
     </div>
   );
 }
+
+GrupoModal.propTypes = {
+  grupo: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    nombre: PropTypes.string,
+    tipo: PropTypes.string,
+    fecha_evento: PropTypes.string,
+    coordinador_nombre: PropTypes.string,
+    coordinador_telefono: PropTypes.string,
+    coordinador_email: PropTypes.string,
+    notas: PropTypes.string,
+  }),
+  onClose: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func.isRequired,
+};

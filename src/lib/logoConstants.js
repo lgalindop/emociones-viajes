@@ -1,22 +1,18 @@
 // Logo constants for Emociones Viajes
 
+const LOGO_URL = "/emociones-logo-icon.png";
+
 export const LOGO_CONFIG = {
   local: {
-    iconUrl: "/emociones-logo-icon.png",
+    iconUrl: LOGO_URL,
   },
 };
 
-// Get logo URL
+// Get logo URL - unified function for all uses
 export function getLogoUrl() {
-  return LOGO_CONFIG.local.iconUrl;
+  return LOGO_URL;
 }
 
-// For receipts
-export function getReceiptLogo() {
-  return LOGO_CONFIG.local.iconUrl;
-}
-
-// For web pages
-export function getWebLogo() {
-  return LOGO_CONFIG.local.iconUrl;
-}
+// Aliases for backward compatibility
+export const getReceiptLogo = getLogoUrl;
+export const getWebLogo = getLogoUrl;

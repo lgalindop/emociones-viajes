@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 import { X } from "lucide-react";
 import ReceiptGenerator from "../receipts/ReceiptGenerator";
 
@@ -67,7 +67,7 @@ export default function ConvertToSale({
         .select(
           `
           *,
-          cotizaciones (
+          cotizaciones!ventas_cotizacion_id_fkey (
             cliente_nombre,
             cliente_telefono,
             cliente_email,

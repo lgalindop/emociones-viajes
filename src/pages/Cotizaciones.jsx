@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import DetallesCotizacion from "./DetallesCotizacion";
 import { useDebounce } from "../hooks/useDebounce";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import LeadOriginIcon from "../components/LeadOriginIcon";
 
 export default function Cotizaciones({ onNewCotizacion }) {
@@ -85,11 +85,11 @@ export default function Cotizaciones({ onNewCotizacion }) {
         .select(
           `
           *,
-          ventas (
+          ventas!ventas_cotizacion_id_fkey (
             id,
             monto_pendiente
           ),
-          grupos (
+          grupos!cotizaciones_grupo_id_fkey (
             id,
             nombre,
             tipo

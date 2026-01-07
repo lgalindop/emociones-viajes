@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 import { getCompanySettings } from "../../lib/useCompanySettings";
 import { X, FileText, MessageSquare, Download, Send, Eye } from "lucide-react";
 import html2canvas from "html2canvas";

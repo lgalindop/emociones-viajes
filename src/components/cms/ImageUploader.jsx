@@ -39,31 +39,28 @@ export default function ImageUploader({
   const spec = IMAGE_SPECS[folder];
 
   useEffect(() => {
-    if (imagePreview && canvasRef.current) {
-      drawPreview();
-    }
-  }, [imagePreview, fitMode, zoom, offsetX, offsetY]);
+    if (!imagePreview || !canvasRef.current) return;
 
-  function drawPreview() {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     const img = new Image();
+    let cancelled = false;
 
     img.onload = () => {
+      if (cancelled) return;
+
       canvas.width = spec.width;
       canvas.height = spec.height;
       ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      let sx, sy, sw, sh, dx, dy, dw, dh;
+      let dx, dy, dw, dh;
 
       if (fitMode === "cover") {
         const scale =
           Math.max(canvas.width / img.width, canvas.height / img.height) * zoom;
-        sw = img.width;
-        sh = img.height;
+        const sw = img.width;
+        const sh = img.height;
         dw = img.width * scale;
         dh = img.height * scale;
         dx = (canvas.width - dw) / 2 + offsetX;
@@ -83,7 +80,14 @@ export default function ImageUploader({
     };
 
     img.src = imagePreview;
-  }
+
+    // Cleanup to prevent memory leaks
+    return () => {
+      cancelled = true;
+      img.onload = null;
+      img.src = "";
+    };
+  }, [imagePreview, fitMode, zoom, offsetX, offsetY, spec.width, spec.height]);
 
   async function processImage() {
     return new Promise((resolve) => {

@@ -45,14 +45,14 @@ export default function GroupModal({ group, onClose, onSuccess }) {
       if (group) {
         // Update
         const { error } = await supabase
-          .from("groups")
+          .from("grupos")
           .update(formData)
           .eq("id", group.id);
 
         if (error) throw error;
       } else {
         // Insert
-        const { error } = await supabase.from("groups").insert([formData]);
+        const { error } = await supabase.from("grupos").insert([formData]);
 
         if (error) throw error;
       }
@@ -60,7 +60,10 @@ export default function GroupModal({ group, onClose, onSuccess }) {
       onSuccess();
     } catch (error) {
       console.error("Error:", error);
-      setToast({ message: "Error al guardar group: " + error.message, type: "error" });
+      setToast({
+        message: "Error al guardar group: " + error.message,
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }

@@ -160,7 +160,7 @@ export default function SalesList() {
         </div>
       </div>
 
-      {/* Ventas Table */}
+      {/* Ventas List */}
       {filteredVentas.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
           <DollarSign size={48} className="mx-auto text-gray-300 mb-4" />
@@ -171,107 +171,28 @@ export default function SalesList() {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Folio
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">
-                  Cliente
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">
-                  Destino
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">
-                  Viajeros
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">
-                  Total
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">
-                  Pagado
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">
-                  Saldo
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                  Estado
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredVentas.map((venta) => (
-                <tr
-                  key={venta.id}
-                  onClick={() => setViewingVentaId(venta.id)}
-                  className="hover:bg-gray-50 cursor-pointer"
-                >
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-mono font-medium text-gray-900">
-                        {venta.folio_venta}
+        <>
+          {/* Mobile Card View */}
+          <div className="space-y-1 sm:hidden">
+            {filteredVentas.map((venta) => (
+              <div
+                key={venta.id}
+                onClick={() => setViewingVentaId(venta.id)}
+                className="bg-white rounded-lg shadow hover:shadow-md transition-all cursor-pointer"
+              >
+                <div className="p-2 flex items-center gap-3 text-xs">
+                  <div className="flex flex-col items-center gap-0.5 min-w-[80px]">
+                    <span className="font-mono font-semibold text-gray-900">
+                      {venta.folio_venta}
+                    </span>
+                    {venta.grupos && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-purple-100 text-purple-800">
+                        👥 {venta.grupos.nombre.slice(0, 10)}
+                        {venta.grupos.nombre.length > 10 ? "..." : ""}
                       </span>
-                      {/* Mobile: show total below folio */}
-                      <span className="text-xs text-gray-500 sm:hidden">
-                        ${parseFloat(venta.precio_total).toLocaleString("es-MX")}
-                      </span>
-                      {venta.grupos && (
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full w-fit mt-0.5"
-                          title={`Grupo: ${venta.grupos.nombre}`}
-                        >
-                          👥 {venta.grupos.nombre}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <span className="text-sm text-gray-900">
-                      {venta.cotizaciones?.cliente_nombre || "Sin nombre"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <span className="text-sm text-gray-600">
-                      {venta.cotizaciones?.destino}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell">
-                    <span className="text-sm text-gray-600">
-                      {venta.cotizaciones
-                        ? venta.cotizaciones.num_adultos +
-                          venta.cotizaciones.num_ninos
-                        : "-"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-right hidden sm:table-cell">
-                    <span className="text-sm font-medium text-gray-900">
-                      ${parseFloat(venta.precio_total).toLocaleString("es-MX")}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-right hidden lg:table-cell">
-                    <span className="text-sm font-medium text-green-600">
-                      $
-                      {parseFloat(venta.monto_pagado || 0).toLocaleString(
-                        "es-MX"
-                      )}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-right hidden lg:table-cell">
-                    <span className="text-sm font-medium text-red-600">
-                      $
-                      {parseFloat(venta.monto_pendiente || 0).toLocaleString(
-                        "es-MX"
-                      )}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-center">
+                    )}
                     <span
-                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      className={`px-1.5 py-0.5 rounded-full whitespace-nowrap ${
                         venta.monto_pendiente <= 0
                           ? "bg-green-100 text-green-800"
                           : venta.monto_pagado > 0
@@ -285,24 +206,162 @@ export default function SalesList() {
                           ? "Parcial"
                           : "Pendiente"}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-center hidden sm:table-cell">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setViewingVentaId(venta.id);
-                      }}
-                      className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
-                    >
-                      <Eye size={14} />
-                      Ver
-                    </button>
-                  </td>
+                  </div>
+
+                  <div className="flex flex-col items-center min-w-0 flex-1">
+                    <span className="font-bold text-gray-900 truncate w-full text-center">
+                      {venta.cotizaciones?.cliente_nombre || "Sin nombre"}
+                    </span>
+                    <span className="text-gray-500 truncate w-full text-center">
+                      {venta.cotizaciones?.destino}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col items-end min-w-[70px]">
+                    <span className="font-semibold text-gray-900">
+                      ${parseFloat(venta.precio_total).toLocaleString("es-MX")}
+                    </span>
+                    {venta.monto_pendiente > 0 && (
+                      <span className="text-red-600 text-[10px]">
+                        Saldo: ${parseFloat(venta.monto_pendiente).toLocaleString("es-MX")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="bg-white rounded-lg shadow overflow-hidden hidden sm:block">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Folio
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Cliente
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">
+                    Destino
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">
+                    Viajeros
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    Total
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">
+                    Pagado
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">
+                    Saldo
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                    Estado
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                    Acciones
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredVentas.map((venta) => (
+                  <tr
+                    key={venta.id}
+                    onClick={() => setViewingVentaId(venta.id)}
+                    className="hover:bg-gray-50 cursor-pointer"
+                  >
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-mono font-medium text-gray-900">
+                          {venta.folio_venta}
+                        </span>
+                        {venta.grupos && (
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full w-fit mt-0.5"
+                            title={`Grupo: ${venta.grupos.nombre}`}
+                          >
+                            👥 {venta.grupos.nombre}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm text-gray-900">
+                        {venta.cotizaciones?.cliente_nombre || "Sin nombre"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <span className="text-sm text-gray-600">
+                        {venta.cotizaciones?.destino}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell">
+                      <span className="text-sm text-gray-600">
+                        {venta.cotizaciones
+                          ? venta.cotizaciones.num_adultos +
+                            venta.cotizaciones.num_ninos
+                          : "-"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-right">
+                      <span className="text-sm font-medium text-gray-900">
+                        ${parseFloat(venta.precio_total).toLocaleString("es-MX")}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-right hidden lg:table-cell">
+                      <span className="text-sm font-medium text-green-600">
+                        $
+                        {parseFloat(venta.monto_pagado || 0).toLocaleString(
+                          "es-MX"
+                        )}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-right hidden lg:table-cell">
+                      <span className="text-sm font-medium text-red-600">
+                        $
+                        {parseFloat(venta.monto_pendiente || 0).toLocaleString(
+                          "es-MX"
+                        )}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          venta.monto_pendiente <= 0
+                            ? "bg-green-100 text-green-800"
+                            : venta.monto_pagado > 0
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {venta.monto_pendiente <= 0
+                          ? "Pagado"
+                          : venta.monto_pagado > 0
+                            ? "Parcial"
+                            : "Pendiente"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewingVentaId(venta.id);
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+                      >
+                        <Eye size={14} />
+                        Ver
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

@@ -281,132 +281,197 @@ export default function ReceiptsList() {
           </div>
         </div>
 
-        {/* Receipts Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          {filteredReceipts.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              No se encontraron recibos
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Recibo
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                    Cliente
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                    Venta
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                    Fecha
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                    Monto
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                    Método
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredReceipts.map((receipt) => (
-                  <tr
-                    key={receipt.id}
-                    onClick={() => handleEdit(receipt)}
-                    className="hover:bg-gray-50 cursor-pointer"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-gray-900">
-                          {receipt.receipt_number}
-                        </span>
-                        {/* Mobile: show amount below receipt number */}
-                        <span className="text-xs text-green-600 font-medium sm:hidden">
-                          $
-                          {receipt.amount
-                            ? parseFloat(receipt.amount).toLocaleString("es-MX")
-                            : "0.00"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <div className="text-sm">
-                        <div className="font-medium text-gray-900">
-                          {receipt.client_name ||
-                            receipt.ventas?.cotizaciones?.cliente_nombre ||
-                            "N/A"}
-                        </div>
-                        <div className="text-gray-500 text-xs">
-                          {receipt.destination ||
-                            receipt.ventas?.cotizaciones?.destino ||
-                            ""}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 hidden md:table-cell">
-                      {receipt.ventas?.folio_venta || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 hidden md:table-cell">
-                      {formatDate(receipt.payment_date)}
-                    </td>
-                    <td className="px-4 py-3 text-right hidden sm:table-cell">
+        {/* Receipts List */}
+        {filteredReceipts.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+            No se encontraron recibos
+          </div>
+        ) : (
+          <>
+            {/* Mobile Card View */}
+            <div className="space-y-1 sm:hidden">
+              {filteredReceipts.map((receipt) => (
+                <div
+                  key={receipt.id}
+                  onClick={() => handleEdit(receipt)}
+                  className="bg-white rounded-lg shadow hover:shadow-md transition-all cursor-pointer"
+                >
+                  <div className="p-2 flex items-center gap-3 text-xs">
+                    <div className="flex flex-col items-center gap-0.5 min-w-[80px]">
+                      <span className="font-semibold text-gray-900">
+                        {receipt.receipt_number}
+                      </span>
+                      <span className="text-gray-500 text-[10px]">
+                        {formatDate(receipt.payment_date)}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col items-center min-w-0 flex-1">
+                      <span className="font-bold text-gray-900 truncate w-full text-center">
+                        {receipt.client_name ||
+                          receipt.ventas?.cotizaciones?.cliente_nombre ||
+                          "N/A"}
+                      </span>
+                      <span className="text-gray-500 truncate w-full text-center">
+                        {receipt.destination ||
+                          receipt.ventas?.cotizaciones?.destino ||
+                          ""}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col items-end min-w-[70px]">
                       <span className="font-semibold text-green-600">
                         $
                         {receipt.amount
                           ? parseFloat(receipt.amount).toLocaleString("es-MX")
                           : "0.00"}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 hidden lg:table-cell">
-                      {receipt.payment_method}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleView(receipt);
-                          }}
-                          disabled={!receipt.image_url}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Ver Recibo"
-                        >
-                          <Eye size={18} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEdit(receipt);
-                          }}
-                          className="p-1.5 text-yellow-600 hover:bg-yellow-50 rounded hidden sm:block"
-                          title="Editar"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(receipt);
-                          }}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                          title="Eliminar"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
+                      <span className="text-gray-500 text-[10px]">
+                        {receipt.payment_method}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleView(receipt);
+                        }}
+                        disabled={!receipt.image_url}
+                        className="p-1 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50"
+                        title="Ver Recibo"
+                      >
+                        <Eye size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(receipt);
+                        }}
+                        className="p-1 text-red-600 hover:bg-red-50 rounded"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="bg-white rounded-lg shadow overflow-hidden hidden sm:block">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Recibo
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Cliente
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                      Venta
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                      Fecha
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Monto
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                      Método
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Acciones
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredReceipts.map((receipt) => (
+                    <tr
+                      key={receipt.id}
+                      onClick={() => handleEdit(receipt)}
+                      className="hover:bg-gray-50 cursor-pointer"
+                    >
+                      <td className="px-4 py-3">
+                        <span className="font-semibold text-gray-900">
+                          {receipt.receipt_number}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm">
+                          <div className="font-medium text-gray-900">
+                            {receipt.client_name ||
+                              receipt.ventas?.cotizaciones?.cliente_nombre ||
+                              "N/A"}
+                          </div>
+                          <div className="text-gray-500 text-xs">
+                            {receipt.destination ||
+                              receipt.ventas?.cotizaciones?.destino ||
+                              ""}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 hidden md:table-cell">
+                        {receipt.ventas?.folio_venta || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 hidden md:table-cell">
+                        {formatDate(receipt.payment_date)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="font-semibold text-green-600">
+                          $
+                          {receipt.amount
+                            ? parseFloat(receipt.amount).toLocaleString("es-MX")
+                            : "0.00"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 hidden lg:table-cell">
+                        {receipt.payment_method}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleView(receipt);
+                            }}
+                            disabled={!receipt.image_url}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Ver Recibo"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(receipt);
+                            }}
+                            className="p-1.5 text-yellow-600 hover:bg-yellow-50 rounded"
+                            title="Editar"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(receipt);
+                            }}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                            title="Eliminar"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

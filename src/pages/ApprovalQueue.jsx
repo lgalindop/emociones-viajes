@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { Check, X, Eye, ArrowLeft } from "lucide-react";
+import Toast from "../components/ui/Toast";
 
 // Sanitize user content to prevent XSS attacks
 function escapeHtml(str) {
@@ -29,6 +30,7 @@ function sanitizeUrl(url) {
 export default function ApprovalQueue() {
   const [pending, setPending] = useState([]);
   const [profiles, setProfiles] = useState({});
+  const [toast, setToast] = useState(null);
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
 
@@ -93,11 +95,11 @@ export default function ApprovalQueue() {
       .eq("id", item.id);
 
     if (error) {
-      alert("Error aprobando: " + error.message);
+      setToast({ message: "Error aprobando: " + error.message, type: "error" });
       return;
     }
 
-    alert("Cambios publicados");
+    setToast({ message: "Cambios publicados", type: "success" });
     fetchPending();
   }
 
@@ -114,11 +116,11 @@ export default function ApprovalQueue() {
       .eq("id", item.id);
 
     if (error) {
-      alert("Error rechazando: " + error.message);
+      setToast({ message: "Error rechazando: " + error.message, type: "error" });
       return;
     }
 
-    alert("Cambios rechazados");
+    setToast({ message: "Cambios rechazados", type: "info" });
     fetchPending();
   }
 
@@ -324,6 +326,15 @@ export default function ApprovalQueue() {
           </div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

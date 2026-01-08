@@ -182,6 +182,8 @@ export default function ReceiptGenerator({
         scale: 2,
         backgroundColor: template === "informal" ? null : "#ffffff",
         logging: false,
+        useCORS: true,
+        allowTaint: true,
       });
 
       return new Promise((resolve) => {
@@ -204,6 +206,8 @@ export default function ReceiptGenerator({
         scale: 2,
         backgroundColor: template === "informal" ? null : "#ffffff",
         logging: false,
+        useCORS: true,
+        allowTaint: true,
       });
 
       const imgData = canvas.toDataURL("image/png");
@@ -223,14 +227,23 @@ export default function ReceiptGenerator({
 
   async function handleGenerate() {
     try {
-      // Generate receipt number right now
+      setGenerating(true);
+
+      // Generate receipt number with retry logic to handle race conditions
+      const currentYear = new Date().getFullYear();
       let finalReceiptNumber = receiptNumber;
-      if (!finalReceiptNumber) {
-        // Get the latest receipt number
+      let attempts = 0;
+      const maxAttempts = 5;
+
+      while (!finalReceiptNumber && attempts < maxAttempts) {
+        attempts++;
+
+        // Get the latest receipt number for current year
         const { data, error } = await supabase
           .from("receipts")
           .select("receipt_number")
-          .order("created_at", { ascending: false })
+          .like("receipt_number", `REC-${currentYear}-%`)
+          .order("receipt_number", { ascending: false })
           .limit(1);
 
         if (error) throw error;
@@ -238,18 +251,37 @@ export default function ReceiptGenerator({
         let nextNumber = 1;
         if (data && data.length > 0) {
           const lastNumber = data[0].receipt_number;
-          const match = lastNumber.match(/REC-2025-(\d+)/);
+          const match = lastNumber.match(/REC-\d{4}-(\d+)/);
           if (match) {
             nextNumber = parseInt(match[1]) + 1;
           }
         }
 
-        const paddedNumber = String(nextNumber).padStart(5, "0");
-        finalReceiptNumber = `REC-2025-${paddedNumber}`;
-        setReceiptNumber(finalReceiptNumber);
+        // Add random offset on retry to avoid collision
+        if (attempts > 1) {
+          nextNumber += Math.floor(Math.random() * 10);
+        }
 
-        // Wait for state update to trigger re-render before capturing
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        const paddedNumber = String(nextNumber).padStart(5, "0");
+        const candidateNumber = `REC-${currentYear}-${paddedNumber}`;
+
+        // Check if this number already exists
+        const { data: existing } = await supabase
+          .from("receipts")
+          .select("id")
+          .eq("receipt_number", candidateNumber)
+          .limit(1);
+
+        if (!existing || existing.length === 0) {
+          finalReceiptNumber = candidateNumber;
+          setReceiptNumber(finalReceiptNumber);
+          // Wait for state update to trigger re-render before capturing
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
+
+      if (!finalReceiptNumber) {
+        throw new Error("No se pudo generar un número de recibo único. Por favor, intente de nuevo.");
       }
 
       const imageBlob = await generateReceiptImage();

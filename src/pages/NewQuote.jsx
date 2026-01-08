@@ -3,15 +3,23 @@ import { supabase } from "../lib/supabase";
 import { ArrowLeft, Plus, Trash2, Check, X } from "lucide-react";
 import LeadOriginIcon from "../components/LeadOriginIcon";
 import HotelAutocomplete from "../components/HotelAutocomplete";
+import ClienteSelector from "../components/clientes/ClienteSelector";
+import Toast from "../components/ui/Toast";
 
 export default function NewQuote({ onBack, onSuccess }) {
   const [step, setStep] = useState(1);
   const [operadores, setOperadores] = useState([]);
   const [grupos, setGrupos] = useState([]);
+  // CRM: Selected cliente and solicitante
+  const [selectedCliente, setSelectedCliente] = useState(null);
+  const [selectedSolicitante, setSelectedSolicitante] = useState(null);
+
   const [formData, setFormData] = useState({
     cliente_nombre: "",
     cliente_telefono: "",
     cliente_email: "",
+    cliente_id: null,
+    solicitante_id: null,
     origen_lead: "whatsapp",
     destino: "",
     fecha_salida: "",
@@ -58,12 +66,7 @@ export default function NewQuote({ onBack, onSuccess }) {
   });
   const [incluye, setIncluye] = useState("");
   const [noIncluye, setNoIncluye] = useState("");
-
-  // Customer search states
-  const [customerSearch, setCustomerSearch] = useState("");
-  const [customerMatches, setCustomerMatches] = useState([]);
-  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-  const customerDropdownRef = useRef(null);
+  const [toast, setToast] = useState(null);
 
   const leadOrigins = [
     { value: "whatsapp", label: "WhatsApp" },
@@ -78,31 +81,6 @@ export default function NewQuote({ onBack, onSuccess }) {
     fetchOperators();
     fetchGroups();
   }, []);
-
-  // Click outside handler for customer dropdown
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (
-        customerDropdownRef.current &&
-        !customerDropdownRef.current.contains(event.target)
-      ) {
-        setShowCustomerDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Customer search
-  useEffect(() => {
-    if (customerSearch.length > 2) {
-      searchCustomers();
-    } else {
-      setCustomerMatches([]);
-      setShowCustomerDropdown(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerSearch]);
 
   // Auto-populate vuelo dates from formData when entering Step 3
   useEffect(() => {
@@ -143,46 +121,35 @@ export default function NewQuote({ onBack, onSuccess }) {
     }
   }
 
-  async function searchCustomers() {
-    try {
-      const { data, error } = await supabase
-        .from("cotizaciones")
-        .select("cliente_nombre, cliente_telefono, cliente_email")
-        .or(
-          `cliente_nombre.ilike.%${customerSearch}%,cliente_telefono.ilike.%${customerSearch}%`
-        )
-        .limit(5);
-
-      if (error) throw error;
-
-      // Remove duplicates based on phone or email
-      const unique = [];
-      const seen = new Set();
-
-      for (const customer of data || []) {
-        const key = `${customer.cliente_telefono}-${customer.cliente_email}`;
-        if (!seen.has(key) && customer.cliente_nombre) {
-          seen.add(key);
-          unique.push(customer);
-        }
-      }
-
-      setCustomerMatches(unique);
-      setShowCustomerDropdown(unique.length > 0);
-    } catch (error) {
-      console.error("Error searching customers:", error);
+  // Handle cliente selection from ClienteSelector
+  function handleClienteChange(cliente) {
+    setSelectedCliente(cliente);
+    if (cliente) {
+      setFormData({
+        ...formData,
+        cliente_id: cliente.id,
+        cliente_nombre: cliente.nombre_completo,
+        cliente_telefono: cliente.telefono || "",
+        cliente_email: cliente.email || "",
+      });
+    } else {
+      setFormData({
+        ...formData,
+        cliente_id: null,
+        cliente_nombre: "",
+        cliente_telefono: "",
+        cliente_email: "",
+      });
     }
   }
 
-  function selectCustomer(customer) {
+  // Handle solicitante (requester) selection
+  function handleSolicitanteChange(solicitante) {
+    setSelectedSolicitante(solicitante);
     setFormData({
       ...formData,
-      cliente_nombre: customer.cliente_nombre,
-      cliente_telefono: customer.cliente_telefono || "",
-      cliente_email: customer.cliente_email || "",
+      solicitante_id: solicitante?.id || null,
     });
-    setCustomerSearch(customer.cliente_nombre);
-    setShowCustomerDropdown(false);
   }
 
   function handlePriceChange(field, value) {
@@ -207,7 +174,7 @@ export default function NewQuote({ onBack, onSuccess }) {
       (!currentOpcion.operador_id || currentOpcion.operador_id === "otro") &&
       !currentOpcion.precio_total
     ) {
-      alert("Completa el precio total de la opción");
+      setToast({ message: "Completa el precio total de la opción", type: "warning" });
       return;
     }
 
@@ -280,8 +247,8 @@ export default function NewQuote({ onBack, onSuccess }) {
 
   async function handleSubmit() {
     try {
-      if (!formData.cliente_nombre || !formData.destino) {
-        alert("Completa los campos obligatorios");
+      if (!selectedCliente || !formData.destino) {
+        setToast({ message: "Completa los campos obligatorios (cliente y destino)", type: "warning" });
         return;
       }
 
@@ -347,11 +314,11 @@ export default function NewQuote({ onBack, onSuccess }) {
         if (opError) throw opError;
       }
 
-      alert("✅ Cotización creada exitosamente");
-      onSuccess();
+      setToast({ message: "Cotización creada exitosamente", type: "success" });
+      setTimeout(() => onSuccess(), 1500);
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al crear cotización: " + error.message);
+      setToast({ message: "Error al crear cotización: " + error.message, type: "error" });
     }
   }
 
@@ -409,91 +376,17 @@ export default function NewQuote({ onBack, onSuccess }) {
         {step === 1 && (
           <div className="bg-white rounded-lg shadow p-6">
             <div className="space-y-6">
-              <div className="relative" ref={customerDropdownRef}>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Nombre del Cliente *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={customerSearch || formData.cliente_nombre}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setCustomerSearch(value);
-                    setFormData({ ...formData, cliente_nombre: value });
-                  }}
-                  onFocus={() => {
-                    if (customerMatches.length > 0) {
-                      setShowCustomerDropdown(true);
-                    }
-                  }}
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                  placeholder="Empieza a escribir para buscar..."
-                />
-
-                {/* Customer Dropdown */}
-                {showCustomerDropdown && customerMatches.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {customerMatches.map((customer, index) => (
-                      <div
-                        key={index}
-                        onClick={() => selectCustomer(customer)}
-                        className="px-4 py-3 hover:bg-primary/10 cursor-pointer border-b last:border-b-0"
-                      >
-                        <p className="font-medium text-gray-900">
-                          {customer.cliente_nombre}
-                        </p>
-                        {customer.cliente_telefono && (
-                          <p className="text-sm text-gray-600">
-                            {customer.cliente_telefono}
-                          </p>
-                        )}
-                        {customer.cliente_email && (
-                          <p className="text-sm text-gray-500">
-                            {customer.cliente_email}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Teléfono
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.cliente_telefono}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        cliente_telefono: e.target.value,
-                      })
-                    }
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.cliente_email}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        cliente_email: e.target.value,
-                      })
-                    }
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                  />
-                </div>
-              </div>
+              {/* Cliente Selector with requester toggle */}
+              <ClienteSelector
+                value={selectedCliente}
+                onChange={handleClienteChange}
+                label="Cliente (Titular)"
+                required={true}
+                showRequesterToggle={true}
+                requesterValue={selectedSolicitante}
+                onRequesterChange={handleSolicitanteChange}
+                placeholder="Buscar cliente por nombre, teléfono o email..."
+              />
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -551,7 +444,7 @@ export default function NewQuote({ onBack, onSuccess }) {
             <div className="flex justify-end mt-6">
               <button
                 onClick={() => setStep(2)}
-                disabled={!formData.cliente_nombre}
+                disabled={!selectedCliente}
                 className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold transition-all"
               >
                 Siguiente
@@ -1435,6 +1328,15 @@ export default function NewQuote({ onBack, onSuccess }) {
           </div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

@@ -23,6 +23,10 @@ import ReceiptWizard from "./pages/ReceiptWizard";
 import Groups from "./pages/Groups";
 import GroupDetails from "./pages/GroupDetails";
 import HomeDashboard from "./pages/HomeDashboard";
+import Clientes from "./pages/Clientes";
+import ClienteDetalle from "./pages/ClienteDetalle";
+import Hoteles from "./pages/Hoteles";
+import HotelDetalle from "./pages/HotelDetalle";
 import DesktopNav from "./components/navigation/DesktopNav";
 import MobileHeader from "./components/navigation/MobileHeader";
 import MobileBottomNav from "./components/navigation/MobileBottomNav";
@@ -135,6 +139,43 @@ function MainApp() {
           <Route path="/sales" element={<SalesList />} />
           <Route path="/grupos" element={<Groups />} />
           <Route path="/grupos/:id" element={<GroupDetails />} />
+          <Route
+            path="/clientes"
+            element={
+              <Clientes
+                onViewDetails={(id) => navigate(`/app/clientes/${id}`)}
+              />
+            }
+          />
+          <Route
+            path="/clientes/:id"
+            element={
+              <ClienteDetalle
+                clienteId={location.pathname.split("/").pop()}
+                onBack={() => navigate("/app/clientes")}
+                onNavigateToQuote={(id) => navigate(`/app/cotizaciones/${id}`)}
+                onNavigateToSale={(id) => navigate(`/app/sales/${id}`)}
+                onNavigateToCliente={(id) => navigate(`/app/clientes/${id}`)}
+              />
+            }
+          />
+          <Route
+            path="/hoteles"
+            element={
+              <Hoteles
+                onViewDetails={(id) => navigate(`/app/hoteles/${id}`)}
+              />
+            }
+          />
+          <Route
+            path="/hoteles/:id"
+            element={
+              <HotelDetalle
+                hotelId={location.pathname.split("/").pop()}
+                onBack={() => navigate("/app/hoteles")}
+              />
+            }
+          />
           <Route path="/dashboard" element={<SalesDashboard />} />
           <Route path="/receipts" element={<ReceiptsList />} />
           <Route path="/receipts/wizard" element={<ReceiptWizard />} />

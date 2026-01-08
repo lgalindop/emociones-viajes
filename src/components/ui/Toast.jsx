@@ -35,9 +35,9 @@ export default function Toast({
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg transition-all duration-300 ${
+      className={`fixed top-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg transition-all duration-300 ${
         bgColors[type]
-      } ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"}`}
+      } ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
       role="alert"
       aria-live="polite"
     >
@@ -67,7 +67,7 @@ Toast.propTypes = {
 // Toast container for managing multiple toasts
 export function ToastContainer({ toasts, removeToast }) {
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
+    <div className="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 space-y-2">
       {toasts.map((toast) => (
         <Toast
           key={toast.id}

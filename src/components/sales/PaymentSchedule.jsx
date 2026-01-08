@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
-import { 
-  ArrowLeft, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import {
+  ArrowLeft,
+  CheckCircle,
+  XCircle,
+  Clock,
   Calendar,
   DollarSign,
   Check,
@@ -15,6 +15,8 @@ import {
   Download
 } from "lucide-react";
 import ReceiptGenerator from "../receipts/ReceiptGenerator";
+import ConfirmDialog from "../ui/ConfirmDialog";
+import Toast from "../ui/Toast";
 
 export default function PaymentSchedule({ venta, onBack, onUpdate }) {
   const [pagos, setPagos] = useState([]);
@@ -22,6 +24,9 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
   const [loading, setLoading] = useState(true);
   const [showReceiptGenerator, setShowReceiptGenerator] = useState(false);
   const [selectedPago, setSelectedPago] = useState(null);
+  const [confirmPago, setConfirmPago] = useState({ open: false, pago: null });
+  const [confirmReceipt, setConfirmReceipt] = useState({ open: false, pago: null });
+  const [toast, setToast] = useState(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -62,8 +67,6 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
   }
 
   async function markAsPaid(pago) {
-    if (!confirm('¿Marcar este pago como recibido?')) return;
-
     try {
       const { error } = await supabase
         .from('pagos')
@@ -87,25 +90,29 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
 
       await fetchPayments();
       onUpdate();
-      alert('✅ Pago registrado');
-      
+      setToast({ message: 'Pago registrado', type: 'success' });
+      setConfirmPago({ open: false, pago: null });
+
       // Ask if they want to generate receipt
-      if (confirm('¿Deseas generar un recibo para este pago?')) {
-        const updatedPagos = await supabase
-          .from('pagos')
-          .select('*')
-          .eq('id', pago.id)
-          .single();
-        
-        if (updatedPagos.data) {
-          setSelectedPago(updatedPagos.data);
-          setShowReceiptGenerator(true);
-        }
-      }
+      setConfirmReceipt({ open: true, pago });
     } catch (error) {
       console.error('Error:', error);
-      alert('Error al registrar pago');
+      setToast({ message: 'Error al registrar pago', type: 'error' });
     }
+  }
+
+  async function handleGenerateReceipt(pago) {
+    const updatedPagos = await supabase
+      .from('pagos')
+      .select('*')
+      .eq('id', pago.id)
+      .single();
+
+    if (updatedPagos.data) {
+      setSelectedPago(updatedPagos.data);
+      setShowReceiptGenerator(true);
+    }
+    setConfirmReceipt({ open: false, pago: null });
   }
 
   async function shareViaWhatsApp(receipt) {
@@ -157,7 +164,7 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
 
       fetchReceipts();
     } else {
-      alert('No hay número de teléfono registrado');
+      setToast({ message: 'No hay número de teléfono registrado', type: 'warning' });
     }
   }
 
@@ -380,7 +387,7 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
                         
                         {pago.estado === 'pendiente' && (
                           <button
-                            onClick={() => markAsPaid(pago)}
+                            onClick={() => setConfirmPago({ open: true, pago })}
                             className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
                           >
                             <CheckCircle size={16} />
@@ -424,6 +431,37 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
             setShowReceiptGenerator(false);
             setSelectedPago(null);
           }}
+        />
+      )}
+
+      {/* Confirm Mark as Paid Dialog */}
+      <ConfirmDialog
+        isOpen={confirmPago.open}
+        onClose={() => setConfirmPago({ open: false, pago: null })}
+        onConfirm={() => markAsPaid(confirmPago.pago)}
+        title="Registrar Pago"
+        message={`¿Marcar el pago ${confirmPago.pago?.numero_pago} como recibido?`}
+        confirmText="Registrar Pago"
+        variant="primary"
+      />
+
+      {/* Confirm Generate Receipt Dialog */}
+      <ConfirmDialog
+        isOpen={confirmReceipt.open}
+        onClose={() => setConfirmReceipt({ open: false, pago: null })}
+        onConfirm={() => handleGenerateReceipt(confirmReceipt.pago)}
+        title="Generar Recibo"
+        message="¿Deseas generar un recibo para este pago?"
+        confirmText="Generar Recibo"
+        variant="primary"
+      />
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
         />
       )}
     </>

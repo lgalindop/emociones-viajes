@@ -6,11 +6,13 @@ import {
   TrendingUp,
   DollarSign,
   Users,
+  UserCircle,
   BarChart3,
   Receipt,
   Layout,
   Shield,
   LogOut,
+  Building,
 } from "lucide-react";
 import NavButton from "./NavButton";
 
@@ -37,7 +39,9 @@ export default function MobileMenu({
   const navItems = [
     { path: "/app", icon: Home, label: "Inicio", exact: true },
     { path: "/app/cotizaciones", icon: FileText, label: "Cotizaciones" },
+    { path: "/app/clientes", icon: UserCircle, label: "Clientes" },
     { path: "/app/operadores", icon: Building2, label: "Operadores" },
+    { path: "/app/hoteles", icon: Building, label: "Hoteles" },
     { path: "/app/pipeline", icon: TrendingUp, label: "Pipeline" },
     { path: "/app/sales", icon: DollarSign, label: "Ventas" },
     { path: "/app/grupos", icon: Users, label: "Grupos" },

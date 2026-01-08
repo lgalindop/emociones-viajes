@@ -7,6 +7,7 @@ import HeroEditor from "../components/cms/HeroEditor";
 import DealsEditor from "../components/cms/DealsEditor";
 import DestinationsEditor from "../components/cms/DestinationsEditor";
 import GalleryEditor from "../components/cms/GalleryEditor";
+import Toast from "../components/ui/Toast";
 
 export default function CMSDashboard() {
   const [sections, setSections] = useState([]);
@@ -15,6 +16,7 @@ export default function CMSDashboard() {
   const [editContent, setEditContent] = useState(null);
   const { user, profile, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     if (!profile?.content_manager && !isAdmin()) {
@@ -75,7 +77,7 @@ export default function CMSDashboard() {
     const existing = sections.find((s) => s.section === editingSection);
 
     if (existing && existing.status === "pending") {
-      alert("Esta sección tiene cambios pendientes de aprobación");
+      setToast({ message: "Esta sección tiene cambios pendientes de aprobación", type: "warning" });
       return;
     }
 
@@ -107,11 +109,11 @@ export default function CMSDashboard() {
     }
 
     if (error) {
-      alert("Error guardando borrador: " + error.message);
+      setToast({ message: "Error guardando borrador: " + error.message, type: "error" });
       return;
     }
 
-    alert("Borrador guardado");
+    setToast({ message: "Borrador guardado", type: "success" });
     setEditingSection(null);
     fetchSections();
   }
@@ -125,7 +127,7 @@ export default function CMSDashboard() {
     );
 
     if (!existing) {
-      alert("Primero guarda como borrador");
+      setToast({ message: "Primero guarda como borrador", type: "warning" });
       return;
     }
 
@@ -139,11 +141,11 @@ export default function CMSDashboard() {
       .eq("id", existing.id);
 
     if (error) {
-      alert("Error enviando: " + error.message);
+      setToast({ message: "Error enviando: " + error.message, type: "error" });
       return;
     }
 
-    alert("Enviado para aprobación");
+    setToast({ message: "Enviado para aprobación", type: "success" });
     setEditingSection(null);
     fetchSections();
     fetchPendingCount();
@@ -205,6 +207,15 @@ export default function CMSDashboard() {
             {renderEditor()}
           </div>
         </div>
+
+        {/* Toast Notification */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
       </div>
     );
   }
@@ -332,11 +343,11 @@ export default function CMSDashboard() {
                             .eq("id", draft.id);
 
                           if (error) {
-                            alert("Error enviando: " + error.message);
+                            setToast({ message: "Error enviando: " + error.message, type: "error" });
                             return;
                           }
 
-                          alert("Enviado para aprobación");
+                          setToast({ message: "Enviado para aprobación", type: "success" });
                           fetchSections();
                           fetchPendingCount();
                         }}
@@ -359,6 +370,15 @@ export default function CMSDashboard() {
           })}
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

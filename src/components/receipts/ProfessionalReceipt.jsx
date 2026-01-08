@@ -119,209 +119,152 @@ export default function ProfessionalReceipt({ data, companyInfo }) {
       </div>
 
       {/* Details Table */}
-      <div
+      <table
         style={{
+          width: "100%",
           background: "#f8fafc",
           borderRadius: "8px",
           overflow: "hidden",
           marginBottom: "20px",
           border: "1px solid #e2e8f0",
+          borderCollapse: "collapse",
         }}
       >
-        <div
-          style={{
-            padding: "15px 20px",
-            borderBottom: "1px solid #e2e8f0",
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
-          <span style={{ fontSize: "18px", color: "#64748b" }}>
-            Folio de pago
-          </span>
-          <span
-            style={{ fontSize: "18px", fontWeight: "600", color: "#1e293b" }}
-          >
-            {data.receipt_number}
-          </span>
-        </div>
-        <div
-          style={{
-            padding: "15px 20px",
-            borderBottom: "1px solid #e2e8f0",
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
-          <span style={{ fontSize: "18px", color: "#64748b" }}>
-            Forma de pago
-          </span>
-          <span
-            style={{ fontSize: "18px", fontWeight: "600", color: "#1e293b" }}
-          >
-            {data.payment_method}
-          </span>
-        </div>
-        <div
-          style={{
-            padding: "15px 20px",
-            borderBottom: "1px solid #e2e8f0",
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
-          <span style={{ fontSize: "18px", color: "#64748b" }}>Fecha</span>
-          <span
-            style={{ fontSize: "18px", fontWeight: "600", color: "#1e293b" }}
-          >
-            {formatDateShort(data.payment_date)}
-          </span>
-        </div>
-        <div
-          style={{
-            padding: "15px 20px",
-            borderBottom: "1px solid #e2e8f0",
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
-          <span style={{ fontSize: "18px", color: "#64748b" }}>Referencia</span>
-          <span
-            style={{ fontSize: "18px", fontWeight: "600", color: "#1e293b" }}
-          >
-            {data.folio_venta}
-          </span>
-        </div>
+        <tbody>
+          <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+            <td style={{ padding: "15px 20px", fontSize: "18px", color: "#64748b" }}>
+              Folio de pago
+            </td>
+            <td style={{ padding: "15px 20px", fontSize: "18px", fontWeight: "600", color: "#1e293b", textAlign: "right" }}>
+              {data.receipt_number}
+            </td>
+          </tr>
+          <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+            <td style={{ padding: "15px 20px", fontSize: "18px", color: "#64748b" }}>
+              Forma de pago
+            </td>
+            <td style={{ padding: "15px 20px", fontSize: "18px", fontWeight: "600", color: "#1e293b", textAlign: "right" }}>
+              {data.payment_method}
+            </td>
+          </tr>
+          <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+            <td style={{ padding: "15px 20px", fontSize: "18px", color: "#64748b" }}>
+              Fecha
+            </td>
+            <td style={{ padding: "15px 20px", fontSize: "18px", fontWeight: "600", color: "#1e293b", textAlign: "right" }}>
+              {formatDateShort(data.payment_date)}
+            </td>
+          </tr>
+          <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+            <td style={{ padding: "15px 20px", fontSize: "18px", color: "#64748b" }}>
+              Referencia
+            </td>
+            <td style={{ padding: "15px 20px", fontSize: "18px", fontWeight: "600", color: "#1e293b", textAlign: "right" }}>
+              {data.folio_venta}
+            </td>
+          </tr>
 
-        {/* Custom Line Items */}
-        {data.line_items &&
-          data.line_items.length > 0 &&
-          data.line_items.map(
-            (item, index) =>
-              item.label && (
-                <div
-                  key={index}
-                  style={{
-                    padding: "15px 20px",
-                    borderBottom: "1px solid #e2e8f0",
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <span style={{ fontSize: "18px", color: "#64748b" }}>
-                    {item.label}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: "600",
-                      color: "#1e293b",
-                    }}
-                  >
-                    $
-                    {parseFloat(item.amount || 0).toLocaleString("es-MX", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </span>
-                </div>
-              )
+          {/* Custom Line Items */}
+          {data.line_items &&
+            data.line_items.length > 0 &&
+            data.line_items.map(
+              (item, index) =>
+                item.label && (
+                  <tr key={index} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                    <td style={{ padding: "15px 20px", fontSize: "18px", color: "#64748b" }}>
+                      {item.label}
+                    </td>
+                    <td style={{ padding: "15px 20px", fontSize: "18px", fontWeight: "600", color: "#1e293b", textAlign: "right" }}>
+                      $
+                      {parseFloat(item.amount || 0).toLocaleString("es-MX", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </td>
+                  </tr>
+                )
+            )}
+
+          {data.show_comision && (
+            <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+              <td style={{ padding: "15px 20px", fontSize: "18px", color: "#64748b" }}>
+                Comisión:
+              </td>
+              <td style={{ padding: "15px 20px", fontSize: "18px", fontWeight: "600", color: "#1e293b", textAlign: "right" }}>
+                $
+                {parseFloat(data.comision || 0).toLocaleString("es-MX", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </td>
+            </tr>
           )}
 
-        {data.show_comision && (
-          <div
-            style={{
-              padding: "15px 20px",
-              borderBottom: "1px solid #e2e8f0",
-              display: "flex",
-              justifyContent: "space-between",
-            }}
-          >
-            <span style={{ fontSize: "18px", color: "#64748b" }}>
-              Comisión:
-            </span>
-            <span
-              style={{ fontSize: "18px", fontWeight: "600", color: "#1e293b" }}
-            >
+          <tr>
+            <td style={{ padding: "15px 20px", fontSize: "18px", color: "#64748b" }}>
+              Total:
+            </td>
+            <td style={{ padding: "15px 20px", fontSize: "18px", fontWeight: "bold", color: "#1e293b", textAlign: "right" }}>
               $
-              {parseFloat(data.comision || 0).toLocaleString("es-MX", {
+              {data.amount.toLocaleString("es-MX", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
-            </span>
-          </div>
-        )}
-
-        <div
-          style={{
-            padding: "15px 20px",
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
-          <span style={{ fontSize: "18px", color: "#64748b" }}>Total:</span>
-          <span
-            style={{ fontSize: "18px", fontWeight: "bold", color: "#1e293b" }}
-          >
-            $
-            {data.amount.toLocaleString("es-MX", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-        </div>
-      </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       {/* Balance - Yellow */}
       {data.balance > 0 && (
-        <div
+        <table
           style={{
+            width: "100%",
             background: "#fef08a",
             borderRadius: "8px",
-            padding: "15px 20px",
             marginBottom: "20px",
-            display: "flex",
-            justifyContent: "space-between",
+            borderCollapse: "collapse",
           }}
         >
-          <span
-            style={{ fontSize: "18px", fontWeight: "600", color: "#854d0e" }}
-          >
-            Saldo:
-          </span>
-          <span
-            style={{ fontSize: "22px", fontWeight: "bold", color: "#854d0e" }}
-          >
-            $
-            {data.balance.toLocaleString("es-MX", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-        </div>
+          <tbody>
+            <tr>
+              <td style={{ padding: "15px 20px", fontSize: "18px", fontWeight: "600", color: "#854d0e" }}>
+                Saldo:
+              </td>
+              <td style={{ padding: "15px 20px", fontSize: "22px", fontWeight: "bold", color: "#854d0e", textAlign: "right" }}>
+                $
+                {data.balance.toLocaleString("es-MX", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       )}
 
       {/* Payment Deadline - Always show if there's a balance and fecha_limite exists */}
       {data.balance > 0 && data.fecha_limite_pago && (
-        <div
+        <table
           style={{
+            width: "100%",
             background: "#fef3c7",
             borderRadius: "8px",
-            padding: "15px 20px",
             marginBottom: "20px",
-            display: "flex",
-            justifyContent: "space-between",
+            borderCollapse: "collapse",
           }}
         >
-          <span style={{ fontSize: "18px", color: "#92400e" }}>
-            Fecha límite de pago:
-          </span>
-          <span
-            style={{ fontSize: "18px", fontWeight: "600", color: "#92400e" }}
-          >
-            {formatDateShort(data.fecha_limite_pago)}
-          </span>
-        </div>
+          <tbody>
+            <tr>
+              <td style={{ padding: "15px 20px", fontSize: "18px", color: "#92400e" }}>
+                Fecha límite de pago:
+              </td>
+              <td style={{ padding: "15px 20px", fontSize: "18px", fontWeight: "600", color: "#92400e", textAlign: "right" }}>
+                {formatDateShort(data.fecha_limite_pago)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       )}
 
       {/* Reservation Info - Always show if destino or fecha_viaje exists */}
@@ -435,15 +378,15 @@ export default function ProfessionalReceipt({ data, companyInfo }) {
         </div>
 
         {/* Logo */}
-        <div style={{ marginTop: "20px" }}>
+        <div style={{ marginTop: "20px", textAlign: "center" }}>
           <img
             src={logoSrc}
             alt="Emociones Viajes"
+            crossOrigin="anonymous"
             style={{
               height: "60px",
               width: "auto",
-              display: "block",
-              margin: "0 auto",
+              display: "inline-block",
             }}
           />
         </div>

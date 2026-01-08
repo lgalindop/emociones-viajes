@@ -9,6 +9,7 @@ import {
   MapPin,
   Trash2,
 } from "lucide-react";
+import Toast from "../components/ui/Toast";
 
 export default function SaleDetails({ saleId, onBack }) {
   const { user } = useAuth();
@@ -16,6 +17,7 @@ export default function SaleDetails({ saleId, onBack }) {
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     async function fetchSale() {
@@ -60,7 +62,7 @@ export default function SaleDetails({ saleId, onBack }) {
         setVenta(data);
       } catch (error) {
         console.error("Error:", error);
-        alert("Error al cargar venta");
+        setToast({ message: "Error al cargar venta", type: "error" });
       } finally {
         setLoading(false);
       }
@@ -123,11 +125,11 @@ export default function SaleDetails({ saleId, onBack }) {
 
       if (ventaError) throw ventaError;
 
-      alert("Venta eliminada correctamente");
-      onBack();
+      setToast({ message: "Venta eliminada correctamente", type: "success" });
+      setTimeout(() => onBack(), 1500);
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al eliminar venta: " + error.message);
+      setToast({ message: "Error al eliminar venta: " + error.message, type: "error" });
     } finally {
       setDeleting(false);
     }
@@ -143,6 +145,13 @@ export default function SaleDetails({ saleId, onBack }) {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">

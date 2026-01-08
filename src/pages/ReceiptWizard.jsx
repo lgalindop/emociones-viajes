@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, FileText } from "lucide-react";
+import Toast from "../components/ui/Toast";
 
 // Helper function for number to words conversion
 function convertNumberToWords(num) {
@@ -101,6 +102,7 @@ export default function ReceiptWizard() {
   const [selectedVenta, setSelectedVenta] = useState(null);
   const [loading, setLoading] = useState(false);
   const [existingReceipt, setExistingReceipt] = useState(null);
+  const [toast, setToast] = useState(null);
 
   const [receiptData, setReceiptData] = useState({
     clientName: "",
@@ -216,8 +218,8 @@ export default function ReceiptWizard() {
       setStep(2);
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cargar recibo: " + error.message);
-      navigate("/app/receipts");
+      setToast({ message: "Error al cargar recibo: " + error.message, type: "error" });
+      setTimeout(() => navigate("/app/receipts"), 2000);
     } finally {
       setLoading(false);
     }
@@ -247,7 +249,7 @@ export default function ReceiptWizard() {
       setVentas(data || []);
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cargar ventas");
+      setToast({ message: "Error al cargar ventas", type: "error" });
     }
   }
 
@@ -332,7 +334,7 @@ export default function ReceiptWizard() {
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al procesar recibo: " + error.message);
+      setToast({ message: "Error al procesar recibo: " + error.message, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -443,14 +445,21 @@ export default function ReceiptWizard() {
       if (pagoError) throw pagoError;
 
       // Link pago to receipt
-      await supabase
-        .from("receipts")
-        .update({ pago_id: pago.id })
-        .eq("id", receipt.id);
+      if (pago?.id && receipt?.id) {
+        const { error: linkError } = await supabase
+          .from("receipts")
+          .update({ pago_id: pago.id })
+          .eq("id", receipt.id);
+
+        if (linkError) {
+          console.error("Error linking pago to receipt:", linkError, { pagoId: pago.id, receiptId: receipt.id });
+          // Non-fatal: receipt was created, just couldn't link pago_id
+        }
+      }
     }
 
-    alert("Recibo generado exitosamente");
-    navigate("/app/receipts");
+    setToast({ message: "Recibo generado exitosamente", type: "success" });
+    setTimeout(() => navigate("/app/receipts"), 1500);
   }
 
   async function handleEditReceipt(imageUrl) {
@@ -548,8 +557,8 @@ export default function ReceiptWizard() {
 
     if (updateReceiptError) throw updateReceiptError;
 
-    alert("Recibo actualizado y finanzas sincronizadas");
-    navigate("/app/receipts");
+    setToast({ message: "Recibo actualizado exitosamente", type: "success" });
+    setTimeout(() => navigate("/app/receipts"), 1500);
   }
 
   if (loading && step === 1) {
@@ -558,17 +567,30 @@ export default function ReceiptWizard() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <button
-            onClick={() =>
-              step === 1 ? navigate("/app/receipts") : setStep(1)
-            }
+            onClick={() => {
+              if (editMode || step === 1) {
+                navigate("/app/receipts");
+              } else {
+                setStep(1);
+                setMode(null);
+                setSelectedVenta(null);
+              }
+            }}
             className="flex items-center gap-2 text-primary hover:text-primary/80 mb-4"
           >
             <ArrowLeft size={20} />
-            {step === 1 ? "Volver a Recibos" : "Volver a Selección"}
+            {editMode || step === 1 ? "Volver a Recibos" : "Volver a Selección"}
           </button>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
             <FileText size={32} />
@@ -911,7 +933,7 @@ export default function ReceiptWizard() {
                       !receiptData.amountPaid ||
                       !receiptData.destination
                     ) {
-                      alert("Completa todos los campos requeridos");
+                      setToast({ message: "Completa todos los campos requeridos", type: "warning" });
                       return;
                     }
 
@@ -1030,14 +1052,14 @@ export default function ReceiptWizard() {
                             handleGenerateReceipt(blob);
                           } else {
                             setLoading(false);
-                            alert("Error al generar imagen");
+                            setToast({ message: "Error al generar imagen", type: "error" });
                           }
                         }, "image/png");
                       }, 500);
                     } catch (error) {
                       setLoading(false);
                       console.error("Error:", error);
-                      alert("Error al generar recibo: " + error.message);
+                      setToast({ message: "Error al generar recibo: " + error.message, type: "error" });
                     }
                   }}
                   disabled={loading}

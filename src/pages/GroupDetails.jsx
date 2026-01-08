@@ -12,6 +12,7 @@ import {
 import GroupModal from "../components/groups/GroupModal";
 import SaleDetails from "./SaleDetails";
 import QuoteDetails from "./QuoteDetails";
+import Toast from "../components/ui/Toast";
 
 export default function GroupDetails() {
   const { id } = useParams();
@@ -24,6 +25,7 @@ export default function GroupDetails() {
   const [viewingVentaId, setViewingVentaId] = useState(null);
   const [viewingCotizacionId, setViewingCotizacionId] = useState(null);
   const [activeTab, setActiveTab] = useState("ventas");
+  const [toast, setToast] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -106,7 +108,7 @@ export default function GroupDetails() {
       setVentas(allVentas);
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cargar grupo: " + error.message);
+      setToast({ message: "Error al cargar grupo: " + error.message, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -185,6 +187,13 @@ export default function GroupDetails() {
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">

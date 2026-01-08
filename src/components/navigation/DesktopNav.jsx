@@ -6,11 +6,13 @@ import {
   TrendingUp,
   DollarSign,
   Users,
+  UserCircle,
   BarChart3,
   Receipt,
   Layout,
   Shield,
   LogOut,
+  Building,
 } from "lucide-react";
 import { getRoleBadgeColor, getRoleLabel } from "../../lib/roleUtils";
 
@@ -30,7 +32,9 @@ export default function DesktopNav({
   const navItems = [
     { path: "/app", icon: Home, label: "Inicio", exact: true },
     { path: "/app/cotizaciones", icon: FileText, label: "Cotizaciones" },
+    { path: "/app/clientes", icon: UserCircle, label: "Clientes" },
     { path: "/app/operadores", icon: Building2, label: "Operadores" },
+    { path: "/app/hoteles", icon: Building, label: "Hoteles" },
     { path: "/app/pipeline", icon: TrendingUp, label: "Pipeline" },
     { path: "/app/sales", icon: DollarSign, label: "Ventas" },
     { path: "/app/grupos", icon: Users, label: "Grupos" },
@@ -64,38 +68,47 @@ export default function DesktopNav({
                   <button
                     key={item.path}
                     onClick={() => onNavigate(item.path)}
-                    className={`p-3 rounded hover:bg-white/10 transition-colors ${
+                    className={`p-3 rounded hover:bg-white/10 transition-colors relative group ${
                       active ? "bg-white/20" : ""
                     }`}
                     aria-label={item.label}
                     aria-current={active ? "page" : undefined}
                   >
                     <Icon size={20} aria-hidden="true" />
+                    <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                      {item.label}
+                    </span>
                   </button>
                 );
               })}
               {showCMS && (
                 <button
                   onClick={() => onNavigate("/app/cms")}
-                  className={`p-3 rounded hover:bg-white/10 transition-colors ${
+                  className={`p-3 rounded hover:bg-white/10 transition-colors relative group ${
                     isActive("/app/cms") ? "bg-white/20" : ""
                   }`}
                   aria-label="CMS"
                   aria-current={isActive("/app/cms") ? "page" : undefined}
                 >
                   <Layout size={20} aria-hidden="true" />
+                  <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    CMS
+                  </span>
                 </button>
               )}
               {canManageUsers && (
                 <button
                   onClick={() => onNavigate("/app/users")}
-                  className={`p-3 rounded hover:bg-white/10 transition-colors ${
+                  className={`p-3 rounded hover:bg-white/10 transition-colors relative group ${
                     isActive("/app/users") ? "bg-white/20" : ""
                   }`}
                   aria-label="Usuarios"
                   aria-current={isActive("/app/users") ? "page" : undefined}
                 >
                   <Shield size={20} aria-hidden="true" />
+                  <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    Usuarios
+                  </span>
                 </button>
               )}
             </div>
@@ -117,10 +130,13 @@ export default function DesktopNav({
             </div>
             <button
               onClick={onSignOut}
-              className="p-2 hover:bg-white/10 rounded transition-colors"
+              className="p-2 hover:bg-white/10 rounded transition-colors relative group"
               aria-label="Cerrar sesion"
             >
               <LogOut size={20} aria-hidden="true" />
+              <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                Cerrar Sesión
+              </span>
             </button>
           </div>
         </div>

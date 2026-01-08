@@ -11,6 +11,8 @@ import {
   Filter,
 } from "lucide-react";
 import GroupModal from "../components/groups/GroupModal";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
+import Toast from "../components/ui/Toast";
 import { useNavigate } from "react-router-dom";
 
 export default function Groups() {
@@ -20,6 +22,8 @@ export default function Groups() {
   const [editingGrupo, setEditingGrupo] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("activos"); // 'activos', 'pasados', 'todos'
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, grupo: null });
+  const [toast, setToast] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -66,23 +70,17 @@ export default function Groups() {
     }
   }
 
-  async function handleDelete(id) {
-    if (
-      !confirm(
-        "¿Eliminar este grupo? Las cotizaciones/ventas no se eliminarán."
-      )
-    ) {
-      return;
-    }
-
+  async function handleDelete(grupo) {
     try {
-      const { error } = await supabase.from("grupos").delete().eq("id", id);
+      const { error } = await supabase.from("grupos").delete().eq("id", grupo.id);
 
       if (error) throw error;
+      setToast({ message: "Grupo eliminado correctamente", type: "success" });
       fetchGroups();
+      setDeleteConfirm({ open: false, grupo: null });
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al eliminar grupo");
+      setToast({ message: "Error al eliminar grupo", type: "error" });
     }
   }
 
@@ -367,7 +365,7 @@ export default function Groups() {
                           <Edit2 size={18} />
                         </button>
                         <button
-                          onClick={() => handleDelete(grupo.id)}
+                          onClick={() => setDeleteConfirm({ open: true, grupo })}
                           className="p-2 text-red-600 hover:bg-red-50 rounded"
                         >
                           <Trash2 size={18} />
@@ -394,6 +392,26 @@ export default function Groups() {
             setEditingGrupo(null);
             fetchGroups();
           }}
+        />
+      )}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.open}
+        onClose={() => setDeleteConfirm({ open: false, grupo: null })}
+        onConfirm={() => handleDelete(deleteConfirm.grupo)}
+        title="Eliminar Grupo"
+        message={`¿Eliminar "${deleteConfirm.grupo?.nombre}"? Las cotizaciones y ventas asociadas no se eliminarán.`}
+        confirmText="Eliminar"
+        variant="danger"
+      />
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
         />
       )}
     </div>

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
-import { X } from "lucide-react";
+import { X, Users } from "lucide-react";
 import ReceiptGenerator from "../receipts/ReceiptGenerator";
+import ViajerosManager from "../clientes/ViajerosManager";
 
 export default function ConvertToSale({
   cotizacion,
@@ -25,6 +26,8 @@ export default function ConvertToSale({
   const [showReceiptGenerator, setShowReceiptGenerator] = useState(false);
   const [createdVenta, setCreatedVenta] = useState(null);
   const [createdPago, setCreatedPago] = useState(null);
+  const [viajeros, setViajeros] = useState([]);
+  const [showViajeros, setShowViajeros] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -81,7 +84,34 @@ export default function ConvertToSale({
 
       if (ventaError) throw ventaError;
 
-      // 2. Create initial payment if > 0
+      // 2. Save viajeros if any
+      if (viajeros.length > 0) {
+        const viajerosData = viajeros.map(v => ({
+          venta_id: venta.id,
+          cliente_id: v.cliente_id || null,
+          nombre_completo: v.nombre_completo,
+          tipo_viajero: v.tipo_viajero,
+          es_titular: v.es_titular || false,
+          fecha_nacimiento: v.fecha_nacimiento || null,
+          nacionalidad: v.nacionalidad || null,
+          pasaporte_numero: v.pasaporte_numero || null,
+          pasaporte_vencimiento: v.pasaporte_vencimiento || null,
+          telefono: v.telefono || null,
+          email: v.email || null,
+          requerimientos_especiales: v.requerimientos_especiales || null,
+        }));
+
+        const { error: viajerosError } = await supabase
+          .from("viajeros")
+          .insert(viajerosData);
+
+        if (viajerosError) {
+          console.error("Error saving viajeros:", viajerosError);
+          // Don't fail the sale, just log the error
+        }
+      }
+
+      // 3. Create initial payment if > 0
       const pagoInicial = parseFloat(formData.pago_inicial);
       if (pagoInicial > 0) {
         const { data: newPago, error: pagoError } = await supabase
@@ -373,6 +403,47 @@ export default function ConvertToSale({
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
                 placeholder="Notas adicionales sobre la venta..."
               />
+            </div>
+
+            {/* Viajeros Section */}
+            <div className="border-2 border-gray-200 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowViajeros(!showViajeros)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Users size={20} className="text-gray-500" />
+                  <span className="font-medium text-gray-700">
+                    Viajeros / Pasajeros
+                  </span>
+                  {viajeros.length > 0 && (
+                    <span className="px-2 py-0.5 bg-primary/10 text-primary text-sm rounded-full">
+                      {viajeros.length} registrados
+                    </span>
+                  )}
+                </div>
+                <span className="text-sm text-gray-500">
+                  {showViajeros ? "Ocultar" : "Mostrar"} (opcional)
+                </span>
+              </button>
+
+              {showViajeros && (
+                <div className="p-4 border-t">
+                  <ViajerosManager
+                    viajeros={viajeros}
+                    onChange={setViajeros}
+                    numAdultos={cotizacion.num_adultos || 0}
+                    numMenores={cotizacion.num_ninos || 0}
+                    numInfantes={cotizacion.num_infantes || 0}
+                    clienteId={cotizacion.cliente_id}
+                  />
+                  <p className="text-xs text-gray-500 mt-3">
+                    Puedes agregar los datos de los viajeros ahora o más tarde desde los detalles de la venta.
+                    {cotizacion.cliente_id && " Los familiares registrados del cliente aparecerán para agregar rápidamente."}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Submit */}

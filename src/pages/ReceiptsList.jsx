@@ -10,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Toast from "../components/ui/Toast";
 
 export default function ReceiptsList() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function ReceiptsList() {
   const [filterStage, setFilterStage] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     fetchReceipts();
@@ -47,7 +49,7 @@ export default function ReceiptsList() {
       setReceipts(data || []);
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cargar recibos");
+      setToast({ message: "Error al cargar recibos", type: "error" });
     } finally {
       setLoading(false);
     }
@@ -72,11 +74,11 @@ export default function ReceiptsList() {
 
         if (deleteError) throw deleteError;
 
-        alert("Recibo eliminado");
+        setToast({ message: "Recibo eliminado", type: "success" });
         fetchReceipts();
       } catch (error) {
         console.error("Error:", error);
-        alert("Error al eliminar recibo: " + error.message);
+        setToast({ message: "Error al eliminar recibo: " + error.message, type: "error" });
       }
       return;
     }
@@ -137,11 +139,11 @@ export default function ReceiptsList() {
 
       if (deleteError) throw deleteError;
 
-      alert("Recibo eliminado y finanzas actualizadas");
+      setToast({ message: "Recibo eliminado y finanzas actualizadas", type: "success" });
       fetchReceipts();
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al eliminar recibo: " + error.message);
+      setToast({ message: "Error al eliminar recibo: " + error.message, type: "error" });
     }
   }
 
@@ -207,6 +209,13 @@ export default function ReceiptsList() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">

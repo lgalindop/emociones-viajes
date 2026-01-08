@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import LeadOriginIcon from "../components/LeadOriginIcon";
 import ExportToPDF from "../components/export/ExportToPDF";
+import Toast from "../components/ui/Toast";
 
 export default function QuoteDetails({
   quoteId,
@@ -53,6 +54,7 @@ export default function QuoteDetails({
     tour_link: "",
   });
   const [showAddOpcion, setShowAddOpcion] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -81,7 +83,7 @@ export default function QuoteDetails({
       setOperadores(result3.data || []);
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cargar cotización");
+      setToast({ message: "Error al cargar cotización", type: "error" });
     } finally {
       setLoading(false);
     }
@@ -201,11 +203,11 @@ export default function QuoteDetails({
       setCotizacion(editData);
       setEditing(false);
       setShowAddOpcion(false);
-      alert("Cotización actualizada");
+      setToast({ message: "Cotización actualizada", type: "success" });
       fetchData();
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al actualizar: " + error.message);
+      setToast({ message: "Error al actualizar: " + error.message, type: "error" });
     }
   }
 
@@ -218,11 +220,11 @@ export default function QuoteDetails({
         .delete()
         .eq("id", quoteId);
       if (result.error) throw result.error;
-      alert("Cotización eliminada");
-      onDeleted();
+      setToast({ message: "Cotización eliminada", type: "success" });
+      setTimeout(() => onDeleted(), 1500);
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al eliminar");
+      setToast({ message: "Error al eliminar", type: "error" });
     }
   }
 
@@ -237,7 +239,7 @@ export default function QuoteDetails({
       !newOpcion.nombre_paquete ||
       !newOpcion.precio_total
     ) {
-      alert("Completa los campos obligatorios");
+      setToast({ message: "Completa los campos obligatorios", type: "warning" });
       return;
     }
     setEditingOpciones([
@@ -313,6 +315,13 @@ export default function QuoteDetails({
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 pb-24 md:pb-8">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       <div className="max-w-6xl mx-auto">
         <button
           onClick={onBack}

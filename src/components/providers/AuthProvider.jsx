@@ -90,8 +90,26 @@ export default function AuthProvider({ children }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
+
+      // Handle token refresh failures - clear stale session
+      if (event === "TOKEN_REFRESHED" && !session) {
+        console.warn("Token refresh failed, signing out");
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      // Handle sign out event
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setProfile(null);
+        setAuthError(null);
+        setLoading(false);
+        return;
+      }
 
       setUser(session?.user ?? null);
       if (session?.user) {

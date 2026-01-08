@@ -13,12 +13,14 @@ import QuoteDetails from "./QuoteDetails";
 import { useDebounce } from "../hooks/useDebounce";
 import { useAuth } from "../hooks/useAuth";
 import LeadOriginIcon from "../components/LeadOriginIcon";
+import Toast from "../components/ui/Toast";
 
 export default function Quotes({ onNewQuote }) {
   const [cotizaciones, setCotizaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCotizacionId, setSelectedCotizacionId] = useState(null);
   const [selectedForDelete, setSelectedForDelete] = useState([]);
+  const [toast, setToast] = useState(null);
   const { isAdmin } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState(
@@ -242,12 +244,12 @@ export default function Quotes({ onNewQuote }) {
 
       if (error) throw error;
 
-      alert("✅ Cotizaciones eliminadas");
+      setToast({ message: "Cotizaciones eliminadas", type: "success" });
       setSelectedForDelete([]);
       fetchCotizaciones();
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al eliminar cotizaciones");
+      setToast({ message: "Error al eliminar cotizaciones", type: "error" });
     }
   }
 
@@ -282,6 +284,13 @@ export default function Quotes({ onNewQuote }) {
 
   return (
     <div className="min-h-screen bg-gray-50 p-3 md:p-6 pb-20 md:pb-6">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">

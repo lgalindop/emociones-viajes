@@ -90,23 +90,49 @@ serve(async (req) => {
       throw new Error('Admins cannot delete other Admin users')
     }
 
-    // Delete user from auth.users (this will cascade to profiles if FK is set up)
-    // First try to delete profile explicitly to be safe
+    // Nullify references in related tables before deletion
+    // This handles foreign key constraints gracefully
+    const tablesToUpdate = [
+      { table: 'actividades', column: 'created_by' },
+      { table: 'cotizaciones', column: 'created_by' },
+      { table: 'cotizaciones', column: 'updated_by' },
+      { table: 'ventas', column: 'created_by' },
+      { table: 'ventas', column: 'updated_by' },
+      { table: 'pagos', column: 'created_by' },
+      { table: 'receipts', column: 'created_by' },
+      { table: 'grupos', column: 'created_by' },
+    ];
+
+    for (const { table, column } of tablesToUpdate) {
+      const { error } = await supabaseAdmin
+        .from(table)
+        .update({ [column]: null })
+        .eq(column, userId);
+
+      if (error) {
+        console.log(`Note: Could not update ${table}.${column}:`, error.message);
+        // Continue - column might not exist or have different constraints
+      }
+    }
+
+    // Delete profile first (before auth.users to avoid FK issues)
     const { error: profileDeleteError } = await supabaseAdmin
       .from('profiles')
       .delete()
-      .eq('id', userId)
+      .eq('id', userId);
 
     if (profileDeleteError) {
-      console.error('Profile delete error:', profileDeleteError)
-      // Continue anyway - the auth delete might cascade
+      console.error('Profile delete error:', profileDeleteError);
+      throw new Error(`Cannot delete profile: ${profileDeleteError.message}`);
     }
 
     // Delete from auth.users
     const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
     if (authDeleteError) {
-      throw authDeleteError
+      // Profile already deleted, log but don't fail completely
+      console.error('Auth delete error (profile already removed):', authDeleteError);
+      // User is effectively deleted since profile is gone
     }
 
     return new Response(

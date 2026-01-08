@@ -138,7 +138,44 @@ export default function ReceiptWizard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ventaIdFromNav, ventas]);
 
-  // Auto-generate custom text when template type changes to informal
+  // Function to generate default text for informal receipts
+  // Called on blur from amount field or when template changes to informal with valid amount
+  function generateInformalText() {
+    if (
+      receiptData.templateType === "informal" &&
+      selectedVenta &&
+      receiptData.amountPaid
+    ) {
+      const amountText = convertNumberToWords(
+        parseFloat(receiptData.amountPaid)
+      );
+      // Format travel date with T00:00:00 to avoid timezone issues
+      let travelDateFormatted = "por confirmar";
+      if (selectedVenta.fecha_viaje) {
+        const dateOnly = selectedVenta.fecha_viaje.includes("T")
+          ? selectedVenta.fecha_viaje.split("T")[0]
+          : selectedVenta.fecha_viaje;
+        travelDateFormatted = new Date(dateOnly + "T00:00:00").toLocaleDateString("es-MX", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric"
+        });
+      }
+      const defaultText = `Se recibió un pago de $${parseFloat(
+        receiptData.amountPaid
+      ).toLocaleString("es-MX", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })} (${amountText} pesos 00/100 M.N.) como abono para la reservación de ${receiptData.destination || "viaje"}, a nombre de ${receiptData.clientName}, con fecha de viaje del ${travelDateFormatted}.`;
+
+      setReceiptData((prev) => ({
+        ...prev,
+        notes: defaultText,
+      }));
+    }
+  }
+
+  // Auto-generate custom text only when template type changes to informal (not on every amount keystroke)
   useEffect(() => {
     if (
       receiptData.templateType === "informal" &&
@@ -146,23 +183,10 @@ export default function ReceiptWizard() {
       receiptData.amountPaid &&
       !receiptData.notes
     ) {
-      const amountText = convertNumberToWords(
-        parseFloat(receiptData.amountPaid)
-      );
-      const defaultText = `Se recibió un pago de $${parseFloat(
-        receiptData.amountPaid
-      ).toLocaleString("es-MX", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })} (${amountText} pesos 00/100 M.N.) como abono para la reservación de ${receiptData.destination || "viaje"}, a nombre de ${receiptData.clientName}, con fecha de viaje del ${selectedVenta.fecha_viaje ? new Date(selectedVenta.fecha_viaje).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" }) : "por confirmar"}.`;
-
-      setReceiptData({
-        ...receiptData,
-        notes: defaultText,
-      });
+      generateInformalText();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [receiptData.templateType, selectedVenta, receiptData.amountPaid]);
+  }, [receiptData.templateType, selectedVenta]);
 
   async function loadReceiptForEdit() {
     try {
@@ -869,6 +893,12 @@ export default function ReceiptWizard() {
                         amountPaid: e.target.value,
                       })
                     }
+                    onBlur={() => {
+                      // Generate informal text when user finishes entering amount
+                      if (receiptData.templateType === "informal" && receiptData.amountPaid) {
+                        generateInformalText();
+                      }
+                    }}
                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary text-sm"
                     required
                   />

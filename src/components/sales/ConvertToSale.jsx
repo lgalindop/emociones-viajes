@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { X, Users } from "lucide-react";
 import ReceiptGenerator from "../receipts/ReceiptGenerator";
-import ViajerosManager from "../clientes/ViajerosManager";
+import TravelersManager from "../customers/TravelersManager";
 
 export default function ConvertToSale({
   cotizacion,
@@ -86,7 +86,7 @@ export default function ConvertToSale({
 
       // 2. Save viajeros if any
       if (viajeros.length > 0) {
-        const viajerosData = viajeros.map(v => ({
+        const viajerosData = viajeros.map((v) => ({
           venta_id: venta.id,
           cliente_id: v.cliente_id || null,
           nombre_completo: v.nombre_completo,
@@ -430,7 +430,7 @@ export default function ConvertToSale({
 
               {showViajeros && (
                 <div className="p-4 border-t">
-                  <ViajerosManager
+                  <TravelersManager
                     viajeros={viajeros}
                     onChange={setViajeros}
                     numAdultos={cotizacion.num_adultos || 0}
@@ -439,8 +439,10 @@ export default function ConvertToSale({
                     clienteId={cotizacion.cliente_id}
                   />
                   <p className="text-xs text-gray-500 mt-3">
-                    Puedes agregar los datos de los viajeros ahora o más tarde desde los detalles de la venta.
-                    {cotizacion.cliente_id && " Los familiares registrados del cliente aparecerán para agregar rápidamente."}
+                    Puedes agregar los datos de los viajeros ahora o más tarde
+                    desde los detalles de la venta.
+                    {cotizacion.cliente_id &&
+                      " Los familiares registrados del cliente aparecerán para agregar rápidamente."}
                   </p>
                 </div>
               )}

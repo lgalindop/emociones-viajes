@@ -164,8 +164,11 @@ export default function ReceiptGenerator({
   }
 
   function formatDate(dateStr) {
-    if (!dateStr) return "";
-    const date = new Date(dateStr + "T00:00:00");
+    if (!dateStr) return "por confirmar";
+    // Handle dates by extracting just the date part and adding T00:00:00 to avoid timezone issues
+    const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+    const date = new Date(dateOnly + "T00:00:00");
+    if (isNaN(date.getTime())) return "por confirmar";
     return date.toLocaleDateString("es-MX", {
       day: "2-digit",
       month: "long",
@@ -311,18 +314,25 @@ export default function ReceiptGenerator({
         venta.cotizaciones?.num_adultos || venta.num_adultos || 0;
       const numNinos = venta.cotizaciones?.num_ninos || venta.num_ninos || 0;
 
+      // Calculate financial data correctly
+      const currentPaymentAmount = parseFloat(pago.monto);
+      const totalPriceAmount = parseFloat(venta.precio_total);
+      const montoPagadoTotal = parseFloat(venta.monto_pagado || 0);
+      const previousPaymentsAmount = Math.max(0, montoPagadoTotal - currentPaymentAmount);
+      const balanceAmount = Math.max(0, totalPriceAmount - montoPagadoTotal);
+
       const receiptData = {
         receipt_number: finalReceiptNumber,
         venta_id: venta.id,
         pago_id: pago.id,
         template_type: template,
         custom_text: template === "informal" ? customText : null,
-        amount: pago.monto,
+        amount: currentPaymentAmount,
         payment_date: pago.fecha_pagado || pago.fecha_programada,
         payment_method: pago.metodo_pago,
-        total_price: venta.precio_total,
-        previous_payments: venta.monto_pagado - pago.monto,
-        balance: venta.monto_pendiente,
+        total_price: totalPriceAmount,
+        previous_payments: previousPaymentsAmount,
+        balance: balanceAmount,
         client_name: clientName,
         client_phone: clientPhone,
         client_email: clientEmail,
@@ -357,11 +367,17 @@ export default function ReceiptGenerator({
   const destino = venta.cotizaciones?.destino || venta.destino;
 
   // Calculate correct financial data for receipt
-  const currentPayment = pago.monto;
-  const totalPrice = venta.precio_total;
-  const previousPayments = (venta.monto_pagado || 0) - currentPayment; // Payments BEFORE this one
-  const balance =
-    venta.monto_pendiente || totalPrice - (venta.monto_pagado || 0); // Balance AFTER this payment
+  // The pago.monto is the current payment being made
+  const currentPayment = parseFloat(pago.monto);
+  const totalPrice = parseFloat(venta.precio_total);
+
+  // monto_pagado includes ALL payments including the current one
+  // So previousPayments = monto_pagado - currentPayment gives payments BEFORE this one
+  const montoPagadoTotal = parseFloat(venta.monto_pagado || 0);
+  const previousPayments = Math.max(0, montoPagadoTotal - currentPayment);
+
+  // Balance AFTER this payment = total - all payments (including this one)
+  const balance = Math.max(0, totalPrice - montoPagadoTotal);
 
   const receiptData = {
     receipt_number: receiptNumber,

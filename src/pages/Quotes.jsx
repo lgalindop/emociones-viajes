@@ -15,10 +15,10 @@ import { useAuth } from "../hooks/useAuth";
 import LeadOriginIcon from "../components/LeadOriginIcon";
 import Toast from "../components/ui/Toast";
 
-export default function Quotes({ onNewQuote }) {
+export default function Quotes({ onNewQuote, initialQuoteId }) {
   const [cotizaciones, setCotizaciones] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCotizacionId, setSelectedCotizacionId] = useState(null);
+  const [selectedCotizacionId, setSelectedCotizacionId] = useState(initialQuoteId || null);
   const [selectedForDelete, setSelectedForDelete] = useState([]);
   const [toast, setToast] = useState(null);
   const { isAdmin } = useAuth();

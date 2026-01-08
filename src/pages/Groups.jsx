@@ -5,10 +5,10 @@ import {
   Edit2,
   Trash2,
   Users,
-  Calendar,
   User,
   Search,
   Filter,
+  X,
 } from "lucide-react";
 import GroupModal from "../components/groups/GroupModal";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
@@ -143,49 +143,56 @@ export default function Groups() {
   }
 
   return (
-    <div className="p-4 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-primary">Grupos</h1>
-          <p className="text-gray-600 mt-1">
-            {filteredGrupos.length} de {grupos.length} grupos
-          </p>
+    <div className="min-h-screen bg-gray-50 p-3 md:p-6 pb-20 md:pb-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+          <div>
+            <h1 className="text-xl font-bold text-primary">Grupos</h1>
+            <p className="text-xs text-gray-600">
+              {filteredGrupos.length} de {grupos.length} grupos
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setEditingGrupo(null);
+              setShowModal(true);
+            }}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors text-sm"
+          >
+            <Plus size={16} />
+            <span>Nuevo Grupo</span>
+          </button>
         </div>
-        <button
-          onClick={() => {
-            setEditingGrupo(null);
-            setShowModal(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-        >
-          <Plus size={20} />
-          Nuevo Grupo
-        </button>
-      </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow p-2 mb-3">
+          <div className="relative mb-2">
             <Search
-              size={20}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={14}
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
             />
             <input
               type="text"
               placeholder="Buscar por nombre, coordinador, tipo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full pl-8 pr-8 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
 
           {/* Date Filter */}
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <button
               onClick={() => setDateFilter("activos")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`flex-1 px-2 py-1 text-xs rounded-lg font-medium transition-colors ${
                 dateFilter === "activos"
                   ? "bg-primary text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -195,7 +202,7 @@ export default function Groups() {
             </button>
             <button
               onClick={() => setDateFilter("pasados")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`flex-1 px-2 py-1 text-xs rounded-lg font-medium transition-colors ${
                 dateFilter === "pasados"
                   ? "bg-primary text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -205,7 +212,7 @@ export default function Groups() {
             </button>
             <button
               onClick={() => setDateFilter("todos")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`flex-1 px-2 py-1 text-xs rounded-lg font-medium transition-colors ${
                 dateFilter === "todos"
                   ? "bg-primary text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -215,86 +222,63 @@ export default function Groups() {
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Groups List */}
-      {filteredGrupos.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <Users size={48} className="mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-600 mb-4">
-            {searchTerm || dateFilter !== "todos"
-              ? "No hay grupos que coincidan con los filtros"
-              : "No hay grupos registrados"}
-          </p>
-          {!searchTerm && dateFilter === "todos" && (
-            <button
-              onClick={() => setShowModal(true)}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-            >
-              Crear Primer Grupo
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Grupo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tipo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha Evento
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Coordinador
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cotiz. / Ventas
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredGrupos.map((grupo) => {
-                const isPast =
-                  grupo.fecha_evento &&
-                  new Date(grupo.fecha_evento + "T00:00:00") < new Date();
+        {/* Groups List */}
+        {filteredGrupos.length === 0 ? (
+          <div className="text-center py-8 bg-white rounded-lg shadow">
+            <Users size={32} className="mx-auto text-gray-300 mb-2" />
+            <h3 className="text-sm font-semibold text-gray-600 mb-1">
+              No hay grupos
+            </h3>
+            <p className="text-xs text-gray-500">
+              {searchTerm || dateFilter !== "todos"
+                ? "Intenta ajustar los filtros"
+                : "Comienza creando tu primer grupo"}
+            </p>
+            {!searchTerm && dateFilter === "todos" && (
+              <button
+                onClick={() => setShowModal(true)}
+                className="mt-3 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm"
+              >
+                Crear Primer Grupo
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {filteredGrupos.map((grupo) => {
+              const isPast =
+                grupo.fecha_evento &&
+                new Date(grupo.fecha_evento + "T00:00:00") < new Date();
 
-                return (
-                  <tr
-                    key={grupo.id}
-                    className={`hover:bg-gray-50 ${isPast ? "opacity-60" : ""}`}
-                  >
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-900">
+              return (
+                <div
+                  key={grupo.id}
+                  onClick={() => navigate(`/app/grupos/${grupo.id}`)}
+                  className={`bg-white rounded-lg shadow hover:shadow-md transition-all cursor-pointer ${
+                    isPast ? "opacity-60" : ""
+                  }`}
+                >
+                  <div className="p-1.5 flex items-center gap-2 text-xs">
+                    {/* Grupo name and tipo badge */}
+                    <div className="flex flex-col gap-0.5 min-w-[100px]">
+                      <span className="font-bold text-gray-900 truncate">
                         {grupo.nombre}
-                      </div>
-                      {grupo.notas && (
-                        <div className="text-xs text-gray-500 mt-1 truncate max-w-xs">
-                          {grupo.notas}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
+                      </span>
                       <span
-                        className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
+                        className={`inline-block px-1.5 py-0.5 text-[10px] font-semibold rounded-full w-fit ${
                           tipoColors[grupo.tipo] || tipoColors.otro
                         }`}
                       >
                         {tipoLabels[grupo.tipo] || "Otro"}
                       </span>
-                    </td>
-                    <td className="px-6 py-4">
+                    </div>
+
+                    {/* Fecha evento */}
+                    <div className="flex flex-col items-center min-w-0 flex-1">
                       {grupo.fecha_evento ? (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar size={16} className="text-gray-400" />
-                          <span>
+                        <>
+                          <span className="text-gray-600 whitespace-nowrap">
                             {new Date(
                               grupo.fecha_evento + "T00:00:00"
                             ).toLocaleDateString("es-MX", {
@@ -304,81 +288,81 @@ export default function Groups() {
                             })}
                           </span>
                           {isPast && (
-                            <span className="text-xs text-red-600">
+                            <span className="text-[10px] text-red-600">
                               (Pasado)
                             </span>
                           )}
-                        </div>
+                        </>
                       ) : (
-                        <span className="text-sm text-gray-400">Sin fecha</span>
+                        <span className="text-gray-400">Sin fecha</span>
                       )}
-                    </td>
-                    <td className="px-6 py-4">
+                    </div>
+
+                    {/* Coordinador - hide on very small screens */}
+                    <div className="hidden sm:flex flex-col items-center min-w-[90px]">
                       {grupo.coordinador_nombre ? (
-                        <div className="text-sm">
-                          <div className="font-medium text-gray-900">
+                        <>
+                          <span className="text-gray-900 truncate w-full text-center font-medium">
                             {grupo.coordinador_nombre}
-                          </div>
+                          </span>
                           {grupo.coordinador_telefono && (
-                            <div className="text-xs text-gray-500">
+                            <span className="text-gray-500 text-[10px]">
                               {grupo.coordinador_telefono}
-                            </div>
+                            </span>
                           )}
-                        </div>
+                        </>
                       ) : (
-                        <span className="text-sm text-gray-400">
-                          Sin coordinador
-                        </span>
+                        <span className="text-gray-400">Sin coord.</span>
                       )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">Cotiz:</span>{" "}
-                          <span className="font-semibold">
+                    </div>
+
+                    {/* Cotiz / Ventas counts */}
+                    <div className="flex flex-col items-center gap-0.5 min-w-[60px]">
+                      <div className="flex gap-2 text-[10px]">
+                        <span className="text-gray-600">
+                          C:{" "}
+                          <span className="font-semibold text-gray-900">
                             {grupo.cotizaciones_count || 0}
                           </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Ventas:</span>{" "}
+                        </span>
+                        <span className="text-gray-600">
+                          V:{" "}
                           <span className="font-semibold text-green-600">
                             {grupo.ventas_count || 0}
                           </span>
-                        </div>
+                        </span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => navigate(`/app/grupos/${grupo.id}`)}
-                          className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 text-sm font-medium"
-                        >
-                          Ver
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingGrupo(grupo);
-                            setShowModal(true);
-                          }}
-                          className="p-2 text-gray-600 hover:bg-gray-100 rounded"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirm({ open: true, grupo })}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                    </div>
+
+                    {/* Actions - hide on mobile, show on click */}
+                    <div className="hidden md:flex gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingGrupo(grupo);
+                          setShowModal(true);
+                        }}
+                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirm({ open: true, grupo });
+                        }}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {showModal && (
         <GroupModal

@@ -43,10 +43,12 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
     try {
       const { data, error } = await supabase
         .from("hotel_operadores")
-        .select(`
+        .select(
+          `
           *,
           operador:operador_id(id, nombre)
-        `)
+        `
+        )
         .eq("hotel_id", hotelId)
         .order("created_at", { ascending: false });
 
@@ -116,7 +118,9 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
       const saveData = {
         hotel_id: hotelId,
         operador_id: formData.operador_id,
-        comision_porcentaje: formData.comision_porcentaje ? parseFloat(formData.comision_porcentaje) : null,
+        comision_porcentaje: formData.comision_porcentaje
+          ? parseFloat(formData.comision_porcentaje)
+          : null,
         tarifa_neta: formData.tarifa_neta,
         codigo_agencia: formData.codigo_agencia.trim() || null,
         contacto_nombre: formData.contacto_nombre.trim() || null,
@@ -144,7 +148,7 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
       resetForm();
     } catch (error) {
       console.error("Error saving relacion:", error);
-      if (error.code === '23505') {
+      if (error.code === "23505") {
         alert("Este operador ya está vinculado con el hotel");
       } else {
         alert("Error al guardar: " + error.message);
@@ -187,7 +191,8 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
 
   // Filter out operadores already linked
   const availableOperadores = operadores.filter(
-    op => !relaciones.some(r => r.operador_id === op.id && r.id !== editingId)
+    (op) =>
+      !relaciones.some((r) => r.operador_id === op.id && r.id !== editingId)
   );
 
   if (loading) {
@@ -219,7 +224,10 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-gray-50 rounded-lg p-4 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-gray-50 rounded-lg p-4 space-y-4"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -227,14 +235,18 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
               </label>
               <select
                 value={formData.operador_id}
-                onChange={(e) => setFormData({ ...formData, operador_id: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, operador_id: e.target.value })
+                }
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 required
                 disabled={editingId}
               >
                 <option value="">Seleccionar operador...</option>
                 {(editingId ? operadores : availableOperadores).map((op) => (
-                  <option key={op.id} value={op.id}>{op.nombre}</option>
+                  <option key={op.id} value={op.id}>
+                    {op.nombre}
+                  </option>
                 ))}
               </select>
             </div>
@@ -245,7 +257,9 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
               <input
                 type="text"
                 value={formData.codigo_agencia}
-                onChange={(e) => setFormData({ ...formData, codigo_agencia: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, codigo_agencia: e.target.value })
+                }
                 placeholder="Código asignado por el hotel"
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
               />
@@ -263,7 +277,12 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
                 min="0"
                 max="100"
                 value={formData.comision_porcentaje}
-                onChange={(e) => setFormData({ ...formData, comision_porcentaje: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    comision_porcentaje: e.target.value,
+                  })
+                }
                 placeholder="Ej: 10.00"
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
               />
@@ -273,7 +292,9 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
                 type="checkbox"
                 id="tarifa_neta"
                 checked={formData.tarifa_neta}
-                onChange={(e) => setFormData({ ...formData, tarifa_neta: e.target.checked })}
+                onChange={(e) =>
+                  setFormData({ ...formData, tarifa_neta: e.target.checked })
+                }
                 className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
               />
               <label htmlFor="tarifa_neta" className="text-sm text-gray-700">
@@ -290,7 +311,9 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
               <input
                 type="text"
                 value={formData.contacto_nombre}
-                onChange={(e) => setFormData({ ...formData, contacto_nombre: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, contacto_nombre: e.target.value })
+                }
                 placeholder="Contacto específico para esta relación"
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
               />
@@ -302,7 +325,9 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
               <input
                 type="email"
                 value={formData.contacto_email}
-                onChange={(e) => setFormData({ ...formData, contacto_email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, contacto_email: e.target.value })
+                }
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
               />
             </div>
@@ -314,7 +339,9 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
             </label>
             <textarea
               value={formData.notas}
-              onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, notas: e.target.value })
+              }
               rows={2}
               placeholder="Condiciones especiales, acuerdos, etc."
               className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
@@ -326,7 +353,9 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
               type="checkbox"
               id="is_active"
               checked={formData.is_active}
-              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, is_active: e.target.checked })
+              }
               className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
             />
             <label htmlFor="is_active" className="text-sm text-gray-700">
@@ -374,16 +403,20 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
             <div
               key={relacion.id}
               className={`bg-white border rounded-lg p-4 ${
-                relacion.is_active ? "border-gray-200" : "border-gray-100 opacity-60"
+                relacion.is_active
+                  ? "border-gray-200"
+                  : "border-gray-100 opacity-60"
               }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    relacion.is_active
-                      ? "bg-blue-100 text-blue-600"
-                      : "bg-gray-100 text-gray-400"
-                  }`}>
+                  <div
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      relacion.is_active
+                        ? "bg-blue-100 text-blue-600"
+                        : "bg-gray-100 text-gray-400"
+                    }`}
+                  >
                     <Building2 size={20} />
                   </div>
                   <div>
@@ -400,7 +433,10 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
                     <div className="flex flex-wrap gap-3 mt-1 text-sm">
                       {relacion.codigo_agencia && (
                         <span className="text-gray-600">
-                          Código: <span className="font-medium">{relacion.codigo_agencia}</span>
+                          Código:{" "}
+                          <span className="font-medium">
+                            {relacion.codigo_agencia}
+                          </span>
                         </span>
                       )}
                       {relacion.comision_porcentaje && (
@@ -432,7 +468,9 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
                       </div>
                     )}
                     {relacion.notas && (
-                      <p className="mt-2 text-xs text-gray-500">{relacion.notas}</p>
+                      <p className="mt-2 text-xs text-gray-500">
+                        {relacion.notas}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -447,7 +485,11 @@ export default function HotelOperadores({ hotelId, disabled = false }) {
                       }`}
                       title={relacion.is_active ? "Desactivar" : "Activar"}
                     >
-                      {relacion.is_active ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                      {relacion.is_active ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
                     </button>
                     <button
                       onClick={() => startEdit(relacion)}

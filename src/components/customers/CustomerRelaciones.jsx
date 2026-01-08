@@ -27,10 +27,10 @@ const RELATIONSHIP_TYPES = [
 ];
 
 /**
- * ClienteRelaciones - Manage relationships between customers
+ * CustomerRelaciones - Manage relationships between customers
  * Shows family members, assistants, employers, etc.
  */
-export default function ClienteRelaciones({
+export default function CustomerRelaciones({
   clienteId,
   onNavigateToCliente,
   disabled = false,
@@ -63,7 +63,8 @@ export default function ClienteRelaciones({
       // Get relationships where this cliente is either side
       const { data: outgoing, error: err1 } = await supabase
         .from("cliente_relaciones")
-        .select(`
+        .select(
+          `
           id,
           tipo_relacion,
           descripcion,
@@ -75,14 +76,16 @@ export default function ClienteRelaciones({
             total_cotizaciones,
             total_ventas
           )
-        `)
+        `
+        )
         .eq("cliente_id", clienteId);
 
       if (err1) throw err1;
 
       const { data: incoming, error: err2 } = await supabase
         .from("cliente_relaciones")
-        .select(`
+        .select(
+          `
           id,
           tipo_relacion,
           descripcion,
@@ -94,7 +97,8 @@ export default function ClienteRelaciones({
             total_cotizaciones,
             total_ventas
           )
-        `)
+        `
+        )
         .eq("relacionado_con_id", clienteId);
 
       if (err2) throw err2;
@@ -153,7 +157,9 @@ export default function ClienteRelaciones({
         .select("id, nombre_completo, telefono, email")
         .eq("is_active", true)
         .neq("id", clienteId) // Exclude current cliente
-        .or(`nombre_completo.ilike.%${query}%,telefono.ilike.%${query}%,email.ilike.%${query}%`)
+        .or(
+          `nombre_completo.ilike.%${query}%,telefono.ilike.%${query}%,email.ilike.%${query}%`
+        )
         .limit(5);
 
       if (error) throw error;
@@ -232,40 +238,65 @@ export default function ClienteRelaciones({
         return;
       }
 
-      // Fetch viajes for all related clientes
+      // Fetch cotizaciones for related clientes, then traverse to ventas and viajeros
       const { data, error } = await supabase
-        .from("viajeros")
-        .select(`
+        .from("cotizaciones")
+        .select(
+          `
           id,
-          nombre_completo,
-          es_titular,
+          destino,
+          fecha_salida,
+          fecha_regreso,
           cliente_id,
-          venta:venta_id(
+          ventas!ventas_cotizacion_id_fkey(
             id,
             precio_total,
             divisa,
-            estatus,
-            cotizacion:cotizacion_id(
+            viajeros!viajeros_venta_id_fkey(
               id,
-              destino,
-              fecha_salida,
-              fecha_regreso
+              nombre_completo,
+              es_titular,
+              cliente_id
             )
           )
-        `)
+        `
+        )
         .in("cliente_id", relatedIds)
-        .order("created_at", { ascending: false })
-        .limit(20);
+        .not("ventas", "is", null)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Group by venta and add cliente info
-      const enriched = (data || []).map((v) => ({
-        ...v,
-        clienteInfo: relaciones.find((r) => r.cliente?.id === v.cliente_id)?.cliente,
-      }));
+      // Flatten the nested structure to extract viajeros with their associated data
+      const viajerosList = [];
+      (data || []).forEach((cotizacion) => {
+        (cotizacion.ventas || []).forEach((venta) => {
+          (venta.viajeros || []).forEach((viajero) => {
+            viajerosList.push({
+              id: viajero.id,
+              nombre_completo: viajero.nombre_completo,
+              es_titular: viajero.es_titular,
+              cliente_id: viajero.cliente_id,
+              venta: {
+                id: venta.id,
+                precio_total: venta.precio_total,
+                divisa: venta.divisa,
+                cotizacion: {
+                  id: cotizacion.id,
+                  destino: cotizacion.destino,
+                  fecha_salida: cotizacion.fecha_salida,
+                  fecha_regreso: cotizacion.fecha_regreso,
+                },
+              },
+              clienteInfo: relaciones.find(
+                (r) => r.cliente?.id === viajero.cliente_id
+              )?.cliente,
+            });
+          });
+        });
+      });
 
-      setFamilyTravelHistory(enriched);
+      setFamilyTravelHistory(viajerosList);
       setShowTravelHistory(true);
     } catch (error) {
       console.error("Error fetching family travel history:", error);
@@ -342,7 +373,9 @@ export default function ClienteRelaciones({
               <div>
                 <p className="font-medium">{selectedCliente.nombre_completo}</p>
                 {selectedCliente.telefono && (
-                  <p className="text-sm text-gray-500">{selectedCliente.telefono}</p>
+                  <p className="text-sm text-gray-500">
+                    {selectedCliente.telefono}
+                  </p>
                 )}
               </div>
               <button
@@ -387,17 +420,21 @@ export default function ClienteRelaciones({
                     >
                       <p className="font-medium">{cliente.nombre_completo}</p>
                       {cliente.telefono && (
-                        <p className="text-sm text-gray-500">{cliente.telefono}</p>
+                        <p className="text-sm text-gray-500">
+                          {cliente.telefono}
+                        </p>
                       )}
                     </div>
                   ))}
                 </div>
               )}
-              {searchQuery.length >= 2 && searchResults.length === 0 && !searching && (
-                <p className="text-sm text-gray-500 py-2">
-                  No se encontraron clientes
-                </p>
-              )}
+              {searchQuery.length >= 2 &&
+                searchResults.length === 0 &&
+                !searching && (
+                  <p className="text-sm text-gray-500 py-2">
+                    No se encontraron clientes
+                  </p>
+                )}
             </div>
           )}
 
@@ -491,7 +528,9 @@ export default function ClienteRelaciones({
                       )}
                     </div>
                     <div className="flex gap-3 text-xs text-gray-400 mt-1">
-                      <span>{relacion.cliente?.total_cotizaciones || 0} cotizaciones</span>
+                      <span>
+                        {relacion.cliente?.total_cotizaciones || 0} cotizaciones
+                      </span>
                       <span>{relacion.cliente?.total_ventas || 0} ventas</span>
                     </div>
                   </div>
@@ -582,7 +621,9 @@ export default function ClienteRelaciones({
                       <div className="text-right text-sm">
                         <p className="text-gray-500">
                           {viaje.venta?.cotizacion?.fecha_salida &&
-                            new Date(viaje.venta.cotizacion.fecha_salida).toLocaleDateString("es-MX")}
+                            new Date(
+                              viaje.venta.cotizacion.fecha_salida + "T00:00:00"
+                            ).toLocaleDateString("es-MX")}
                         </p>
                         <p className="text-xs text-gray-400 capitalize">
                           {viaje.venta?.estatus}
@@ -604,7 +645,7 @@ export default function ClienteRelaciones({
   );
 }
 
-ClienteRelaciones.propTypes = {
+CustomerRelaciones.propTypes = {
   clienteId: PropTypes.string.isRequired,
   onNavigateToCliente: PropTypes.func,
   disabled: PropTypes.bool,

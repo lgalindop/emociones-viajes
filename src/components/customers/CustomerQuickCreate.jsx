@@ -4,13 +4,13 @@ import { supabase } from "../../lib/supabase";
 import { X, UserPlus, Building2, User, Users, ChevronDown } from "lucide-react";
 
 /**
- * ClienteQuickCreate - Modal for creating new customers
+ * CustomerQuickCreate - Modal for creating new customers
  *
  * Can be used:
- * - Inline from ClienteSelector
+ * - Inline from CustomerSelector
  * - Standalone modal for full customer creation
  */
-export default function ClienteQuickCreate({
+export default function CustomerQuickCreate({
   isOpen,
   onClose,
   onCreated,
@@ -49,7 +49,7 @@ export default function ClienteQuickCreate({
   // Initialize form with initial values
   useEffect(() => {
     if (isOpen) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         nombre_completo: initialName,
         telefono: initialPhone,
@@ -143,7 +143,7 @@ export default function ClienteQuickCreate({
   function addTag() {
     const tag = tagInput.trim();
     if (tag && !formData.etiquetas.includes(tag)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         etiquetas: [...prev.etiquetas, tag],
       }));
@@ -152,9 +152,9 @@ export default function ClienteQuickCreate({
   }
 
   function removeTag(tagToRemove) {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      etiquetas: prev.etiquetas.filter(t => t !== tagToRemove),
+      etiquetas: prev.etiquetas.filter((t) => t !== tagToRemove),
     }));
   }
 
@@ -180,7 +180,9 @@ export default function ClienteQuickCreate({
         <div className="sticky top-0 bg-white px-6 py-4 border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
             <UserPlus size={24} className="text-primary" />
-            <h2 className="text-xl font-semibold text-gray-900">Nuevo Cliente</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Nuevo Cliente
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -206,7 +208,9 @@ export default function ClienteQuickCreate({
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => setFormData({ ...formData, tipo: option.value })}
+                  onClick={() =>
+                    setFormData({ ...formData, tipo: option.value })
+                  }
                   className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
                     formData.tipo === option.value
                       ? "border-primary bg-primary/10 text-primary font-medium"
@@ -229,9 +233,15 @@ export default function ClienteQuickCreate({
               ref={firstInputRef}
               type="text"
               value={formData.nombre_completo}
-              onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, nombre_completo: e.target.value })
+              }
               className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder={formData.tipo === "corporate" ? "Nombre de la empresa" : "Nombre del cliente"}
+              placeholder={
+                formData.tipo === "corporate"
+                  ? "Nombre de la empresa"
+                  : "Nombre del cliente"
+              }
               required
             />
           </div>
@@ -245,7 +255,9 @@ export default function ClienteQuickCreate({
               <input
                 type="text"
                 value={formData.razon_social}
-                onChange={(e) => setFormData({ ...formData, razon_social: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, razon_social: e.target.value })
+                }
                 className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                 placeholder="Razón social para facturación"
               />
@@ -261,7 +273,9 @@ export default function ClienteQuickCreate({
               <input
                 type="tel"
                 value={formData.telefono}
-                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, telefono: e.target.value })
+                }
                 className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                 placeholder="+52 614 123 4567"
               />
@@ -273,7 +287,9 @@ export default function ClienteQuickCreate({
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                 placeholder="cliente@email.com"
               />
@@ -295,7 +311,12 @@ export default function ClienteQuickCreate({
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => setFormData({ ...formData, preferencia_contacto: option.value })}
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      preferencia_contacto: option.value,
+                    })
+                  }
                   className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
                     formData.preferencia_contacto === option.value
                       ? "border-primary bg-primary/10 text-primary font-medium"
@@ -320,7 +341,12 @@ export default function ClienteQuickCreate({
                   <input
                     type="tel"
                     value={formData.telefono_secundario}
-                    onChange={(e) => setFormData({ ...formData, telefono_secundario: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        telefono_secundario: e.target.value,
+                      })
+                    }
                     className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                   />
                 </div>
@@ -331,7 +357,12 @@ export default function ClienteQuickCreate({
                   <div className="relative">
                     <select
                       value={formData.mejor_horario || ""}
-                      onChange={(e) => setFormData({ ...formData, mejor_horario: e.target.value || null })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          mejor_horario: e.target.value || null,
+                        })
+                      }
                       className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary appearance-none"
                     >
                       <option value="">Cualquiera</option>
@@ -339,7 +370,10 @@ export default function ClienteQuickCreate({
                       <option value="afternoon">Tarde</option>
                       <option value="evening">Noche</option>
                     </select>
-                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <ChevronDown
+                      size={16}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                    />
                   </div>
                 </div>
               </div>
@@ -353,7 +387,12 @@ export default function ClienteQuickCreate({
                   <input
                     type="date"
                     value={formData.fecha_nacimiento}
-                    onChange={(e) => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        fecha_nacimiento: e.target.value,
+                      })
+                    }
                     className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                   />
                 </div>
@@ -364,7 +403,12 @@ export default function ClienteQuickCreate({
                   <input
                     type="text"
                     value={formData.rfc}
-                    onChange={(e) => setFormData({ ...formData, rfc: e.target.value.toUpperCase() })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        rfc: e.target.value.toUpperCase(),
+                      })
+                    }
                     className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary uppercase"
                     placeholder="XAXX010101000"
                   />
@@ -380,7 +424,9 @@ export default function ClienteQuickCreate({
                   <input
                     type="text"
                     value={formData.direccion}
-                    onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, direccion: e.target.value })
+                    }
                     className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                     placeholder="Calle y número"
                   />
@@ -389,14 +435,18 @@ export default function ClienteQuickCreate({
                   <input
                     type="text"
                     value={formData.ciudad}
-                    onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, ciudad: e.target.value })
+                    }
                     className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                     placeholder="Ciudad"
                   />
                   <input
                     type="text"
                     value={formData.estado}
-                    onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, estado: e.target.value })
+                    }
                     className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                     placeholder="Estado"
                   />
@@ -405,14 +455,21 @@ export default function ClienteQuickCreate({
                   <input
                     type="text"
                     value={formData.codigo_postal}
-                    onChange={(e) => setFormData({ ...formData, codigo_postal: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        codigo_postal: e.target.value,
+                      })
+                    }
                     className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                     placeholder="Código Postal"
                   />
                   <input
                     type="text"
                     value={formData.pais}
-                    onChange={(e) => setFormData({ ...formData, pais: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, pais: e.target.value })
+                    }
                     className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                     placeholder="País"
                   />
@@ -425,34 +482,38 @@ export default function ClienteQuickCreate({
                   Etiquetas
                 </label>
                 <div className="flex gap-2 flex-wrap mb-2">
-                  {["VIP", "Frecuente", "Corporativo", "Referido"].map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => {
-                        if (!formData.etiquetas.includes(tag)) {
-                          setFormData(prev => ({
-                            ...prev,
-                            etiquetas: [...prev.etiquetas, tag],
-                          }));
-                        }
-                      }}
-                      className={`text-xs px-2 py-1 rounded-full border transition-all ${
-                        formData.etiquetas.includes(tag)
-                          ? "border-primary bg-primary/20 text-primary"
-                          : "border-gray-300 text-gray-600 hover:border-gray-400"
-                      }`}
-                    >
-                      + {tag}
-                    </button>
-                  ))}
+                  {["VIP", "Frecuente", "Corporativo", "Referido"].map(
+                    (tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => {
+                          if (!formData.etiquetas.includes(tag)) {
+                            setFormData((prev) => ({
+                              ...prev,
+                              etiquetas: [...prev.etiquetas, tag],
+                            }));
+                          }
+                        }}
+                        className={`text-xs px-2 py-1 rounded-full border transition-all ${
+                          formData.etiquetas.includes(tag)
+                            ? "border-primary bg-primary/20 text-primary"
+                            : "border-gray-300 text-gray-600 hover:border-gray-400"
+                        }`}
+                      >
+                        + {tag}
+                      </button>
+                    )
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), addTag())
+                    }
                     className="flex-1 border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
                     placeholder="Nueva etiqueta..."
                   />
@@ -492,7 +553,9 @@ export default function ClienteQuickCreate({
                 </label>
                 <textarea
                   value={formData.notas}
-                  onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notas: e.target.value })
+                  }
                   rows="3"
                   className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                   placeholder="Notas internas sobre el cliente..."
@@ -541,7 +604,7 @@ export default function ClienteQuickCreate({
   );
 }
 
-ClienteQuickCreate.propTypes = {
+CustomerQuickCreate.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onCreated: PropTypes.func.isRequired,

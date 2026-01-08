@@ -316,7 +316,7 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
                             <div className="flex items-center gap-1">
                               <Calendar size={14} />
                               <span>
-                                {new Date(pago.fecha_programada).toLocaleDateString('es-MX', {
+                                {new Date(pago.fecha_programada + "T00:00:00").toLocaleDateString('es-MX', {
                                   year: 'numeric',
                                   month: 'long',
                                   day: 'numeric'

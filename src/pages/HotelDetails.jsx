@@ -19,26 +19,44 @@ import {
   Bed,
   DollarSign,
 } from "lucide-react";
-import HotelContactos from "../components/hoteles/HotelContactos";
-import HotelHabitaciones from "../components/hoteles/HotelHabitaciones";
-import HotelOperadores from "../components/hoteles/HotelOperadores";
-import HotelTemporadas from "../components/hoteles/HotelTemporadas";
+import HotelContacts from "../components/hotels/HotelContacts";
+import HotelRooms from "../components/hotels/HotelRooms";
+import HotelOperadores from "../components/hotels/HotelOperadores";
+import HotelSeasons from "../components/hotels/HotelSeasons";
 import Toast from "../components/ui/Toast";
 
 const HOTEL_TIPOS = {
   hotel: { label: "Hotel", color: "bg-gray-100 text-gray-600" },
   resort: { label: "Resort", color: "bg-blue-100 text-blue-600" },
   boutique: { label: "Boutique", color: "bg-purple-100 text-purple-600" },
-  all_inclusive: { label: "All Inclusive", color: "bg-green-100 text-green-600" },
+  all_inclusive: {
+    label: "All Inclusive",
+    color: "bg-green-100 text-green-600",
+  },
   hostal: { label: "Hostal", color: "bg-orange-100 text-orange-600" },
   villa: { label: "Villa", color: "bg-pink-100 text-pink-600" },
 };
 
 const AMENIDADES_OPTIONS = [
-  'piscina', 'spa', 'gimnasio', 'restaurante', 'bar',
-  'wifi', 'estacionamiento', 'playa', 'golf', 'tenis',
-  'kids_club', 'business_center', 'room_service', 'lavanderia',
-  'traslados', 'tours', 'buceo', 'kayak', 'jacuzzi'
+  "piscina",
+  "spa",
+  "gimnasio",
+  "restaurante",
+  "bar",
+  "wifi",
+  "estacionamiento",
+  "playa",
+  "golf",
+  "tenis",
+  "kids_club",
+  "business_center",
+  "room_service",
+  "lavanderia",
+  "traslados",
+  "tours",
+  "buceo",
+  "kayak",
+  "jacuzzi",
 ];
 
 export default function HotelDetalle({ hotelId, onBack }) {
@@ -65,10 +83,12 @@ export default function HotelDetalle({ hotelId, onBack }) {
     try {
       const { data, error } = await supabase
         .from("hoteles")
-        .select(`
+        .select(
+          `
           *,
           created_by_profile:created_by(full_name)
-        `)
+        `
+        )
         .eq("id", hotelId)
         .single();
 
@@ -89,20 +109,22 @@ export default function HotelDetalle({ hotelId, onBack }) {
         nombre: editData.nombre,
         destino: editData.destino || null,
         categoria: editData.categoria || null,
-        tipo: editData.tipo || 'hotel',
+        tipo: editData.tipo || "hotel",
         estrellas: editData.estrellas ? parseInt(editData.estrellas) : null,
         direccion: editData.direccion || null,
         ciudad: editData.ciudad || null,
-        pais: editData.pais || 'México',
+        pais: editData.pais || "México",
         telefono_principal: editData.telefono_principal || null,
         email_reservaciones: editData.email_reservaciones || null,
         website: editData.website || null,
-        comision_porcentaje: editData.comision_porcentaje ? parseFloat(editData.comision_porcentaje) : null,
+        comision_porcentaje: editData.comision_porcentaje
+          ? parseFloat(editData.comision_porcentaje)
+          : null,
         dias_pago: editData.dias_pago ? parseInt(editData.dias_pago) : 30,
         politica_cancelacion: editData.politica_cancelacion || null,
         politica_ninos: editData.politica_ninos || null,
-        check_in_hora: editData.check_in_hora || '15:00',
-        check_out_hora: editData.check_out_hora || '12:00',
+        check_in_hora: editData.check_in_hora || "15:00",
+        check_out_hora: editData.check_out_hora || "12:00",
         amenidades: editData.amenidades || [],
         etiquetas: editData.etiquetas || [],
         notas: editData.notas || null,
@@ -119,7 +141,10 @@ export default function HotelDetalle({ hotelId, onBack }) {
       setIsEditing(false);
     } catch (error) {
       console.error("Error saving hotel:", error);
-      setToast({ message: "Error al guardar: " + error.message, type: "error" });
+      setToast({
+        message: "Error al guardar: " + error.message,
+        type: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -128,7 +153,7 @@ export default function HotelDetalle({ hotelId, onBack }) {
   function addTag() {
     const tag = tagInput.trim();
     if (tag && !editData.etiquetas?.includes(tag)) {
-      setEditData(prev => ({
+      setEditData((prev) => ({
         ...prev,
         etiquetas: [...(prev.etiquetas || []), tag],
       }));
@@ -137,21 +162,21 @@ export default function HotelDetalle({ hotelId, onBack }) {
   }
 
   function removeTag(tagToRemove) {
-    setEditData(prev => ({
+    setEditData((prev) => ({
       ...prev,
-      etiquetas: prev.etiquetas.filter(t => t !== tagToRemove),
+      etiquetas: prev.etiquetas.filter((t) => t !== tagToRemove),
     }));
   }
 
   function toggleAmenidad(amenidad) {
     const current = editData.amenidades || [];
     if (current.includes(amenidad)) {
-      setEditData(prev => ({
+      setEditData((prev) => ({
         ...prev,
-        amenidades: current.filter(a => a !== amenidad),
+        amenidades: current.filter((a) => a !== amenidad),
       }));
     } else {
-      setEditData(prev => ({
+      setEditData((prev) => ({
         ...prev,
         amenidades: [...current, amenidad],
       }));
@@ -167,13 +192,14 @@ export default function HotelDetalle({ hotelId, onBack }) {
           type="button"
           disabled={!editable}
           onClick={() => editable && setEditData({ ...editData, estrellas: i })}
-          className={`${editable ? 'cursor-pointer' : 'cursor-default'}`}
+          className={`${editable ? "cursor-pointer" : "cursor-default"}`}
         >
           <Star
             size={editable ? 24 : 16}
-            className={i <= (editable ? editData.estrellas : count)
-              ? "text-yellow-400 fill-yellow-400"
-              : "text-gray-300"
+            className={
+              i <= (editable ? editData.estrellas : count)
+                ? "text-yellow-400 fill-yellow-400"
+                : "text-gray-300"
             }
           />
         </button>
@@ -232,9 +258,12 @@ export default function HotelDetalle({ hotelId, onBack }) {
 
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 rounded-lg flex items-center justify-center ${
-                HOTEL_TIPOS[hotel.tipo || 'hotel']?.color || 'bg-gray-100 text-gray-600'
-              }`}>
+              <div
+                className={`w-16 h-16 rounded-lg flex items-center justify-center ${
+                  HOTEL_TIPOS[hotel.tipo || "hotel"]?.color ||
+                  "bg-gray-100 text-gray-600"
+                }`}
+              >
                 <Building size={32} />
               </div>
               <div>
@@ -243,12 +272,15 @@ export default function HotelDetalle({ hotelId, onBack }) {
                 </h1>
                 <div className="flex items-center gap-3 mt-1">
                   {renderStars(hotel.estrellas)}
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    HOTEL_TIPOS[hotel.tipo || 'hotel']?.color || 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {HOTEL_TIPOS[hotel.tipo || 'hotel']?.label || 'Hotel'}
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                      HOTEL_TIPOS[hotel.tipo || "hotel"]?.color ||
+                      "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {HOTEL_TIPOS[hotel.tipo || "hotel"]?.label || "Hotel"}
                   </span>
-                  {hotel.etiquetas?.map(tag => (
+                  {hotel.etiquetas?.map((tag) => (
                     <span
                       key={tag}
                       className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full"
@@ -307,7 +339,7 @@ export default function HotelDetalle({ hotelId, onBack }) {
               <span className="text-sm">Calificación</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">
-              {hotel.calificacion_promedio?.toFixed(1) || '-'}
+              {hotel.calificacion_promedio?.toFixed(1) || "-"}
             </p>
           </div>
         </div>
@@ -388,7 +420,9 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       <input
                         type="text"
                         value={editData.nombre || ""}
-                        onChange={(e) => setEditData({ ...editData, nombre: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({ ...editData, nombre: e.target.value })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -398,11 +432,15 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       </label>
                       <select
                         value={editData.tipo || "hotel"}
-                        onChange={(e) => setEditData({ ...editData, tipo: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({ ...editData, tipo: e.target.value })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       >
                         {Object.entries(HOTEL_TIPOS).map(([value, config]) => (
-                          <option key={value} value={value}>{config.label}</option>
+                          <option key={value} value={value}>
+                            {config.label}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -425,7 +463,9 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       <input
                         type="text"
                         value={editData.destino || ""}
-                        onChange={(e) => setEditData({ ...editData, destino: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({ ...editData, destino: e.target.value })
+                        }
                         placeholder="Cancún, Riviera Maya, etc."
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
@@ -437,7 +477,9 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       <input
                         type="text"
                         value={editData.ciudad || ""}
-                        onChange={(e) => setEditData({ ...editData, ciudad: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({ ...editData, ciudad: e.target.value })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -448,7 +490,12 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       <input
                         type="text"
                         value={editData.direccion || ""}
-                        onChange={(e) => setEditData({ ...editData, direccion: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            direccion: e.target.value,
+                          })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -459,7 +506,9 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       <input
                         type="text"
                         value={editData.pais || "México"}
-                        onChange={(e) => setEditData({ ...editData, pais: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({ ...editData, pais: e.target.value })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -474,7 +523,12 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       <input
                         type="tel"
                         value={editData.telefono_principal || ""}
-                        onChange={(e) => setEditData({ ...editData, telefono_principal: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            telefono_principal: e.target.value,
+                          })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -485,7 +539,12 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       <input
                         type="email"
                         value={editData.email_reservaciones || ""}
-                        onChange={(e) => setEditData({ ...editData, email_reservaciones: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            email_reservaciones: e.target.value,
+                          })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -496,7 +555,9 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       <input
                         type="url"
                         value={editData.website || ""}
-                        onChange={(e) => setEditData({ ...editData, website: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({ ...editData, website: e.target.value })
+                        }
                         placeholder="https://"
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
@@ -505,7 +566,9 @@ export default function HotelDetalle({ hotelId, onBack }) {
 
                   {/* Business Terms */}
                   <div className="border-t pt-4">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Términos Comerciales</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                      Términos Comerciales
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -515,7 +578,12 @@ export default function HotelDetalle({ hotelId, onBack }) {
                           type="number"
                           step="0.01"
                           value={editData.comision_porcentaje || ""}
-                          onChange={(e) => setEditData({ ...editData, comision_porcentaje: e.target.value })}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              comision_porcentaje: e.target.value,
+                            })
+                          }
                           className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                         />
                       </div>
@@ -526,7 +594,12 @@ export default function HotelDetalle({ hotelId, onBack }) {
                         <input
                           type="number"
                           value={editData.dias_pago || 30}
-                          onChange={(e) => setEditData({ ...editData, dias_pago: e.target.value })}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              dias_pago: e.target.value,
+                            })
+                          }
                           className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                         />
                       </div>
@@ -537,7 +610,12 @@ export default function HotelDetalle({ hotelId, onBack }) {
                         <input
                           type="text"
                           value={editData.categoria || ""}
-                          onChange={(e) => setEditData({ ...editData, categoria: e.target.value })}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              categoria: e.target.value,
+                            })
+                          }
                           placeholder="Lujo, Primera Clase, etc."
                           className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                         />
@@ -554,7 +632,12 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       <input
                         type="time"
                         value={editData.check_in_hora || "15:00"}
-                        onChange={(e) => setEditData({ ...editData, check_in_hora: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            check_in_hora: e.target.value,
+                          })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -565,7 +648,12 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       <input
                         type="time"
                         value={editData.check_out_hora || "12:00"}
-                        onChange={(e) => setEditData({ ...editData, check_out_hora: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            check_out_hora: e.target.value,
+                          })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -579,7 +667,12 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       </label>
                       <textarea
                         value={editData.politica_cancelacion || ""}
-                        onChange={(e) => setEditData({ ...editData, politica_cancelacion: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            politica_cancelacion: e.target.value,
+                          })
+                        }
                         rows={3}
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
@@ -590,7 +683,12 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       </label>
                       <textarea
                         value={editData.politica_ninos || ""}
-                        onChange={(e) => setEditData({ ...editData, politica_ninos: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            politica_ninos: e.target.value,
+                          })
+                        }
                         rows={3}
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
@@ -626,13 +724,20 @@ export default function HotelDetalle({ hotelId, onBack }) {
                       Etiquetas
                     </label>
                     <div className="flex gap-2 flex-wrap mb-2">
-                      {["familiar", "romántico", "negocios", "aventura", "playa", "ciudad"].map((tag) => (
+                      {[
+                        "familiar",
+                        "romántico",
+                        "negocios",
+                        "aventura",
+                        "playa",
+                        "ciudad",
+                      ].map((tag) => (
                         <button
                           key={tag}
                           type="button"
                           onClick={() => {
                             if (!editData.etiquetas?.includes(tag)) {
-                              setEditData(prev => ({
+                              setEditData((prev) => ({
                                 ...prev,
                                 etiquetas: [...(prev.etiquetas || []), tag],
                               }));
@@ -653,7 +758,9 @@ export default function HotelDetalle({ hotelId, onBack }) {
                         type="text"
                         value={tagInput}
                         onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && (e.preventDefault(), addTag())
+                        }
                         placeholder="Agregar etiqueta..."
                         className="flex-1 border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
                       />
@@ -693,7 +800,9 @@ export default function HotelDetalle({ hotelId, onBack }) {
                     </label>
                     <textarea
                       value={editData.notas || ""}
-                      onChange={(e) => setEditData({ ...editData, notas: e.target.value })}
+                      onChange={(e) =>
+                        setEditData({ ...editData, notas: e.target.value })
+                      }
                       rows={3}
                       className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       placeholder="Notas internas sobre el hotel..."
@@ -733,7 +842,9 @@ export default function HotelDetalle({ hotelId, onBack }) {
                         {hotel.ciudad && ` • ${hotel.ciudad}`}
                       </p>
                       {hotel.direccion && (
-                        <p className="text-sm text-gray-500">{hotel.direccion}</p>
+                        <p className="text-sm text-gray-500">
+                          {hotel.direccion}
+                        </p>
                       )}
                       {hotel.pais && hotel.pais !== "México" && (
                         <p className="text-sm text-gray-500">{hotel.pais}</p>
@@ -773,7 +884,11 @@ export default function HotelDetalle({ hotelId, onBack }) {
                     <div className="flex items-center gap-3">
                       <Globe size={20} className="text-gray-400" />
                       <a
-                        href={hotel.website.startsWith('http') ? hotel.website : `https://${hotel.website}`}
+                        href={
+                          hotel.website.startsWith("http")
+                            ? hotel.website
+                            : `https://${hotel.website}`
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
@@ -788,13 +903,19 @@ export default function HotelDetalle({ hotelId, onBack }) {
                     <div className="flex items-center gap-2">
                       <Clock size={16} className="text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        Check-in: <span className="font-medium">{hotel.check_in_hora || '15:00'}</span>
+                        Check-in:{" "}
+                        <span className="font-medium">
+                          {hotel.check_in_hora || "15:00"}
+                        </span>
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock size={16} className="text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        Check-out: <span className="font-medium">{hotel.check_out_hora || '12:00'}</span>
+                        Check-out:{" "}
+                        <span className="font-medium">
+                          {hotel.check_out_hora || "12:00"}
+                        </span>
                       </span>
                     </div>
                   </div>
@@ -802,22 +923,30 @@ export default function HotelDetalle({ hotelId, onBack }) {
                   {/* Business Terms */}
                   {(hotel.comision_porcentaje || hotel.dias_pago) && (
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Términos Comerciales</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                        Términos Comerciales
+                      </h3>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                         {hotel.comision_porcentaje && (
                           <div>
                             <span className="text-gray-500">Comisión:</span>
-                            <span className="font-medium ml-2">{hotel.comision_porcentaje}%</span>
+                            <span className="font-medium ml-2">
+                              {hotel.comision_porcentaje}%
+                            </span>
                           </div>
                         )}
                         <div>
                           <span className="text-gray-500">Días de pago:</span>
-                          <span className="font-medium ml-2">{hotel.dias_pago || 30}</span>
+                          <span className="font-medium ml-2">
+                            {hotel.dias_pago || 30}
+                          </span>
                         </div>
                         {hotel.categoria && (
                           <div>
                             <span className="text-gray-500">Categoría:</span>
-                            <span className="font-medium ml-2">{hotel.categoria}</span>
+                            <span className="font-medium ml-2">
+                              {hotel.categoria}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -829,14 +958,22 @@ export default function HotelDetalle({ hotelId, onBack }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {hotel.politica_cancelacion && (
                         <div>
-                          <h4 className="text-sm font-medium text-gray-700 mb-1">Política de Cancelación</h4>
-                          <p className="text-sm text-gray-600">{hotel.politica_cancelacion}</p>
+                          <h4 className="text-sm font-medium text-gray-700 mb-1">
+                            Política de Cancelación
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {hotel.politica_cancelacion}
+                          </p>
                         </div>
                       )}
                       {hotel.politica_ninos && (
                         <div>
-                          <h4 className="text-sm font-medium text-gray-700 mb-1">Política de Niños</h4>
-                          <p className="text-sm text-gray-600">{hotel.politica_ninos}</p>
+                          <h4 className="text-sm font-medium text-gray-700 mb-1">
+                            Política de Niños
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {hotel.politica_ninos}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -845,7 +982,9 @@ export default function HotelDetalle({ hotelId, onBack }) {
                   {/* Amenidades */}
                   {hotel.amenidades?.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Amenidades</h4>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">
+                        Amenidades
+                      </h4>
                       <div className="flex flex-wrap gap-2">
                         {hotel.amenidades.map((amenidad) => (
                           <span
@@ -862,15 +1001,22 @@ export default function HotelDetalle({ hotelId, onBack }) {
                   {/* Notes */}
                   {hotel.notas && (
                     <div className="bg-yellow-50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-yellow-800 mb-1">Notas</h4>
-                      <p className="text-sm text-yellow-700 whitespace-pre-wrap">{hotel.notas}</p>
+                      <h4 className="text-sm font-medium text-yellow-800 mb-1">
+                        Notas
+                      </h4>
+                      <p className="text-sm text-yellow-700 whitespace-pre-wrap">
+                        {hotel.notas}
+                      </p>
                     </div>
                   )}
 
                   {/* Metadata */}
                   <div className="text-xs text-gray-400 pt-4 border-t">
-                    Creado {hotel.created_at && new Date(hotel.created_at).toLocaleDateString()}
-                    {hotel.created_by_profile?.full_name && ` por ${hotel.created_by_profile.full_name}`}
+                    Creado{" "}
+                    {hotel.created_at &&
+                      new Date(hotel.created_at).toLocaleDateString()}
+                    {hotel.created_by_profile?.full_name &&
+                      ` por ${hotel.created_by_profile.full_name}`}
                   </div>
                 </div>
               )}
@@ -880,14 +1026,14 @@ export default function HotelDetalle({ hotelId, onBack }) {
           {/* Contactos Tab */}
           {activeTab === "contactos" && (
             <div className="p-6">
-              <HotelContactos hotelId={hotelId} disabled={!canEdit()} />
+              <HotelContacts hotelId={hotelId} disabled={!canEdit()} />
             </div>
           )}
 
           {/* Habitaciones Tab */}
           {activeTab === "habitaciones" && (
             <div className="p-6">
-              <HotelHabitaciones hotelId={hotelId} disabled={!canEdit()} />
+              <HotelRooms hotelId={hotelId} disabled={!canEdit()} />
             </div>
           )}
 
@@ -901,7 +1047,7 @@ export default function HotelDetalle({ hotelId, onBack }) {
           {/* Temporadas Tab */}
           {activeTab === "temporadas" && (
             <div className="p-6">
-              <HotelTemporadas hotelId={hotelId} disabled={!canEdit()} />
+              <HotelSeasons hotelId={hotelId} disabled={!canEdit()} />
             </div>
           )}
         </div>

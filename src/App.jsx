@@ -23,10 +23,10 @@ import ReceiptWizard from "./pages/ReceiptWizard";
 import Groups from "./pages/Groups";
 import GroupDetails from "./pages/GroupDetails";
 import HomeDashboard from "./pages/HomeDashboard";
-import Clientes from "./pages/Clientes";
-import ClienteDetalle from "./pages/ClienteDetalle";
-import Hoteles from "./pages/Hoteles";
-import HotelDetalle from "./pages/HotelDetalle";
+import Customers from "./pages/Customers";
+import CustomerDetails from "./pages/CustomerDetails";
+import Hotels from "./pages/Hotels";
+import HotelDetails from "./pages/HotelDetails";
 import DesktopNav from "./components/navigation/DesktopNav";
 import MobileHeader from "./components/navigation/MobileHeader";
 import MobileBottomNav from "./components/navigation/MobileBottomNav";
@@ -114,8 +114,15 @@ function MainApp() {
           <Route
             path="/cotizaciones"
             element={
+              <Quotes onNewQuote={() => navigate("/app/cotizaciones/nueva")} />
+            }
+          />
+          <Route
+            path="/cotizaciones/:id"
+            element={
               <Quotes
                 onNewQuote={() => navigate("/app/cotizaciones/nueva")}
+                initialQuoteId={location.pathname.split("/").pop()}
               />
             }
           />
@@ -142,35 +149,33 @@ function MainApp() {
           <Route
             path="/clientes"
             element={
-              <Clientes
-                onViewDetails={(id) => navigate(`/app/clientes/${id}`)}
+              <Customers
+                onViewDetails={(id) => navigate(`/app/customers/${id}`)}
               />
             }
           />
           <Route
-            path="/clientes/:id"
+            path="/customers/:id"
             element={
-              <ClienteDetalle
+              <CustomerDetails
                 clienteId={location.pathname.split("/").pop()}
                 onBack={() => navigate("/app/clientes")}
                 onNavigateToQuote={(id) => navigate(`/app/cotizaciones/${id}`)}
                 onNavigateToSale={(id) => navigate(`/app/sales/${id}`)}
-                onNavigateToCliente={(id) => navigate(`/app/clientes/${id}`)}
+                onNavigateToCliente={(id) => navigate(`/app/customers/${id}`)}
               />
             }
           />
           <Route
             path="/hoteles"
             element={
-              <Hoteles
-                onViewDetails={(id) => navigate(`/app/hoteles/${id}`)}
-              />
+              <Hotels onViewDetails={(id) => navigate(`/app/hoteles/${id}`)} />
             }
           />
           <Route
             path="/hoteles/:id"
             element={
-              <HotelDetalle
+              <HotelDetails
                 hotelId={location.pathname.split("/").pop()}
                 onBack={() => navigate("/app/hoteles")}
               />

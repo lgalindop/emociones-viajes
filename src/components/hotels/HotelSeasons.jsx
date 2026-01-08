@@ -12,16 +12,16 @@ import {
 } from "lucide-react";
 
 const TEMPORADA_PRESETS = [
-  { nombre: "Alta", factor: 1.20 },
+  { nombre: "Alta", factor: 1.2 },
   { nombre: "Baja", factor: 0.85 },
-  { nombre: "Semana Santa", factor: 1.30 },
-  { nombre: "Navidad", factor: 1.40 },
-  { nombre: "Fin de Año", factor: 1.50 },
+  { nombre: "Semana Santa", factor: 1.3 },
+  { nombre: "Navidad", factor: 1.4 },
+  { nombre: "Fin de Año", factor: 1.5 },
   { nombre: "Verano", factor: 1.15 },
   { nombre: "Puentes", factor: 1.25 },
 ];
 
-export default function HotelTemporadas({ hotelId, disabled = false }) {
+export default function HotelSeasons({ hotelId, disabled = false }) {
   const [temporadas, setTemporadas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -30,7 +30,7 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
     nombre: "",
     fecha_inicio: "",
     fecha_fin: "",
-    factor_precio: 1.00,
+    factor_precio: 1.0,
     notas: "",
   });
   const [saving, setSaving] = useState(false);
@@ -64,7 +64,7 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
       nombre: "",
       fecha_inicio: "",
       fecha_fin: "",
-      factor_precio: 1.00,
+      factor_precio: 1.0,
       notas: "",
     });
     setEditingId(null);
@@ -76,7 +76,7 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
       nombre: temporada.nombre || "",
       fecha_inicio: temporada.fecha_inicio || "",
       fecha_fin: temporada.fecha_fin || "",
-      factor_precio: temporada.factor_precio || 1.00,
+      factor_precio: temporada.factor_precio || 1.0,
       notas: temporada.notas || "",
     });
     setEditingId(temporada.id);
@@ -84,7 +84,7 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
   }
 
   function applyPreset(preset) {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       nombre: preset.nombre,
       factor_precio: preset.factor,
@@ -116,7 +116,7 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
         nombre: formData.nombre.trim(),
         fecha_inicio: formData.fecha_inicio,
         fecha_fin: formData.fecha_fin,
-        factor_precio: parseFloat(formData.factor_precio) || 1.00,
+        factor_precio: parseFloat(formData.factor_precio) || 1.0,
         notas: formData.notas.trim() || null,
       };
 
@@ -171,7 +171,8 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
   }
 
   function getFactorDisplay(factor) {
-    if (factor === 1) return { text: "Normal", color: "text-gray-600", icon: null };
+    if (factor === 1)
+      return { text: "Normal", color: "text-gray-600", icon: null };
     if (factor > 1) {
       const percent = ((factor - 1) * 100).toFixed(0);
       return {
@@ -222,7 +223,10 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-gray-50 rounded-lg p-4 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-gray-50 rounded-lg p-4 space-y-4"
+        >
           {/* Presets */}
           <div>
             <label className="block text-xs text-gray-500 mb-2">
@@ -240,7 +244,8 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
                       : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  {preset.nombre} ({preset.factor > 1 ? '+' : ''}{((preset.factor - 1) * 100).toFixed(0)}%)
+                  {preset.nombre} ({preset.factor > 1 ? "+" : ""}
+                  {((preset.factor - 1) * 100).toFixed(0)}%)
                 </button>
               ))}
             </div>
@@ -254,7 +259,9 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
               <input
                 type="text"
                 value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, nombre: e.target.value })
+                }
                 placeholder="Ej: Temporada Alta, Semana Santa"
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 required
@@ -271,15 +278,23 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
                   min="0.01"
                   max="5"
                   value={formData.factor_precio}
-                  onChange={(e) => setFormData({ ...formData, factor_precio: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, factor_precio: e.target.value })
+                  }
                   className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   required
                 />
-                <span className={`text-sm font-medium whitespace-nowrap ${
-                  formData.factor_precio > 1 ? "text-red-600" :
-                  formData.factor_precio < 1 ? "text-green-600" : "text-gray-600"
-                }`}>
-                  {formData.factor_precio > 1 ? '+' : ''}{((formData.factor_precio - 1) * 100).toFixed(0)}%
+                <span
+                  className={`text-sm font-medium whitespace-nowrap ${
+                    formData.factor_precio > 1
+                      ? "text-red-600"
+                      : formData.factor_precio < 1
+                        ? "text-green-600"
+                        : "text-gray-600"
+                  }`}
+                >
+                  {formData.factor_precio > 1 ? "+" : ""}
+                  {((formData.factor_precio - 1) * 100).toFixed(0)}%
                 </span>
               </div>
               <p className="text-xs text-gray-500 mt-1">
@@ -296,7 +311,9 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
               <input
                 type="date"
                 value={formData.fecha_inicio}
-                onChange={(e) => setFormData({ ...formData, fecha_inicio: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, fecha_inicio: e.target.value })
+                }
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 required
               />
@@ -308,7 +325,9 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
               <input
                 type="date"
                 value={formData.fecha_fin}
-                onChange={(e) => setFormData({ ...formData, fecha_fin: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, fecha_fin: e.target.value })
+                }
                 min={formData.fecha_inicio}
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 required
@@ -322,7 +341,9 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
             </label>
             <textarea
               value={formData.notas}
-              onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, notas: e.target.value })
+              }
               rows={2}
               placeholder="Condiciones especiales, restricciones, etc."
               className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
@@ -373,21 +394,27 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
               <div
                 key={temporada.id}
                 className={`bg-white border rounded-lg p-4 ${
-                  isCurrent ? "border-primary/30 bg-primary/5" : "border-gray-200"
+                  isCurrent
+                    ? "border-primary/30 bg-primary/5"
+                    : "border-gray-200"
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      isCurrent
-                        ? "bg-primary/20 text-primary"
-                        : "bg-gray-100 text-gray-500"
-                    }`}>
+                    <div
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        isCurrent
+                          ? "bg-primary/20 text-primary"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
                       <Calendar size={20} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-gray-900">{temporada.nombre}</p>
+                        <p className="font-medium text-gray-900">
+                          {temporada.nombre}
+                        </p>
                         {isCurrent && (
                           <span className="text-xs px-2 py-0.5 bg-primary text-white rounded-full">
                             Actual
@@ -396,15 +423,20 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
                       </div>
                       <div className="flex items-center gap-4 mt-1 text-sm">
                         <span className="text-gray-600">
-                          {formatDate(temporada.fecha_inicio)} - {formatDate(temporada.fecha_fin)}
+                          {formatDate(temporada.fecha_inicio)} -{" "}
+                          {formatDate(temporada.fecha_fin)}
                         </span>
-                        <span className={`flex items-center gap-1 font-medium ${factorInfo.color}`}>
+                        <span
+                          className={`flex items-center gap-1 font-medium ${factorInfo.color}`}
+                        >
                           {factorInfo.icon}
                           {factorInfo.text}
                         </span>
                       </div>
                       {temporada.notas && (
-                        <p className="mt-2 text-xs text-gray-500">{temporada.notas}</p>
+                        <p className="mt-2 text-xs text-gray-500">
+                          {temporada.notas}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -434,13 +466,31 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
       {/* Timeline visualization */}
       {temporadas.length > 0 && (
         <div className="mt-6 pt-4 border-t border-gray-200">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Vista de calendario</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">
+            Vista de calendario
+          </h4>
           <div className="bg-gray-100 rounded-lg p-3 overflow-x-auto">
             <div className="min-w-[600px]">
               {/* Months header */}
               <div className="flex mb-2">
-                {['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'].map((month) => (
-                  <div key={month} className="flex-1 text-xs text-gray-500 text-center">
+                {[
+                  "Ene",
+                  "Feb",
+                  "Mar",
+                  "Abr",
+                  "May",
+                  "Jun",
+                  "Jul",
+                  "Ago",
+                  "Sep",
+                  "Oct",
+                  "Nov",
+                  "Dic",
+                ].map((month) => (
+                  <div
+                    key={month}
+                    className="flex-1 text-xs text-gray-500 text-center"
+                  >
                     {month}
                   </div>
                 ))}
@@ -448,20 +498,30 @@ export default function HotelTemporadas({ hotelId, disabled = false }) {
               {/* Seasons bars */}
               <div className="relative h-8 bg-white rounded">
                 {temporadas.map((temporada) => {
-                  const startMonth = new Date(temporada.fecha_inicio + "T00:00:00").getMonth();
-                  const endMonth = new Date(temporada.fecha_fin + "T00:00:00").getMonth();
-                  const startDay = new Date(temporada.fecha_inicio + "T00:00:00").getDate();
-                  const endDay = new Date(temporada.fecha_fin + "T00:00:00").getDate();
+                  const startMonth = new Date(
+                    temporada.fecha_inicio + "T00:00:00"
+                  ).getMonth();
+                  const endMonth = new Date(
+                    temporada.fecha_fin + "T00:00:00"
+                  ).getMonth();
+                  const startDay = new Date(
+                    temporada.fecha_inicio + "T00:00:00"
+                  ).getDate();
+                  const endDay = new Date(
+                    temporada.fecha_fin + "T00:00:00"
+                  ).getDate();
 
-                  const startPercent = ((startMonth + startDay / 31) / 12) * 100;
+                  const startPercent =
+                    ((startMonth + startDay / 31) / 12) * 100;
                   const endPercent = ((endMonth + endDay / 31) / 12) * 100;
                   const width = endPercent - startPercent;
 
-                  const bgColor = temporada.factor_precio > 1
-                    ? "bg-red-300"
-                    : temporada.factor_precio < 1
-                      ? "bg-green-300"
-                      : "bg-gray-300";
+                  const bgColor =
+                    temporada.factor_precio > 1
+                      ? "bg-red-300"
+                      : temporada.factor_precio < 1
+                        ? "bg-green-300"
+                        : "bg-gray-300";
 
                   return (
                     <div

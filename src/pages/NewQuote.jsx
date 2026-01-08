@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase";
 import { ArrowLeft, Plus, Trash2, Check, X } from "lucide-react";
 import LeadOriginIcon from "../components/LeadOriginIcon";
 import HotelAutocomplete from "../components/HotelAutocomplete";
-import ClienteSelector from "../components/clientes/ClienteSelector";
+import CustomerSelector from "../components/customers/CustomerSelector";
 import Toast from "../components/ui/Toast";
 
 export default function NewQuote({ onBack, onSuccess }) {
@@ -121,7 +121,7 @@ export default function NewQuote({ onBack, onSuccess }) {
     }
   }
 
-  // Handle cliente selection from ClienteSelector
+  // Handle cliente selection from CustomerSelector
   function handleClienteChange(cliente) {
     setSelectedCliente(cliente);
     if (cliente) {
@@ -174,7 +174,10 @@ export default function NewQuote({ onBack, onSuccess }) {
       (!currentOpcion.operador_id || currentOpcion.operador_id === "otro") &&
       !currentOpcion.precio_total
     ) {
-      setToast({ message: "Completa el precio total de la opción", type: "warning" });
+      setToast({
+        message: "Completa el precio total de la opción",
+        type: "warning",
+      });
       return;
     }
 
@@ -248,7 +251,10 @@ export default function NewQuote({ onBack, onSuccess }) {
   async function handleSubmit() {
     try {
       if (!selectedCliente || !formData.destino) {
-        setToast({ message: "Completa los campos obligatorios (cliente y destino)", type: "warning" });
+        setToast({
+          message: "Completa los campos obligatorios (cliente y destino)",
+          type: "warning",
+        });
         return;
       }
 
@@ -318,7 +324,10 @@ export default function NewQuote({ onBack, onSuccess }) {
       setTimeout(() => onSuccess(), 1500);
     } catch (error) {
       console.error("Error:", error);
-      setToast({ message: "Error al crear cotización: " + error.message, type: "error" });
+      setToast({
+        message: "Error al crear cotización: " + error.message,
+        type: "error",
+      });
     }
   }
 
@@ -377,7 +386,7 @@ export default function NewQuote({ onBack, onSuccess }) {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="space-y-6">
               {/* Cliente Selector with requester toggle */}
-              <ClienteSelector
+              <CustomerSelector
                 value={selectedCliente}
                 onChange={handleClienteChange}
                 label="Cliente (Titular)"

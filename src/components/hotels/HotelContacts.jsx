@@ -24,7 +24,7 @@ const CARGO_OPTIONS = [
   "Otro",
 ];
 
-export default function HotelContactos({ hotelId, disabled = false }) {
+export default function HotelContacts({ hotelId, disabled = false }) {
   const [contactos, setContactos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -207,7 +207,10 @@ export default function HotelContactos({ hotelId, disabled = false }) {
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-gray-50 rounded-lg p-4 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-gray-50 rounded-lg p-4 space-y-4"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -216,7 +219,9 @@ export default function HotelContactos({ hotelId, disabled = false }) {
               <input
                 type="text"
                 value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, nombre: e.target.value })
+                }
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 required
               />
@@ -227,12 +232,16 @@ export default function HotelContactos({ hotelId, disabled = false }) {
               </label>
               <select
                 value={formData.cargo}
-                onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, cargo: e.target.value })
+                }
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
               >
                 <option value="">Seleccionar...</option>
                 {CARGO_OPTIONS.map((cargo) => (
-                  <option key={cargo} value={cargo}>{cargo}</option>
+                  <option key={cargo} value={cargo}>
+                    {cargo}
+                  </option>
                 ))}
               </select>
             </div>
@@ -243,7 +252,9 @@ export default function HotelContactos({ hotelId, disabled = false }) {
               <input
                 type="tel"
                 value={formData.telefono}
-                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, telefono: e.target.value })
+                }
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
               />
             </div>
@@ -254,7 +265,9 @@ export default function HotelContactos({ hotelId, disabled = false }) {
               <input
                 type="tel"
                 value={formData.celular}
-                onChange={(e) => setFormData({ ...formData, celular: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, celular: e.target.value })
+                }
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
               />
             </div>
@@ -265,7 +278,9 @@ export default function HotelContactos({ hotelId, disabled = false }) {
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
               />
             </div>
@@ -274,7 +289,9 @@ export default function HotelContactos({ hotelId, disabled = false }) {
                 type="checkbox"
                 id="es_principal"
                 checked={formData.es_principal}
-                onChange={(e) => setFormData({ ...formData, es_principal: e.target.checked })}
+                onChange={(e) =>
+                  setFormData({ ...formData, es_principal: e.target.checked })
+                }
                 className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
               />
               <label htmlFor="es_principal" className="text-sm text-gray-700">
@@ -288,7 +305,9 @@ export default function HotelContactos({ hotelId, disabled = false }) {
             </label>
             <textarea
               value={formData.notas}
-              onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, notas: e.target.value })
+              }
               rows={2}
               className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             />
@@ -333,21 +352,27 @@ export default function HotelContactos({ hotelId, disabled = false }) {
             <div
               key={contacto.id}
               className={`bg-white border rounded-lg p-4 ${
-                contacto.es_principal ? "border-primary/30 bg-primary/5" : "border-gray-200"
+                contacto.es_principal
+                  ? "border-primary/30 bg-primary/5"
+                  : "border-gray-200"
               }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    contacto.es_principal
-                      ? "bg-primary/20 text-primary"
-                      : "bg-gray-100 text-gray-500"
-                  }`}>
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      contacto.es_principal
+                        ? "bg-primary/20 text-primary"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
                     <User size={20} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900">{contacto.nombre}</p>
+                      <p className="font-medium text-gray-900">
+                        {contacto.nombre}
+                      </p>
                       {contacto.es_principal && (
                         <span className="text-xs px-2 py-0.5 bg-primary text-white rounded-full">
                           Principal
@@ -390,7 +415,9 @@ export default function HotelContactos({ hotelId, disabled = false }) {
                       )}
                     </div>
                     {contacto.notas && (
-                      <p className="mt-2 text-xs text-gray-500">{contacto.notas}</p>
+                      <p className="mt-2 text-xs text-gray-500">
+                        {contacto.notas}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -403,9 +430,16 @@ export default function HotelContactos({ hotelId, disabled = false }) {
                           ? "text-primary hover:bg-primary/10"
                           : "text-gray-400 hover:text-primary hover:bg-gray-100"
                       }`}
-                      title={contacto.es_principal ? "Quitar como principal" : "Marcar como principal"}
+                      title={
+                        contacto.es_principal
+                          ? "Quitar como principal"
+                          : "Marcar como principal"
+                      }
                     >
-                      <Star size={16} fill={contacto.es_principal ? "currentColor" : "none"} />
+                      <Star
+                        size={16}
+                        fill={contacto.es_principal ? "currentColor" : "none"}
+                      />
                     </button>
                     <button
                       onClick={() => startEdit(contacto)}

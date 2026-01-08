@@ -20,11 +20,19 @@ import {
   ExternalLink,
   Clock,
   Heart,
+  Plane,
 } from "lucide-react";
-import ClienteRelaciones from "../components/clientes/ClienteRelaciones";
+import CustomerRelaciones from "../components/customers/CustomerRelaciones";
+import TravelersManager from "../components/customers/TravelersManager";
 import Toast from "../components/ui/Toast";
 
-export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, onNavigateToSale, onNavigateToCliente }) {
+export default function CustomerDetails({
+  clienteId,
+  onBack,
+  onNavigateToQuote,
+  onNavigateToSale,
+  onNavigateToCliente,
+}) {
   const { canEdit } = useAuth();
   const [cliente, setCliente] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +48,11 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
   const [viajes, setViajes] = useState([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
 
+  // Viajeros state for travelers tab
+  const [clienteViajeros, setClienteViajeros] = useState([]);
+  const [loadingViajeros, setLoadingViajeros] = useState(false);
+  const [savingViajeros, setSavingViajeros] = useState(false);
+
   // Tag input
   const [tagInput, setTagInput] = useState("");
 
@@ -53,6 +66,9 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
     if (cliente && activeTab === "history") {
       fetchRelatedData();
     }
+    if (cliente && activeTab === "viajeros") {
+      fetchClienteViajeros();
+    }
   }, [cliente, activeTab]);
 
   async function fetchCliente() {
@@ -60,17 +76,64 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
     try {
       const { data, error } = await supabase
         .from("clientes")
-        .select(`
+        .select(
+          `
           *,
           referido_por_cliente:referido_por(id, nombre_completo),
-          created_by_profile:created_by(full_name)
-        `)
+          created_by_profile:created_by(full_name),
+          cotizaciones!cotizaciones_cliente_id_fkey(
+            id,
+            ventas!ventas_cotizacion_id_fkey(
+              id,
+              precio_total,
+              divisa
+            )
+          )
+        `
+        )
         .eq("id", clienteId)
         .single();
 
       if (error) throw error;
-      setCliente(data);
-      setEditData(data);
+
+      // Calculate metrics
+      const total_cotizaciones = data.cotizaciones?.length || 0;
+      const total_ventas =
+        data.cotizaciones?.reduce((total, cot) => {
+          return total + (cot.ventas?.length || 0);
+        }, 0) || 0;
+
+      // Calculate total ingresos from all pagos for all ventas
+      let total_ingresos = 0;
+      if (data.cotizaciones && data.cotizaciones.length > 0) {
+        const ventaIds = [];
+        data.cotizaciones.forEach((cot) => {
+          cot.ventas?.forEach((venta) => ventaIds.push(venta.id));
+        });
+
+        if (ventaIds.length > 0) {
+          const { data: pagosData } = await supabase
+            .from("pagos")
+            .select("monto")
+            .in("venta_id", ventaIds);
+
+          total_ingresos =
+            pagosData?.reduce(
+              (sum, pago) => sum + parseFloat(pago.monto || 0),
+              0
+            ) || 0;
+        }
+      }
+
+      const clienteWithMetrics = {
+        ...data,
+        total_cotizaciones,
+        total_ventas,
+        total_ingresos,
+      };
+
+      setCliente(clienteWithMetrics);
+      setEditData(clienteWithMetrics);
     } catch (error) {
       console.error("Error fetching cliente:", error);
     } finally {
@@ -84,36 +147,47 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
       // Fetch cotizaciones
       const { data: cotData } = await supabase
         .from("cotizaciones")
-        .select("id, destino, fecha_salida, fecha_regreso, pipeline_stage, created_at")
+        .select(
+          "id, destino, fecha_salida, fecha_regreso, pipeline_stage, created_at"
+        )
         .eq("cliente_id", clienteId)
         .order("created_at", { ascending: false })
         .limit(20);
 
       setCotizaciones(cotData || []);
 
-      // Fetch ventas through cotizaciones
-      const { data: ventasData } = await supabase
-        .from("ventas")
-        .select(`
-          id,
-          precio_total,
-          divisa,
-          estatus,
-          created_at,
-          cotizacion:cotizacion_id(destino, fecha_salida)
-        `)
-        .in(
-          "cotizacion_id",
-          cotData?.map(c => c.id) || []
-        )
-        .order("created_at", { ascending: false });
+      // Fetch ventas through cotizaciones - only if there are cotizaciones
+      if (cotData && cotData.length > 0) {
+        const { data: ventasData, error: ventasError } = await supabase
+          .from("ventas")
+          .select(
+            `
+            id,
+            precio_total,
+            divisa,
+            created_at,
+            cotizacion:ventas_cotizacion_id_fkey(destino, fecha_salida)
+          `
+          )
+          .in(
+            "cotizacion_id",
+            cotData.map((c) => c.id)
+          )
+          .order("created_at", { ascending: false });
 
-      setVentas(ventasData || []);
+        if (ventasError) {
+          console.error("Error fetching ventas:", ventasError);
+        }
+        setVentas(ventasData || []);
+      } else {
+        setVentas([]);
+      }
 
       // Fetch viajes (as viajero)
       const { data: viajesData } = await supabase
         .from("viajeros")
-        .select(`
+        .select(
+          `
           id,
           es_titular,
           tipo_viajero,
@@ -122,7 +196,8 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
             precio_total,
             cotizacion:cotizacion_id(destino, fecha_salida)
           )
-        `)
+        `
+        )
         .eq("cliente_id", clienteId)
         .limit(20);
 
@@ -131,6 +206,106 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
       console.error("Error fetching related data:", error);
     } finally {
       setLoadingRelated(false);
+    }
+  }
+
+  // Fetch viajeros linked to this client's sales
+  async function fetchClienteViajeros() {
+    setLoadingViajeros(true);
+    try {
+      // Get all ventas for this client via cotizaciones
+      const { data: cotData } = await supabase
+        .from("cotizaciones")
+        .select("id")
+        .eq("cliente_id", clienteId);
+
+      if (!cotData || cotData.length === 0) {
+        setClienteViajeros([]);
+        return;
+      }
+
+      // Get ventas for these cotizaciones
+      const { data: ventasData } = await supabase
+        .from("ventas")
+        .select(
+          "id, folio_venta, cotizacion_id, cotizaciones!ventas_cotizacion_id_fkey(destino, fecha_salida, num_adultos, num_ninos, num_infantes)"
+        )
+        .in(
+          "cotizacion_id",
+          cotData.map((c) => c.id)
+        );
+
+      if (!ventasData || ventasData.length === 0) {
+        setClienteViajeros([]);
+        return;
+      }
+
+      // Get viajeros for all these ventas
+      const { data: viajerosData } = await supabase
+        .from("viajeros")
+        .select("*")
+        .in(
+          "venta_id",
+          ventasData.map((v) => v.id)
+        )
+        .order("es_titular", { ascending: false });
+
+      // Group viajeros by venta with venta info
+      const groupedViajeros = ventasData
+        .map((venta) => ({
+          venta,
+          viajeros: viajerosData?.filter((v) => v.venta_id === venta.id) || [],
+        }))
+        .filter((g) => g.viajeros.length > 0 || true); // Show all ventas even without viajeros
+
+      setClienteViajeros(groupedViajeros);
+    } catch (error) {
+      console.error("Error fetching viajeros:", error);
+      setToast({ message: "Error al cargar viajeros", type: "error" });
+    } finally {
+      setLoadingViajeros(false);
+    }
+  }
+
+  // Save viajeros for a specific venta
+  async function saveViajerosForVenta(ventaId, viajeros, cotizacion) {
+    setSavingViajeros(true);
+    try {
+      // Delete existing viajeros for this venta
+      await supabase.from("viajeros").delete().eq("venta_id", ventaId);
+
+      // Insert new viajeros
+      if (viajeros.length > 0) {
+        const viajerosData = viajeros.map((v) => ({
+          venta_id: ventaId,
+          cliente_id: v.cliente_id || null,
+          nombre_completo: v.nombre_completo,
+          tipo_viajero: v.tipo_viajero,
+          es_titular: v.es_titular || false,
+          fecha_nacimiento: v.fecha_nacimiento || null,
+          nacionalidad: v.nacionalidad || null,
+          pasaporte_numero: v.pasaporte_numero || null,
+          pasaporte_vencimiento: v.pasaporte_vencimiento || null,
+          telefono: v.telefono || null,
+          email: v.email || null,
+          requerimientos_especiales: v.requerimientos_especiales || null,
+        }));
+
+        const { error } = await supabase.from("viajeros").insert(viajerosData);
+
+        if (error) throw error;
+      }
+
+      setToast({ message: "Viajeros guardados", type: "success" });
+      fetchClienteViajeros();
+    } catch (error) {
+      console.error("Error saving viajeros:", error);
+      setToast({
+        message: "Error al guardar viajeros: " + error.message,
+        type: "error",
+      });
+    } finally {
+      setSavingViajeros(false);
     }
   }
 
@@ -168,7 +343,10 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
       setIsEditing(false);
     } catch (error) {
       console.error("Error saving cliente:", error);
-      setToast({ message: "Error al guardar: " + error.message, type: "error" });
+      setToast({
+        message: "Error al guardar: " + error.message,
+        type: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -177,7 +355,7 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
   function addTag() {
     const tag = tagInput.trim();
     if (tag && !editData.etiquetas?.includes(tag)) {
-      setEditData(prev => ({
+      setEditData((prev) => ({
         ...prev,
         etiquetas: [...(prev.etiquetas || []), tag],
       }));
@@ -186,9 +364,9 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
   }
 
   function removeTag(tagToRemove) {
-    setEditData(prev => ({
+    setEditData((prev) => ({
       ...prev,
-      etiquetas: prev.etiquetas.filter(t => t !== tagToRemove),
+      etiquetas: prev.etiquetas.filter((t) => t !== tagToRemove),
     }));
   }
 
@@ -272,13 +450,15 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
 
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
-                cliente.tipo === "corporate"
-                  ? "bg-blue-100 text-blue-600"
-                  : cliente.tipo === "agency"
-                    ? "bg-purple-100 text-purple-600"
-                    : "bg-gray-100 text-gray-600"
-              }`}>
+              <div
+                className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                  cliente.tipo === "corporate"
+                    ? "bg-blue-100 text-blue-600"
+                    : cliente.tipo === "agency"
+                      ? "bg-purple-100 text-purple-600"
+                      : "bg-gray-100 text-gray-600"
+                }`}
+              >
                 {tipoIcons[cliente.tipo]}
               </div>
               <div>
@@ -289,7 +469,7 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                   <span className="text-sm text-gray-500">
                     {tipoLabels[cliente.tipo]}
                   </span>
-                  {cliente.etiquetas?.map(tag => (
+                  {cliente.etiquetas?.map((tag) => (
                     <span
                       key={tag}
                       className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full"
@@ -369,6 +549,17 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                 Historial
               </button>
               <button
+                onClick={() => setActiveTab("viajeros")}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1 ${
+                  activeTab === "viajeros"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Plane size={14} />
+                Viajeros
+              </button>
+              <button
                 onClick={() => setActiveTab("relaciones")}
                 className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1 ${
                   activeTab === "relaciones"
@@ -397,7 +588,12 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                       <input
                         type="text"
                         value={editData.nombre_completo || ""}
-                        onChange={(e) => setEditData({ ...editData, nombre_completo: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            nombre_completo: e.target.value,
+                          })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -407,7 +603,9 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                       </label>
                       <select
                         value={editData.tipo || "individual"}
-                        onChange={(e) => setEditData({ ...editData, tipo: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({ ...editData, tipo: e.target.value })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       >
                         <option value="individual">Individual</option>
@@ -426,7 +624,9 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                       <input
                         type="tel"
                         value={editData.telefono || ""}
-                        onChange={(e) => setEditData({ ...editData, telefono: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({ ...editData, telefono: e.target.value })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -437,7 +637,9 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                       <input
                         type="email"
                         value={editData.email || ""}
-                        onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({ ...editData, email: e.target.value })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -448,7 +650,12 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                       <input
                         type="tel"
                         value={editData.telefono_secundario || ""}
-                        onChange={(e) => setEditData({ ...editData, telefono_secundario: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            telefono_secundario: e.target.value,
+                          })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -458,7 +665,12 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                       </label>
                       <select
                         value={editData.preferencia_contacto || "whatsapp"}
-                        onChange={(e) => setEditData({ ...editData, preferencia_contacto: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            preferencia_contacto: e.target.value,
+                          })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       >
                         <option value="whatsapp">WhatsApp</option>
@@ -478,7 +690,12 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                       <input
                         type="date"
                         value={editData.fecha_nacimiento || ""}
-                        onChange={(e) => setEditData({ ...editData, fecha_nacimiento: e.target.value })}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            fecha_nacimiento: e.target.value,
+                          })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
@@ -489,7 +706,12 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                       <input
                         type="text"
                         value={editData.rfc || ""}
-                        onChange={(e) => setEditData({ ...editData, rfc: e.target.value.toUpperCase() })}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            rfc: e.target.value.toUpperCase(),
+                          })
+                        }
                         className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary uppercase"
                       />
                     </div>
@@ -501,34 +723,38 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                       Etiquetas
                     </label>
                     <div className="flex gap-2 flex-wrap mb-2">
-                      {["VIP", "Frecuente", "Corporativo", "Referido"].map((tag) => (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => {
-                            if (!editData.etiquetas?.includes(tag)) {
-                              setEditData(prev => ({
-                                ...prev,
-                                etiquetas: [...(prev.etiquetas || []), tag],
-                              }));
-                            }
-                          }}
-                          className={`text-xs px-2 py-1 rounded-full border transition-all ${
-                            editData.etiquetas?.includes(tag)
-                              ? "border-primary bg-primary/20 text-primary"
-                              : "border-gray-300 text-gray-600 hover:border-gray-400"
-                          }`}
-                        >
-                          + {tag}
-                        </button>
-                      ))}
+                      {["VIP", "Frecuente", "Corporativo", "Referido"].map(
+                        (tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => {
+                              if (!editData.etiquetas?.includes(tag)) {
+                                setEditData((prev) => ({
+                                  ...prev,
+                                  etiquetas: [...(prev.etiquetas || []), tag],
+                                }));
+                              }
+                            }}
+                            className={`text-xs px-2 py-1 rounded-full border transition-all ${
+                              editData.etiquetas?.includes(tag)
+                                ? "border-primary bg-primary/20 text-primary"
+                                : "border-gray-300 text-gray-600 hover:border-gray-400"
+                            }`}
+                          >
+                            + {tag}
+                          </button>
+                        )
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <input
                         type="text"
                         value={tagInput}
                         onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && (e.preventDefault(), addTag())
+                        }
                         className="flex-1 border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
                         placeholder="Nueva etiqueta..."
                       />
@@ -568,7 +794,9 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                     </label>
                     <textarea
                       value={editData.notas || ""}
-                      onChange={(e) => setEditData({ ...editData, notas: e.target.value })}
+                      onChange={(e) =>
+                        setEditData({ ...editData, notas: e.target.value })
+                      }
                       rows="3"
                       className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                       placeholder="Notas internas..."
@@ -636,8 +864,12 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                         <div className="flex items-center gap-3">
                           <Phone size={18} className="text-gray-400" />
                           <div>
-                            <p className="text-sm text-gray-500">Teléfono Secundario</p>
-                            <p className="font-medium">{cliente.telefono_secundario}</p>
+                            <p className="text-sm text-gray-500">
+                              Teléfono Secundario
+                            </p>
+                            <p className="font-medium">
+                              {cliente.telefono_secundario}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -645,14 +877,18 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                         <Clock size={18} className="text-gray-400" />
                         <div>
                           <p className="text-sm text-gray-500">Preferencia</p>
-                          <p className="font-medium capitalize">{cliente.preferencia_contacto}</p>
+                          <p className="font-medium capitalize">
+                            {cliente.preferencia_contacto}
+                          </p>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Additional Info */}
-                  {(cliente.fecha_nacimiento || cliente.rfc || cliente.razon_social) && (
+                  {(cliente.fecha_nacimiento ||
+                    cliente.rfc ||
+                    cliente.razon_social) && (
                     <div>
                       <h3 className="text-sm font-medium text-gray-500 mb-3">
                         Información Adicional
@@ -662,9 +898,13 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                           <div className="flex items-center gap-3">
                             <Calendar size={18} className="text-gray-400" />
                             <div>
-                              <p className="text-sm text-gray-500">Fecha de Nacimiento</p>
+                              <p className="text-sm text-gray-500">
+                                Fecha de Nacimiento
+                              </p>
                               <p className="font-medium">
-                                {new Date(cliente.fecha_nacimiento).toLocaleDateString("es-MX")}
+                                {new Date(
+                                  cliente.fecha_nacimiento + "T00:00:00"
+                                ).toLocaleDateString("es-MX")}
                               </p>
                             </div>
                           </div>
@@ -677,8 +917,12 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                         )}
                         {cliente.razon_social && (
                           <div>
-                            <p className="text-sm text-gray-500">Razón Social</p>
-                            <p className="font-medium">{cliente.razon_social}</p>
+                            <p className="text-sm text-gray-500">
+                              Razón Social
+                            </p>
+                            <p className="font-medium">
+                              {cliente.razon_social}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -696,11 +940,17 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                         <div>
                           {cliente.direccion && <p>{cliente.direccion}</p>}
                           <p>
-                            {[cliente.ciudad, cliente.estado, cliente.codigo_postal]
+                            {[
+                              cliente.ciudad,
+                              cliente.estado,
+                              cliente.codigo_postal,
+                            ]
                               .filter(Boolean)
                               .join(", ")}
                           </p>
-                          {cliente.pais && <p className="text-gray-500">{cliente.pais}</p>}
+                          {cliente.pais && (
+                            <p className="text-gray-500">{cliente.pais}</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -721,12 +971,17 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                   {/* Meta */}
                   <div className="pt-4 border-t text-sm text-gray-500">
                     <p>
-                      Creado el {new Date(cliente.created_at).toLocaleDateString("es-MX")}
-                      {cliente.created_by_profile && ` por ${cliente.created_by_profile.full_name}`}
+                      Creado el{" "}
+                      {new Date(cliente.created_at).toLocaleDateString("es-MX")}
+                      {cliente.created_by_profile &&
+                        ` por ${cliente.created_by_profile.full_name}`}
                     </p>
                     {cliente.ultima_interaccion && (
                       <p>
-                        Última interacción: {new Date(cliente.ultima_interaccion).toLocaleDateString("es-MX")}
+                        Última interacción:{" "}
+                        {new Date(
+                          cliente.ultima_interaccion
+                        ).toLocaleDateString("es-MX")}
                       </p>
                     )}
                   </div>
@@ -741,7 +996,9 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
               {loadingRelated ? (
                 <div className="text-center py-8">
                   <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                  <p className="mt-2 text-gray-500 text-sm">Cargando historial...</p>
+                  <p className="mt-2 text-gray-500 text-sm">
+                    Cargando historial...
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-8">
@@ -753,7 +1010,7 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                     </h3>
                     {cotizaciones.length > 0 ? (
                       <div className="space-y-2">
-                        {cotizaciones.map(cot => (
+                        {cotizaciones.map((cot) => (
                           <div
                             key={cot.id}
                             onClick={() => onNavigateToQuote?.(cot.id)}
@@ -762,14 +1019,22 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                             <div>
                               <p className="font-medium">{cot.destino}</p>
                               <p className="text-sm text-gray-500">
-                                {cot.fecha_salida && new Date(cot.fecha_salida).toLocaleDateString("es-MX")}
+                                {cot.fecha_salida &&
+                                  new Date(
+                                    cot.fecha_salida + "T00:00:00"
+                                  ).toLocaleDateString("es-MX")}
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className={`text-xs px-2 py-1 rounded-full ${stageColors[cot.pipeline_stage]}`}>
+                              <span
+                                className={`text-xs px-2 py-1 rounded-full ${stageColors[cot.pipeline_stage]}`}
+                              >
                                 {stageLabels[cot.pipeline_stage]}
                               </span>
-                              <ExternalLink size={16} className="text-gray-400" />
+                              <ExternalLink
+                                size={16}
+                                className="text-gray-400"
+                              />
                             </div>
                           </div>
                         ))}
@@ -789,24 +1054,34 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                     </h3>
                     {ventas.length > 0 ? (
                       <div className="space-y-2">
-                        {ventas.map(venta => (
+                        {ventas.map((venta) => (
                           <div
                             key={venta.id}
                             onClick={() => onNavigateToSale?.(venta.id)}
                             className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
                           >
                             <div>
-                              <p className="font-medium">{venta.cotizacion?.destino}</p>
+                              <p className="font-medium">
+                                {venta.cotizacion?.destino}
+                              </p>
                               <p className="text-sm text-gray-500">
                                 {venta.cotizacion?.fecha_salida &&
-                                  new Date(venta.cotizacion.fecha_salida).toLocaleDateString("es-MX")}
+                                  new Date(
+                                    venta.cotizacion.fecha_salida + "T00:00:00"
+                                  ).toLocaleDateString("es-MX")}
                               </p>
                             </div>
                             <div className="text-right">
                               <p className="font-medium text-green-600">
-                                ${parseFloat(venta.precio_total).toLocaleString()} {venta.divisa}
+                                $
+                                {parseFloat(
+                                  venta.precio_total
+                                ).toLocaleString()}{" "}
+                                {venta.divisa}
                               </p>
-                              <p className="text-xs text-gray-500 capitalize">{venta.estatus}</p>
+                              <p className="text-xs text-gray-500 capitalize">
+                                {venta.estatus}
+                              </p>
                             </div>
                           </div>
                         ))}
@@ -826,16 +1101,21 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
                         Viajes como pasajero ({viajes.length})
                       </h3>
                       <div className="space-y-2">
-                        {viajes.map(viaje => (
+                        {viajes.map((viaje) => (
                           <div
                             key={viaje.id}
                             className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                           >
                             <div>
-                              <p className="font-medium">{viaje.venta?.cotizacion?.destino}</p>
+                              <p className="font-medium">
+                                {viaje.venta?.cotizacion?.destino}
+                              </p>
                               <p className="text-sm text-gray-500">
                                 {viaje.venta?.cotizacion?.fecha_salida &&
-                                  new Date(viaje.venta.cotizacion.fecha_salida).toLocaleDateString("es-MX")}
+                                  new Date(
+                                    viaje.venta.cotizacion.fecha_salida +
+                                      "T00:00:00"
+                                  ).toLocaleDateString("es-MX")}
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
@@ -858,10 +1138,52 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
             </div>
           )}
 
+          {/* Viajeros Tab */}
+          {activeTab === "viajeros" && (
+            <div className="p-6">
+              {loadingViajeros ? (
+                <div className="text-center py-8">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                  <p className="mt-2 text-gray-500 text-sm">
+                    Cargando viajeros...
+                  </p>
+                </div>
+              ) : clienteViajeros.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Plane size={32} className="mx-auto mb-2 text-gray-400" />
+                  <p>No hay ventas con viajeros registrados</p>
+                  <p className="text-sm mt-1">
+                    Los viajeros se registran al crear una venta
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {clienteViajeros.map(({ venta, viajeros }) => (
+                    <ViajerosSection
+                      key={venta.id}
+                      venta={venta}
+                      viajeros={viajeros}
+                      clienteId={clienteId}
+                      canEdit={canEdit()}
+                      onSave={(newViajeros) =>
+                        saveViajerosForVenta(
+                          venta.id,
+                          newViajeros,
+                          venta.cotizaciones
+                        )
+                      }
+                      saving={savingViajeros}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Relaciones Tab */}
           {activeTab === "relaciones" && (
             <div className="p-6">
-              <ClienteRelaciones
+              <CustomerRelaciones
                 clienteId={clienteId}
                 onNavigateToCliente={onNavigateToCliente}
                 disabled={!canEdit()}
@@ -869,6 +1191,166 @@ export default function ClienteDetalle({ clienteId, onBack, onNavigateToQuote, o
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Viajeros Section Component for each venta
+function ViajerosSection({
+  venta,
+  viajeros,
+  clienteId,
+  canEdit,
+  onSave,
+  saving,
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editViajeros, setEditViajeros] = useState([]);
+
+  function startEditing() {
+    setEditViajeros(
+      viajeros.map((v) => ({ ...v, id: v.id || crypto.randomUUID() }))
+    );
+    setIsEditing(true);
+  }
+
+  function handleSave() {
+    onSave(editViajeros);
+    setIsEditing(false);
+  }
+
+  const cotizacion = venta.cotizaciones;
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
+        <div>
+          <p className="font-semibold text-gray-900">{venta.folio_venta}</p>
+          <p className="text-sm text-gray-500">
+            {cotizacion?.destino} •{" "}
+            {cotizacion?.fecha_salida &&
+              new Date(
+                cotizacion.fecha_salida + "T00:00:00"
+              ).toLocaleDateString("es-MX")}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">
+            {viajeros.length} de{" "}
+            {(cotizacion?.num_adultos || 0) +
+              (cotizacion?.num_ninos || 0) +
+              (cotizacion?.num_infantes || 0)}{" "}
+            viajeros
+          </span>
+          {canEdit && !isEditing && (
+            <button
+              onClick={startEditing}
+              className="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary/90"
+            >
+              <Edit size={14} className="inline mr-1" />
+              Editar
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {isEditing ? (
+          <>
+            <TravelersManager
+              viajeros={editViajeros}
+              onChange={setEditViajeros}
+              numAdultos={cotizacion?.num_adultos || 0}
+              numMenores={cotizacion?.num_ninos || 0}
+              numInfantes={cotizacion?.num_infantes || 0}
+              clienteId={clienteId}
+            />
+            <div className="flex gap-2 mt-4 justify-end">
+              <button
+                onClick={() => setIsEditing(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} />
+                    Guardar
+                  </>
+                )}
+              </button>
+            </div>
+          </>
+        ) : viajeros.length === 0 ? (
+          <div className="text-center py-4 text-gray-500">
+            <p className="text-sm">
+              No hay viajeros registrados para esta venta
+            </p>
+            {canEdit && (
+              <button
+                onClick={startEditing}
+                className="text-primary hover:text-primary/80 text-sm mt-2"
+              >
+                + Agregar viajeros
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {viajeros.map((viajero) => (
+              <div
+                key={viajero.id}
+                className={`flex items-center justify-between p-3 rounded-lg ${
+                  viajero.es_titular
+                    ? "bg-green-50 border border-green-200"
+                    : "bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      viajero.tipo_viajero === "menor"
+                        ? "bg-blue-100 text-blue-600"
+                        : viajero.tipo_viajero === "infante"
+                          ? "bg-pink-100 text-pink-600"
+                          : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    <User size={16} />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {viajero.nombre_completo}
+                      {viajero.es_titular && (
+                        <span className="ml-2 text-xs px-2 py-0.5 bg-green-200 text-green-800 rounded-full">
+                          Titular
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-sm text-gray-500 capitalize">
+                      {viajero.tipo_viajero}
+                      {viajero.pasaporte_numero &&
+                        ` • Pasaporte: ${viajero.pasaporte_numero}`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,10 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import { supabase } from "../../lib/supabase";
-import { Search, UserPlus, X, Phone, Mail, User, Building2, ChevronDown } from "lucide-react";
+import {
+  Search,
+  UserPlus,
+  X,
+  Phone,
+  Mail,
+  User,
+  Building2,
+  ChevronDown,
+} from "lucide-react";
 
 /**
- * ClienteSelector - Search, select, or create customers
+ * CustomerSelector - Search, select, or create customers
  *
  * Features:
  * - Search existing customers by name, phone, or email
@@ -12,7 +21,7 @@ import { Search, UserPlus, X, Phone, Mail, User, Building2, ChevronDown } from "
  * - Create new customer inline via quick create modal
  * - Optional "different requester" toggle for titular/solicitante
  */
-export default function ClienteSelector({
+export default function CustomerSelector({
   value,
   onChange,
   placeholder = "Buscar cliente por nombre, teléfono o email...",
@@ -90,9 +99,13 @@ export default function ClienteSelector({
     try {
       const { data, error } = await supabase
         .from("clientes")
-        .select("id, nombre_completo, telefono, email, tipo, total_cotizaciones, total_ventas, etiquetas")
+        .select(
+          "id, nombre_completo, telefono, email, tipo, total_cotizaciones, total_ventas, etiquetas"
+        )
         .eq("is_active", true)
-        .or(`nombre_completo.ilike.%${query}%,telefono.ilike.%${query}%,email.ilike.%${query}%`)
+        .or(
+          `nombre_completo.ilike.%${query}%,telefono.ilike.%${query}%,email.ilike.%${query}%`
+        )
         .order("nombre_completo")
         .limit(10);
 
@@ -172,21 +185,35 @@ export default function ClienteSelector({
 
   // Display selected customer card
   const SelectedCustomerCard = ({ cliente, isRequester = false, onClear }) => (
-    <div className={`flex items-center justify-between p-3 rounded-lg border-2 ${
-      isRequester ? "bg-amber-50 border-amber-200" : "bg-green-50 border-green-200"
-    }`}>
+    <div
+      className={`flex items-center justify-between p-3 rounded-lg border-2 ${
+        isRequester
+          ? "bg-amber-50 border-amber-200"
+          : "bg-green-50 border-green-200"
+      }`}
+    >
       <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-          isRequester ? "bg-amber-200" : "bg-green-200"
-        }`}>
+        <div
+          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+            isRequester ? "bg-amber-200" : "bg-green-200"
+          }`}
+        >
           {cliente.tipo === "corporate" ? (
-            <Building2 size={20} className={isRequester ? "text-amber-700" : "text-green-700"} />
+            <Building2
+              size={20}
+              className={isRequester ? "text-amber-700" : "text-green-700"}
+            />
           ) : (
-            <User size={20} className={isRequester ? "text-amber-700" : "text-green-700"} />
+            <User
+              size={20}
+              className={isRequester ? "text-amber-700" : "text-green-700"}
+            />
           )}
         </div>
         <div>
-          <p className="font-semibold text-gray-900">{cliente.nombre_completo}</p>
+          <p className="font-semibold text-gray-900">
+            {cliente.nombre_completo}
+          </p>
           <div className="flex items-center gap-3 text-sm text-gray-600">
             {cliente.telefono && (
               <span className="flex items-center gap-1">
@@ -225,10 +252,7 @@ export default function ClienteSelector({
       {/* Selected Customer Display */}
       {value ? (
         <div className="space-y-3">
-          <SelectedCustomerCard
-            cliente={value}
-            onClear={clearSelection}
-          />
+          <SelectedCustomerCard cliente={value} onClear={clearSelection} />
 
           {/* Different Requester Toggle */}
           {showRequesterToggle && (
@@ -258,7 +282,7 @@ export default function ClienteSelector({
                       onClear={() => onRequesterChange(null)}
                     />
                   ) : (
-                    <ClienteSelector
+                    <CustomerSelector
                       value={requesterValue}
                       onChange={onRequesterChange}
                       placeholder="Buscar solicitante..."
@@ -369,7 +393,7 @@ export default function ClienteSelector({
                 onClick={() => {
                   setShowQuickCreate(true);
                   setShowDropdown(false);
-                  setNewCliente(prev => ({
+                  setNewCliente((prev) => ({
                     ...prev,
                     nombre_completo: searchQuery,
                   }));
@@ -378,7 +402,9 @@ export default function ClienteSelector({
               >
                 <UserPlus size={18} />
                 Crear nuevo cliente
-                {searchQuery && <span className="text-gray-500">"{searchQuery}"</span>}
+                {searchQuery && (
+                  <span className="text-gray-500">"{searchQuery}"</span>
+                )}
               </div>
             </div>
           )}
@@ -415,7 +441,12 @@ export default function ClienteSelector({
                 <input
                   type="text"
                   value={newCliente.nombre_completo}
-                  onChange={(e) => setNewCliente({ ...newCliente, nombre_completo: e.target.value })}
+                  onChange={(e) =>
+                    setNewCliente({
+                      ...newCliente,
+                      nombre_completo: e.target.value,
+                    })
+                  }
                   className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                   placeholder="Nombre del cliente"
                   autoFocus
@@ -429,7 +460,9 @@ export default function ClienteSelector({
                 <input
                   type="tel"
                   value={newCliente.telefono}
-                  onChange={(e) => setNewCliente({ ...newCliente, telefono: e.target.value })}
+                  onChange={(e) =>
+                    setNewCliente({ ...newCliente, telefono: e.target.value })
+                  }
                   className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                   placeholder="+52 614 123 4567"
                 />
@@ -442,7 +475,9 @@ export default function ClienteSelector({
                 <input
                   type="email"
                   value={newCliente.email}
-                  onChange={(e) => setNewCliente({ ...newCliente, email: e.target.value })}
+                  onChange={(e) =>
+                    setNewCliente({ ...newCliente, email: e.target.value })
+                  }
                   className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
                   placeholder="cliente@email.com"
                 />
@@ -455,14 +490,19 @@ export default function ClienteSelector({
                 <div className="relative">
                   <select
                     value={newCliente.tipo}
-                    onChange={(e) => setNewCliente({ ...newCliente, tipo: e.target.value })}
+                    onChange={(e) =>
+                      setNewCliente({ ...newCliente, tipo: e.target.value })
+                    }
                     className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary appearance-none"
                   >
                     <option value="individual">Individual</option>
                     <option value="corporate">Corporativo</option>
                     <option value="agency">Agencia</option>
                   </select>
-                  <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <ChevronDown
+                    size={16}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  />
                 </div>
               </div>
 
@@ -505,7 +545,7 @@ export default function ClienteSelector({
   );
 }
 
-ClienteSelector.propTypes = {
+CustomerSelector.propTypes = {
   value: PropTypes.shape({
     id: PropTypes.string,
     nombre_completo: PropTypes.string,

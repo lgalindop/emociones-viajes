@@ -1,10 +1,21 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { Plus, Trash2, User, Baby, ChevronDown, ChevronUp, Search, UserCheck, Users, Heart } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  User,
+  Baby,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  UserCheck,
+  Users,
+  Heart,
+} from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
 /**
- * ViajerosManager - Manage travelers for a sale
+ * TravelersManager - Manage travelers for a sale
  *
  * Features:
  * - Add/remove travelers
@@ -13,7 +24,7 @@ import { supabase } from "../../lib/supabase";
  * - Track titular (main booker)
  * - Collect travel documents and special requirements
  */
-export default function ViajerosManager({
+export default function TravelersManager({
   viajeros = [],
   onChange,
   numAdultos = 0,
@@ -45,7 +56,8 @@ export default function ViajerosManager({
       // Get relationships where this cliente is either side
       const { data: outgoing } = await supabase
         .from("cliente_relaciones")
-        .select(`
+        .select(
+          `
           tipo_relacion,
           relacionado_con:relacionado_con_id(
             id,
@@ -54,12 +66,14 @@ export default function ViajerosManager({
             email,
             fecha_nacimiento
           )
-        `)
+        `
+        )
         .eq("cliente_id", clienteId);
 
       const { data: incoming } = await supabase
         .from("cliente_relaciones")
-        .select(`
+        .select(
+          `
           tipo_relacion,
           cliente:cliente_id(
             id,
@@ -68,7 +82,8 @@ export default function ViajerosManager({
             email,
             fecha_nacimiento
           )
-        `)
+        `
+        )
         .eq("relacionado_con_id", clienteId);
 
       // Combine and normalize
@@ -178,7 +193,8 @@ export default function ViajerosManager({
   function linkToCliente(viajeroIndex, cliente) {
     updateViajero(viajeroIndex, "cliente_id", cliente.id);
     updateViajero(viajeroIndex, "nombre_completo", cliente.nombre_completo);
-    if (cliente.telefono) updateViajero(viajeroIndex, "telefono", cliente.telefono);
+    if (cliente.telefono)
+      updateViajero(viajeroIndex, "telefono", cliente.telefono);
     if (cliente.email) updateViajero(viajeroIndex, "email", cliente.email);
     setSearchingFor(null);
     setSearchQuery("");
@@ -353,7 +369,9 @@ export default function ViajerosManager({
             {/* Collapsed View */}
             <div
               className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50"
-              onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
+              onClick={() =>
+                setExpandedIndex(expandedIndex === index ? null : index)
+              }
             >
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
@@ -442,9 +460,13 @@ export default function ViajerosManager({
                                 onClick={() => linkToCliente(index, cliente)}
                                 className="px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm border-b last:border-b-0"
                               >
-                                <p className="font-medium">{cliente.nombre_completo}</p>
+                                <p className="font-medium">
+                                  {cliente.nombre_completo}
+                                </p>
                                 {cliente.telefono && (
-                                  <p className="text-gray-500">{cliente.telefono}</p>
+                                  <p className="text-gray-500">
+                                    {cliente.telefono}
+                                  </p>
                                 )}
                               </div>
                             ))}
@@ -484,7 +506,9 @@ export default function ViajerosManager({
                     <input
                       type="text"
                       value={viajero.nombre_completo}
-                      onChange={(e) => updateViajero(index, "nombre_completo", e.target.value)}
+                      onChange={(e) =>
+                        updateViajero(index, "nombre_completo", e.target.value)
+                      }
                       disabled={disabled}
                       className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-gray-100"
                       placeholder="Nombre como aparece en pasaporte"
@@ -496,7 +520,9 @@ export default function ViajerosManager({
                     </label>
                     <select
                       value={viajero.tipo_viajero}
-                      onChange={(e) => updateViajero(index, "tipo_viajero", e.target.value)}
+                      onChange={(e) =>
+                        updateViajero(index, "tipo_viajero", e.target.value)
+                      }
                       disabled={disabled}
                       className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-gray-100"
                     >
@@ -512,7 +538,9 @@ export default function ViajerosManager({
                   <input
                     type="checkbox"
                     checked={viajero.es_titular}
-                    onChange={(e) => updateViajero(index, "es_titular", e.target.checked)}
+                    onChange={(e) =>
+                      updateViajero(index, "es_titular", e.target.checked)
+                    }
                     disabled={disabled}
                     className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
@@ -534,7 +562,13 @@ export default function ViajerosManager({
                       <input
                         type="date"
                         value={viajero.fecha_nacimiento || ""}
-                        onChange={(e) => updateViajero(index, "fecha_nacimiento", e.target.value)}
+                        onChange={(e) =>
+                          updateViajero(
+                            index,
+                            "fecha_nacimiento",
+                            e.target.value
+                          )
+                        }
                         disabled={disabled}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-gray-100"
                       />
@@ -546,7 +580,9 @@ export default function ViajerosManager({
                       <input
                         type="text"
                         value={viajero.nacionalidad || ""}
-                        onChange={(e) => updateViajero(index, "nacionalidad", e.target.value)}
+                        onChange={(e) =>
+                          updateViajero(index, "nacionalidad", e.target.value)
+                        }
                         disabled={disabled}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-gray-100"
                         placeholder="Mexicana"
@@ -561,7 +597,13 @@ export default function ViajerosManager({
                       <input
                         type="text"
                         value={viajero.pasaporte_numero || ""}
-                        onChange={(e) => updateViajero(index, "pasaporte_numero", e.target.value.toUpperCase())}
+                        onChange={(e) =>
+                          updateViajero(
+                            index,
+                            "pasaporte_numero",
+                            e.target.value.toUpperCase()
+                          )
+                        }
                         disabled={disabled}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-gray-100 uppercase"
                         placeholder="G12345678"
@@ -574,7 +616,13 @@ export default function ViajerosManager({
                       <input
                         type="date"
                         value={viajero.pasaporte_vencimiento || ""}
-                        onChange={(e) => updateViajero(index, "pasaporte_vencimiento", e.target.value)}
+                        onChange={(e) =>
+                          updateViajero(
+                            index,
+                            "pasaporte_vencimiento",
+                            e.target.value
+                          )
+                        }
                         disabled={disabled}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-gray-100"
                       />
@@ -591,7 +639,9 @@ export default function ViajerosManager({
                     <input
                       type="tel"
                       value={viajero.telefono || ""}
-                      onChange={(e) => updateViajero(index, "telefono", e.target.value)}
+                      onChange={(e) =>
+                        updateViajero(index, "telefono", e.target.value)
+                      }
                       disabled={disabled}
                       className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-gray-100"
                       placeholder="Para emergencias"
@@ -604,7 +654,9 @@ export default function ViajerosManager({
                     <input
                       type="email"
                       value={viajero.email || ""}
-                      onChange={(e) => updateViajero(index, "email", e.target.value)}
+                      onChange={(e) =>
+                        updateViajero(index, "email", e.target.value)
+                      }
                       disabled={disabled}
                       className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-gray-100"
                     />
@@ -618,7 +670,13 @@ export default function ViajerosManager({
                   </label>
                   <textarea
                     value={viajero.requerimientos_especiales || ""}
-                    onChange={(e) => updateViajero(index, "requerimientos_especiales", e.target.value)}
+                    onChange={(e) =>
+                      updateViajero(
+                        index,
+                        "requerimientos_especiales",
+                        e.target.value
+                      )
+                    }
                     disabled={disabled}
                     rows="2"
                     className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-gray-100"
@@ -651,7 +709,7 @@ export default function ViajerosManager({
   );
 }
 
-ViajerosManager.propTypes = {
+TravelersManager.propTypes = {
   viajeros: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.string,

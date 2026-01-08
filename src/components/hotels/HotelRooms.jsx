@@ -13,7 +13,7 @@ import {
   ToggleRight,
 } from "lucide-react";
 
-export default function HotelHabitaciones({ hotelId, disabled = false }) {
+export default function HotelRooms({ hotelId, disabled = false }) {
   const [habitaciones, setHabitaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -34,9 +34,20 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
   const [saving, setSaving] = useState(false);
 
   const AMENIDADES_HABITACION = [
-    "vista_mar", "vista_jardin", "balcon", "terraza", "jacuzzi",
-    "minibar", "caja_fuerte", "aire_acondicionado", "tv_cable",
-    "wifi", "plancha", "secadora", "cafetera", "cocina"
+    "vista_mar",
+    "vista_jardin",
+    "balcon",
+    "terraza",
+    "jacuzzi",
+    "minibar",
+    "caja_fuerte",
+    "aire_acondicionado",
+    "tv_cable",
+    "wifi",
+    "plancha",
+    "secadora",
+    "cafetera",
+    "cocina",
   ];
 
   useEffect(() => {
@@ -102,7 +113,10 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
   function toggleAmenidad(amenidad) {
     const current = formData.amenidades || [];
     if (current.includes(amenidad)) {
-      setFormData({ ...formData, amenidades: current.filter(a => a !== amenidad) });
+      setFormData({
+        ...formData,
+        amenidades: current.filter((a) => a !== amenidad),
+      });
     } else {
       setFormData({ ...formData, amenidades: [...current, amenidad] });
     }
@@ -127,9 +141,15 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
         capacidad_total: parseInt(formData.capacidad_total) || 4,
         descripcion: formData.descripcion.trim() || null,
         amenidades: formData.amenidades,
-        tarifa_rack_sencilla: formData.tarifa_rack_sencilla ? parseFloat(formData.tarifa_rack_sencilla) : null,
-        tarifa_rack_doble: formData.tarifa_rack_doble ? parseFloat(formData.tarifa_rack_doble) : null,
-        tarifa_rack_triple: formData.tarifa_rack_triple ? parseFloat(formData.tarifa_rack_triple) : null,
+        tarifa_rack_sencilla: formData.tarifa_rack_sencilla
+          ? parseFloat(formData.tarifa_rack_sencilla)
+          : null,
+        tarifa_rack_doble: formData.tarifa_rack_doble
+          ? parseFloat(formData.tarifa_rack_doble)
+          : null,
+        tarifa_rack_triple: formData.tarifa_rack_triple
+          ? parseFloat(formData.tarifa_rack_triple)
+          : null,
         is_active: formData.is_active,
       };
 
@@ -218,7 +238,10 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-gray-50 rounded-lg p-4 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-gray-50 rounded-lg p-4 space-y-4"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -227,7 +250,9 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
               <input
                 type="text"
                 value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, nombre: e.target.value })
+                }
                 placeholder="Ej: Suite Junior, Deluxe, Standard"
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 required
@@ -240,7 +265,12 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
               <input
                 type="text"
                 value={formData.codigo}
-                onChange={(e) => setFormData({ ...formData, codigo: e.target.value.toUpperCase() })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    codigo: e.target.value.toUpperCase(),
+                  })
+                }
                 placeholder="Ej: SJR, DLX, STD"
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary uppercase"
               />
@@ -254,32 +284,53 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
             </label>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Adultos</label>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Adultos
+                </label>
                 <input
                   type="number"
                   min="1"
                   value={formData.capacidad_adultos}
-                  onChange={(e) => setFormData({ ...formData, capacidad_adultos: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      capacidad_adultos: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Niños</label>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Niños
+                </label>
                 <input
                   type="number"
                   min="0"
                   value={formData.capacidad_ninos}
-                  onChange={(e) => setFormData({ ...formData, capacidad_ninos: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      capacidad_ninos: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Total máx.</label>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Total máx.
+                </label>
                 <input
                   type="number"
                   min="1"
                   value={formData.capacidad_total}
-                  onChange={(e) => setFormData({ ...formData, capacidad_total: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      capacidad_total: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
@@ -293,34 +344,55 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
             </label>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Sencilla</label>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Sencilla
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.tarifa_rack_sencilla}
-                  onChange={(e) => setFormData({ ...formData, tarifa_rack_sencilla: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      tarifa_rack_sencilla: e.target.value,
+                    })
+                  }
                   placeholder="$0.00"
                   className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Doble</label>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Doble
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.tarifa_rack_doble}
-                  onChange={(e) => setFormData({ ...formData, tarifa_rack_doble: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      tarifa_rack_doble: e.target.value,
+                    })
+                  }
                   placeholder="$0.00"
                   className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Triple</label>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Triple
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.tarifa_rack_triple}
-                  onChange={(e) => setFormData({ ...formData, tarifa_rack_triple: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      tarifa_rack_triple: e.target.value,
+                    })
+                  }
                   placeholder="$0.00"
                   className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
@@ -345,7 +417,7 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
-                  {amenidad.replace(/_/g, ' ')}
+                  {amenidad.replace(/_/g, " ")}
                 </button>
               ))}
             </div>
@@ -358,7 +430,9 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
             </label>
             <textarea
               value={formData.descripcion}
-              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, descripcion: e.target.value })
+              }
               rows={2}
               className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             />
@@ -370,7 +444,9 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
               type="checkbox"
               id="is_active"
               checked={formData.is_active}
-              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, is_active: e.target.checked })
+              }
               className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
             />
             <label htmlFor="is_active" className="text-sm text-gray-700">
@@ -418,13 +494,17 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
             <div
               key={habitacion.id}
               className={`bg-white border rounded-lg p-4 ${
-                habitacion.is_active ? "border-gray-200" : "border-gray-100 opacity-60"
+                habitacion.is_active
+                  ? "border-gray-200"
+                  : "border-gray-100 opacity-60"
               }`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-gray-900">{habitacion.nombre}</h4>
+                    <h4 className="font-medium text-gray-900">
+                      {habitacion.nombre}
+                    </h4>
                     {habitacion.codigo && (
                       <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
                         {habitacion.codigo}
@@ -438,8 +518,11 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
                   </div>
                   <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
                     <Users size={14} />
-                    {habitacion.capacidad_adultos} adultos, {habitacion.capacidad_ninos} niños
-                    <span className="text-xs">(máx. {habitacion.capacidad_total})</span>
+                    {habitacion.capacidad_adultos} adultos,{" "}
+                    {habitacion.capacidad_ninos} niños
+                    <span className="text-xs">
+                      (máx. {habitacion.capacidad_total})
+                    </span>
                   </div>
                 </div>
                 {!disabled && (
@@ -453,7 +536,11 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
                       }`}
                       title={habitacion.is_active ? "Desactivar" : "Activar"}
                     >
-                      {habitacion.is_active ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                      {habitacion.is_active ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
                     </button>
                     <button
                       onClick={() => startEdit(habitacion)}
@@ -472,21 +559,32 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
               </div>
 
               {/* Tarifas */}
-              {(habitacion.tarifa_rack_sencilla || habitacion.tarifa_rack_doble || habitacion.tarifa_rack_triple) && (
+              {(habitacion.tarifa_rack_sencilla ||
+                habitacion.tarifa_rack_doble ||
+                habitacion.tarifa_rack_triple) && (
                 <div className="flex gap-3 text-sm mb-2">
                   {habitacion.tarifa_rack_sencilla && (
                     <div className="text-gray-600">
-                      <span className="text-xs text-gray-400">SGL:</span> ${parseFloat(habitacion.tarifa_rack_sencilla).toLocaleString()}
+                      <span className="text-xs text-gray-400">SGL:</span> $
+                      {parseFloat(
+                        habitacion.tarifa_rack_sencilla
+                      ).toLocaleString()}
                     </div>
                   )}
                   {habitacion.tarifa_rack_doble && (
                     <div className="text-gray-600">
-                      <span className="text-xs text-gray-400">DBL:</span> ${parseFloat(habitacion.tarifa_rack_doble).toLocaleString()}
+                      <span className="text-xs text-gray-400">DBL:</span> $
+                      {parseFloat(
+                        habitacion.tarifa_rack_doble
+                      ).toLocaleString()}
                     </div>
                   )}
                   {habitacion.tarifa_rack_triple && (
                     <div className="text-gray-600">
-                      <span className="text-xs text-gray-400">TPL:</span> ${parseFloat(habitacion.tarifa_rack_triple).toLocaleString()}
+                      <span className="text-xs text-gray-400">TPL:</span> $
+                      {parseFloat(
+                        habitacion.tarifa_rack_triple
+                      ).toLocaleString()}
                     </div>
                   )}
                 </div>
@@ -500,7 +598,7 @@ export default function HotelHabitaciones({ hotelId, disabled = false }) {
                       key={amenidad}
                       className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded"
                     >
-                      {amenidad.replace(/_/g, ' ')}
+                      {amenidad.replace(/_/g, " ")}
                     </span>
                   ))}
                   {habitacion.amenidades.length > 5 && (

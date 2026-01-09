@@ -7,6 +7,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import ProfessionalReceipt from "./ProfessionalReceipt";
 import InformalReceipt from "./InformalReceipt";
+import { formatDate, getCurrentYear } from "../../utils/dateUtils";
 
 export default function ReceiptGenerator({
   venta,
@@ -163,19 +164,6 @@ export default function ReceiptGenerator({
     return result.trim() || "cero";
   }
 
-  function formatDate(dateStr) {
-    if (!dateStr) return "por confirmar";
-    // Handle dates by extracting just the date part and adding T00:00:00 to avoid timezone issues
-    const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
-    const date = new Date(dateOnly + "T00:00:00");
-    if (isNaN(date.getTime())) return "por confirmar";
-    return date.toLocaleDateString("es-MX", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  }
-
   async function generateReceiptImage() {
     setGenerating(true);
 
@@ -183,7 +171,7 @@ export default function ReceiptGenerator({
       const element = receiptRef.current;
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: template === "informal" ? null : "#ffffff",
+        backgroundColor: "#ffffff",
         logging: false,
         useCORS: true,
         allowTaint: true,
@@ -207,7 +195,7 @@ export default function ReceiptGenerator({
       const element = receiptRef.current;
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: template === "informal" ? null : "#ffffff",
+        backgroundColor: "#ffffff",
         logging: false,
         useCORS: true,
         allowTaint: true,
@@ -233,7 +221,7 @@ export default function ReceiptGenerator({
       setGenerating(true);
 
       // Generate receipt number with retry logic to handle race conditions
-      const currentYear = new Date().getFullYear();
+      const currentYear = getCurrentYear();
       let finalReceiptNumber = receiptNumber;
       let attempts = 0;
       const maxAttempts = 5;
@@ -279,7 +267,8 @@ export default function ReceiptGenerator({
           finalReceiptNumber = candidateNumber;
           setReceiptNumber(finalReceiptNumber);
           // Wait for state update to trigger re-render before capturing
-          await new Promise((resolve) => setTimeout(resolve, 100));
+          // Use 300ms to ensure component fully re-renders, especially on slower devices
+          await new Promise((resolve) => setTimeout(resolve, 300));
         }
       }
 
@@ -509,16 +498,13 @@ export default function ReceiptGenerator({
             )}
           </div>
 
-          {/* Hidden full-size receipt for capture */}
+          {/* Hidden full-size receipt for capture - positioned off-screen to ensure proper rendering */}
           {!preview && (
             <div
               style={{
-                position: "fixed",
-                left: 0,
+                position: "absolute",
+                left: "-9999px",
                 top: 0,
-                zIndex: -1,
-                opacity: 0,
-                pointerEvents: "none",
               }}
             >
               <div ref={receiptRef}>

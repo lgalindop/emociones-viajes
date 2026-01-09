@@ -17,6 +17,7 @@ import {
 import ReceiptGenerator from "../receipts/ReceiptGenerator";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import Toast from "../ui/Toast";
+import { getLocalDateString, isPastDate, isToday } from "../../utils/dateUtils";
 
 export default function PaymentSchedule({ venta, onBack, onUpdate }) {
   const [pagos, setPagos] = useState([]);
@@ -68,11 +69,14 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
 
   async function markAsPaid(pago) {
     try {
+      // Use local date to avoid timezone issues
+      const localDate = getLocalDateString();
+
       const { error } = await supabase
         .from('pagos')
         .update({
           estado: 'pagado',
-          fecha_pagado: new Date().toISOString(),
+          fecha_pagado: localDate,
           registrado_por: user.id,
         })
         .eq('id', pago.id);
@@ -280,10 +284,9 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
 
             <div className="space-y-4">
               {pagos.map(pago => {
-                const isPastDue = pago.estado === 'pendiente' && 
-                  new Date(pago.fecha_programada) < new Date();
-                const isToday = new Date(pago.fecha_programada).toDateString() === 
-                  new Date().toDateString();
+                // Safe date comparisons for México timezone
+                const isPastDueDate = pago.estado === 'pendiente' && isPastDate(pago.fecha_programada);
+                const isTodayDate = isToday(pago.fecha_programada);
                 const pagoReceipts = receipts.filter(r => r.pago_id === pago.id);
 
                 return (
@@ -292,9 +295,9 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
                     className={`border-2 rounded-lg p-4 ${
                       pago.estado === 'pagado'
                         ? 'border-green-200 bg-green-50'
-                        : isPastDue
+                        : isPastDueDate
                         ? 'border-red-200 bg-red-50'
-                        : isToday
+                        : isTodayDate
                         ? 'border-yellow-200 bg-yellow-50'
                         : 'border-gray-200'
                     }`}
@@ -327,7 +330,9 @@ export default function PaymentSchedule({ venta, onBack, onUpdate }) {
                               <div className="flex items-center gap-1 text-green-600">
                                 <Check size={14} />
                                 <span>
-                                  Pagado: {new Date(pago.fecha_pagado).toLocaleDateString('es-MX')}
+                                  Pagado: {new Date(
+                                    (pago.fecha_pagado.includes("T") ? pago.fecha_pagado.split("T")[0] : pago.fecha_pagado) + "T00:00:00"
+                                  ).toLocaleDateString('es-MX')}
                                 </span>
                               </div>
                             )}

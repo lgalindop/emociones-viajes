@@ -24,6 +24,7 @@ const RELATIONSHIP_TYPES = [
   { value: "empleador", label: "Empleador", icon: Briefcase },
   { value: "colega", label: "Colega", icon: Briefcase },
   { value: "amigo/a", label: "Amigo/a", icon: Users },
+  { value: "otro", label: "Otro", icon: Users },
 ];
 
 /**
@@ -55,6 +56,7 @@ export default function CustomerRelaciones({
     if (clienteId) {
       fetchRelaciones();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clienteId]);
 
   async function fetchRelaciones() {
@@ -140,6 +142,7 @@ export default function CustomerRelaciones({
       empleador: "asistente",
       colega: "colega",
       "amigo/a": "amigo/a",
+      otro: "otro",
     };
     return inverses[tipo] || tipo;
   }

@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from "lucide-react";
 import ImageUploader from "./ImageUploader";
+import { getLocalDateString } from "../../utils/dateUtils";
 
 export default function GalleryEditor({ content, onChange }) {
   const flyers = content.flyers || [];
@@ -9,7 +10,7 @@ export default function GalleryEditor({ content, onChange }) {
       id: `flyer-${Date.now()}`,
       image_url: "",
       title: "",
-      upload_date: new Date().toISOString().split("T")[0],
+      upload_date: getLocalDateString(), // Safe for México timezone
     };
     onChange({ flyers: [...flyers, newFlyer] });
   }

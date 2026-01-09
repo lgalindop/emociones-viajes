@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { supabase } from "../../lib/supabase";
 import {
   Plus,
@@ -8,8 +9,8 @@ import {
   Edit,
   Trash2,
   Save,
-  X,
 } from "lucide-react";
+import { getLocalDateString } from "../../utils/dateUtils";
 
 const TEMPORADA_PRESETS = [
   { nombre: "Alta", factor: 1.2 },
@@ -20,6 +21,11 @@ const TEMPORADA_PRESETS = [
   { nombre: "Verano", factor: 1.15 },
   { nombre: "Puentes", factor: 1.25 },
 ];
+
+HotelSeasons.propTypes = {
+  hotelId: PropTypes.string.isRequired,
+  disabled: PropTypes.bool,
+};
 
 export default function HotelSeasons({ hotelId, disabled = false }) {
   const [temporadas, setTemporadas] = useState([]);
@@ -39,6 +45,7 @@ export default function HotelSeasons({ hotelId, disabled = false }) {
     if (hotelId) {
       fetchTemporadas();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotelId]);
 
   async function fetchTemporadas() {
@@ -190,7 +197,7 @@ export default function HotelSeasons({ hotelId, disabled = false }) {
   }
 
   function isCurrentSeason(temporada) {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getLocalDateString(); // Safe for México timezone
     return temporada.fecha_inicio <= today && temporada.fecha_fin >= today;
   }
 

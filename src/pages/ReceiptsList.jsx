@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   FileText,
   Search,
-  Filter,
   Eye,
   Edit2,
   Trash2,
@@ -17,7 +16,6 @@ export default function ReceiptsList() {
   const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStage, setFilterStage] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [toast, setToast] = useState(null);
@@ -183,9 +181,6 @@ export default function ReceiptsList() {
         .includes(searchTerm.toLowerCase()) ||
       r.ventas?.folio_venta?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStage =
-      filterStage === "all" || r.receipt_stage === filterStage;
-
     const matchesDate = (() => {
       if (!startDate && !endDate) return true;
       const receiptDate = new Date(r.payment_date);
@@ -200,7 +195,7 @@ export default function ReceiptsList() {
       );
     })();
 
-    return matchesSearch && matchesStage && matchesDate;
+    return matchesSearch && matchesDate;
   });
 
   if (loading) {
@@ -272,20 +267,6 @@ export default function ReceiptsList() {
                 className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
                 placeholder="Hasta"
               />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter size={20} className="text-gray-400" />
-              <select
-                value={filterStage}
-                onChange={(e) => setFilterStage(e.target.value)}
-                className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
-              >
-                <option value="all">Todos los estados</option>
-                <option value="draft">Borradores</option>
-                <option value="generated">Generados</option>
-                <option value="sent">Enviados</option>
-                <option value="confirmed">Confirmados</option>
-              </select>
             </div>
           </div>
         </div>

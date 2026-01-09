@@ -1,4 +1,5 @@
 import { getReceiptLogo } from "../../lib/logoConstants";
+import { formatDateShort, formatDateLong } from "../../utils/dateUtils";
 
 export default function ProfessionalReceipt({ data, companyInfo }) {
   const logoSrc = getReceiptLogo();
@@ -9,31 +10,6 @@ export default function ProfessionalReceipt({ data, companyInfo }) {
     phone: "+52 614 397 2021",
     address: "Chihuahua, Chihuahua, México",
   };
-
-  // Inline date formatting to ensure it works in PDF capture
-  function formatDateShort(dateStr) {
-    if (!dateStr) return "";
-    const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
-    const date = new Date(dateOnly + "T00:00:00");
-    if (isNaN(date.getTime())) return "";
-    return date.toLocaleDateString("es-MX", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  }
-
-  function formatDateLong(dateStr) {
-    if (!dateStr) return "";
-    const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
-    const date = new Date(dateOnly + "T00:00:00");
-    if (isNaN(date.getTime())) return "";
-    return date.toLocaleDateString("es-MX", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  }
 
   return (
     <div
@@ -67,29 +43,29 @@ export default function ProfessionalReceipt({ data, companyInfo }) {
         </div>
       </div>
 
-      {/* Check Icon */}
+      {/* Check Icon - Using CSS checkmark for html2canvas compatibility */}
       <div
         style={{
           width: "120px",
           height: "120px",
+          margin: "0 auto 30px",
           background: "#22c55e",
           borderRadius: "50%",
-          margin: "0 auto 30px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          position: "relative",
         }}
       >
-        <svg
-          width="70"
-          height="70"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="3"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            width: "50px",
+            height: "25px",
+            borderLeft: "8px solid white",
+            borderBottom: "8px solid white",
+            transform: "translate(-50%, -60%) rotate(-45deg)",
+          }}
+        />
       </div>
 
       {/* Client & Amount */}

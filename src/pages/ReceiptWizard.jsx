@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, FileText } from "lucide-react";
 import Toast from "../components/ui/Toast";
+import { getLocalDateString, getCurrentYear } from "../utils/dateUtils";
 
 // Helper function for number to words conversion
 function convertNumberToWords(num) {
@@ -112,7 +113,7 @@ export default function ReceiptWizard() {
     travelers: "",
     amountPaid: "",
     paymentMethod: "Efectivo",
-    paymentDate: new Date().toISOString().split("T")[0],
+    paymentDate: getLocalDateString(), // Safe for México timezone
     receiptNumber: "",
     notes: "",
     templateType: "professional",
@@ -232,7 +233,7 @@ export default function ReceiptWizard() {
         amountPaid: receipt.amount?.toString() || "",
         paymentMethod: receipt.payment_method || "Efectivo",
         paymentDate:
-          receipt.payment_date || new Date().toISOString().split("T")[0],
+          receipt.payment_date || getLocalDateString(), // Safe for México timezone
         receiptNumber: receipt.receipt_number || "",
         notes: receipt.notes || "",
         templateType: receipt.template_type || "professional",
@@ -279,7 +280,7 @@ export default function ReceiptWizard() {
 
   async function generateNextReceiptNumber() {
     try {
-      const year = new Date().getFullYear();
+      const year = getCurrentYear();
       const { data, error } = await supabase
         .from("receipts")
         .select("receipt_number")
@@ -301,7 +302,7 @@ export default function ReceiptWizard() {
       return `REC-${year}-00001`;
     } catch (error) {
       console.error("Error:", error);
-      const year = new Date().getFullYear();
+      const year = getCurrentYear();
       return `REC-${year}-00001`;
     }
   }

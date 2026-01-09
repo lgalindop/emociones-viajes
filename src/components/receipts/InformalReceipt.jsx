@@ -1,23 +1,9 @@
 import { getReceiptLogo } from "../../lib/logoConstants";
+import { formatDateInformal } from "../../utils/dateUtils";
 
 export default function InformalReceipt({ data }) {
   const logoSrc = getReceiptLogo();
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return { day: "", month: "", year: "" };
-    // Handle dates by extracting just the date part and adding T00:00:00 to avoid timezone issues
-    const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
-    const date = new Date(dateOnly + "T00:00:00");
-    const day = date.getDate();
-    const month = date
-      .toLocaleDateString("es-MX", { month: "short" })
-      .replace(".", "")
-      .toUpperCase();
-    const year = date.getFullYear();
-    return { day, month, year };
-  };
-
-  const paymentDate = formatDate(data.payment_date);
+  const paymentDate = formatDateInformal(data.payment_date);
 
   return (
     <div

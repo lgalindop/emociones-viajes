@@ -166,60 +166,63 @@ export default function Groups() {
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-2 mb-3">
-          <div className="relative mb-2">
-            <Search
-              size={14}
-              className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              placeholder="Buscar por nombre, coordinador, tipo..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-8 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* Search bar */}
+            <div className="flex-1 relative">
+              <Search
+                size={14}
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
+              />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, coordinador, tipo..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-8 pr-8 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
 
-          {/* Date Filter */}
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => setDateFilter("activos")}
-              className={`flex-1 px-2 py-1 text-xs rounded-lg font-medium transition-colors ${
-                dateFilter === "activos"
-                  ? "bg-primary text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Activos
-            </button>
-            <button
-              onClick={() => setDateFilter("pasados")}
-              className={`flex-1 px-2 py-1 text-xs rounded-lg font-medium transition-colors ${
-                dateFilter === "pasados"
-                  ? "bg-primary text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Pasados
-            </button>
-            <button
-              onClick={() => setDateFilter("todos")}
-              className={`flex-1 px-2 py-1 text-xs rounded-lg font-medium transition-colors ${
-                dateFilter === "todos"
-                  ? "bg-primary text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Todos
-            </button>
+            {/* Date Filter Buttons */}
+            <div className="flex gap-1.5 w-full sm:w-auto">
+              <button
+                onClick={() => setDateFilter("activos")}
+                className={`flex-1 sm:flex-initial sm:min-w-[70px] px-2 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                  dateFilter === "activos"
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Activos
+              </button>
+              <button
+                onClick={() => setDateFilter("pasados")}
+                className={`flex-1 sm:flex-initial sm:min-w-[70px] px-2 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                  dateFilter === "pasados"
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Pasados
+              </button>
+              <button
+                onClick={() => setDateFilter("todos")}
+                className={`flex-1 sm:flex-initial sm:min-w-[70px] px-2 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                  dateFilter === "todos"
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Todos
+              </button>
+            </div>
           </div>
         </div>
 
@@ -294,31 +297,45 @@ export default function Groups() {
                           )}
                         </>
                       ) : (
-                        <span className="text-gray-400">Sin fecha</span>
+                        <span className="text-yellow-600 flex items-center gap-0.5">
+                          <span className="text-[10px]">⚠️</span>
+                          <span className="text-gray-400 text-[10px]">Sin fecha</span>
+                        </span>
                       )}
                     </div>
 
                     {/* Coordinador - hide on very small screens */}
                     <div className="hidden sm:flex flex-col items-center min-w-[90px]">
                       {grupo.coordinador_nombre ? (
-                        <>
-                          <span className="text-gray-900 truncate w-full text-center font-medium">
+                        <div className="group relative flex flex-col items-center">
+                          <span className="text-gray-900 truncate w-full text-center font-medium cursor-help">
                             {grupo.coordinador_nombre}
                           </span>
+                          {grupo.coordinador_email && (
+                            <div className="hidden group-hover:block absolute z-10 bg-gray-900 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap -top-8 left-1/2 transform -translate-x-1/2 shadow-lg">
+                              {grupo.coordinador_email}
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                                <div className="border-4 border-transparent border-t-gray-900"></div>
+                              </div>
+                            </div>
+                          )}
                           {grupo.coordinador_telefono && (
                             <span className="text-gray-500 text-[10px]">
                               {grupo.coordinador_telefono}
                             </span>
                           )}
-                        </>
+                        </div>
                       ) : (
-                        <span className="text-gray-400">Sin coord.</span>
+                        <span className="text-yellow-600 flex items-center gap-0.5">
+                          <span className="text-[10px]">⚠️</span>
+                          <span className="text-gray-400 text-[10px]">Sin coord.</span>
+                        </span>
                       )}
                     </div>
 
                     {/* Cotiz / Ventas counts */}
                     <div className="flex flex-col items-center gap-0.5 min-w-[60px]">
-                      <div className="flex gap-2 text-[10px]">
+                      <div className="flex gap-2 text-[10px] items-center">
                         <span className="text-gray-600">
                           C:{" "}
                           <span className="font-semibold text-gray-900">
@@ -331,6 +348,14 @@ export default function Groups() {
                             {grupo.ventas_count || 0}
                           </span>
                         </span>
+                        {grupo.notas && (
+                          <span
+                            className="cursor-help text-gray-400 hover:text-gray-600"
+                            title={grupo.notas.length > 100 ? grupo.notas.substring(0, 100) + '...' : grupo.notas}
+                          >
+                            📝
+                          </span>
+                        )}
                       </div>
                     </div>
 

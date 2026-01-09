@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { supabase } from "../../lib/supabase";
 import {
   Plus,
@@ -9,7 +10,6 @@ import {
   Edit,
   Trash2,
   Save,
-  X,
   Star,
 } from "lucide-react";
 
@@ -23,6 +23,11 @@ const CARGO_OPTIONS = [
   "Operaciones",
   "Otro",
 ];
+
+HotelContacts.propTypes = {
+  hotelId: PropTypes.string.isRequired,
+  disabled: PropTypes.bool,
+};
 
 export default function HotelContacts({ hotelId, disabled = false }) {
   const [contactos, setContactos] = useState([]);
@@ -44,6 +49,7 @@ export default function HotelContacts({ hotelId, disabled = false }) {
     if (hotelId) {
       fetchContactos();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotelId]);
 
   async function fetchContactos() {

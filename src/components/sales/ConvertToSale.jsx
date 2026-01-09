@@ -4,6 +4,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { X, Users } from "lucide-react";
 import ReceiptGenerator from "../receipts/ReceiptGenerator";
 import TravelersManager from "../customers/TravelersManager";
+import { getLocalDateString } from "../../utils/dateUtils";
 
 export default function ConvertToSale({
   cotizacion,
@@ -114,14 +115,17 @@ export default function ConvertToSale({
       // 3. Create initial payment if > 0
       const pagoInicial = parseFloat(formData.pago_inicial);
       if (pagoInicial > 0) {
+        // Use local date to avoid timezone issues
+        const localDate = getLocalDateString();
+
         const { data: newPago, error: pagoError } = await supabase
           .from("pagos")
           .insert({
             venta_id: venta.id,
             numero_pago: 1,
             monto: pagoInicial,
-            fecha_programada: new Date().toISOString().split("T")[0],
-            fecha_pagado: new Date().toISOString().split("T")[0],
+            fecha_programada: localDate,
+            fecha_pagado: localDate,
             estado: "pagado",
             metodo_pago: formData.metodo_pago,
             registrado_por: user.id,

@@ -621,7 +621,7 @@ export default function SaleDetails({ saleId, onBack }) {
                         {pago.metodo_pago} •{" "}
                         {pago.fecha_pagado
                           ? new Date(
-                              pago.fecha_pagado + "T00:00:00"
+                              pago.fecha_pagado.split("T")[0] + "T00:00:00"
                             ).toLocaleDateString("es-MX")
                           : new Date(
                               pago.fecha_programada + "T00:00:00"
